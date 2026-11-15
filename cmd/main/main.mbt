@@ -9,6 +9,8 @@
 ///   collisions                    截止撞期提醒
 ///   benchmark                     实测扫描（比赛数/规则数/冲突数/投稿包数/耗时）
 ///   validate                      校验台账数据（名字/日期/材料/标志位），有问题返回码 1
+///   preflight                     全链路预检：validate → 逐行核验 → 冲突检测 →
+///                                 投稿包认证 → 撞期提醒，输出清单 SHA-256
 ///   help                          显示本帮助
 /// 用法：moon run cmd/main [子命令 ...]
 /// 作品名、比赛名含空格时请加引号，例如：
@@ -26,6 +28,7 @@ fn main {
     "collisions" => cmd_collisions()
     "benchmark" => cmd_benchmark()
     "validate" => cmd_validate()
+    "preflight" => cmd_preflight()
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -145,6 +148,9 @@ fn print_usage() -> Unit {
     "benchmark：实测扫描（比赛数/规则数/冲突数/投稿包数/耗时）",
   )
   println("validate：校验台账数据，有问题返回码 1")
+  println(
+    "preflight：全链路预检（validate → 逐行核验 → 冲突检测 → 投稿包认证 → 撞期提醒），输出清单 SHA-256",
+  )
   println("help：显示本帮助")
 }
 
@@ -263,6 +269,87 @@ fn cmd_validate() -> Unit {
     }
     @env.exit(1)
   }
+}
+
+///|
+/// 全链路预检：用真实数据一口气跑完 validate → 逐行核验 → 冲突检测 →
+/// 投稿包认证 → 撞期提醒，输出可提交的投稿包 + 带 SHA-256 的清单。
+/// 学 Auto-Lexmount 的预检纪律（submission.py / workflow.py，代码没抄）：
+/// 数据自相矛盾就整单拒绝（返回码 1）；P0 冲突直接标 blocked；
+/// 数据未核实或已过期拒绝认证；不自动重试；失败原因逐项写清。
+/// 单个包的拒绝是结论，不是进程失败——只在 validate 有问题时返回码 1。
+fn cmd_preflight() -> Unit {
+  let comps = @lib.all_competitions()
+  let works = @lib.all_works()
+  let report = @lib.preflight(comps, works, @env.now())
+  println("== preflight 全链路预检 ==")
+  println("今天：\{report.today}")
+  if report.validate_issues.length() > 0 {
+    println("数据校验失败：\{report.validate_issues.length()} 个问题：")
+    for i in 0..<report.validate_issues.length() {
+      println("  - \{report.validate_issues[i]}")
+    }
+    println("拒绝认证：台账数据自相矛盾，先修数据再跑 preflight。")
+    @env.exit(1)
+  }
+  println("数据校验：通过（0 个问题）")
+  let mut verified_rows = 0
+  for i in 0..<report.rows.length() {
+    if report.rows[i].verified {
+      verified_rows = verified_rows + 1
+    }
+  }
+  println(
+    "台账核验：\{report.rows.length()} 行，\{verified_rows} 行已核实，\{report.rows.length() - verified_rows} 行未核实/已过期",
+  )
+  for i in 0..<report.rows.length() {
+    let r = report.rows[i]
+    if !r.verified {
+      println("  - \{r.competition}：\{r.reason}")
+    }
+  }
+  println(
+    "投稿包认证：\{report.packs.length()} 个，可提交 \{report.certifiable_count} 个，P0 挡住 \{report.blocked_count} 个",
+  )
+  println("可提交：")
+  for i in 0..<report.packs.length() {
+    let p = report.packs[i]
+    if p.certifiable {
+      println("  - \{p.work} → \{p.competition}")
+    }
+  }
+  println("P0 挡住：")
+  for i in 0..<report.packs.length() {
+    let p = report.packs[i]
+    if p.blocked {
+      let mut reason = ""
+      for j in 0..<p.reasons.length() {
+        if p.reasons[j].contains("P0 冲突") {
+          reason = p.reasons[j]
+          break
+        }
+      }
+      println("  - \{p.work} → \{p.competition}：\{reason}")
+    }
+  }
+  let mut other = 0
+  for i in 0..<report.packs.length() {
+    let p = report.packs[i]
+    if !p.certifiable && !p.blocked {
+      other = other + 1
+    }
+  }
+  println(
+    "其余 \{other} 个不可提交：材料缺口或数据未核实（拒绝原因见逐包认证）",
+  )
+  println("截止撞期：\{report.collisions.length()} 个日期")
+  for i in 0..<report.collisions.length() {
+    println("  - \{report.collisions[i]}")
+  }
+  println("清单 SHA-256：\{report.manifest_hash}")
+  println(
+    "说明：preflight 是纯本地单次运行，不联网、不重试；清单哈希由全部台账数据算出，数据一变哈希就变。",
+  )
 }
 
 ///|
