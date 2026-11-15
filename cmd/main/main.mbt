@@ -59,7 +59,9 @@ fn run_full_pipeline() -> Unit {
   )
   println("")
   let comps = @lib.all_competitions()
-  println("-- 比赛台账（12 个，按截止排序）--")
+  println(
+    "-- 比赛台账（19 个：12 个在途 + 7 个关注，按截止排序）--",
+  )
   for i in 0..<comps.length() {
     let c = comps[i]
     println(
@@ -167,7 +169,9 @@ fn print_competition_names() -> Unit {
 ///|
 fn cmd_list() -> Unit {
   let comps = @lib.all_competitions()
-  println("-- 比赛台账（12 个，按截止排序）--")
+  println(
+    "-- 比赛台账（19 个：12 个在途 + 7 个关注，按截止排序）--",
+  )
   for i in 0..<comps.length() {
     let c = comps[i]
     println(

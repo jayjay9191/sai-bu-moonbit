@@ -3,8 +3,8 @@
 /// Run `moon test` to execute and `moon test --update` to refresh snapshots.
 
 ///|
-test "registry has twelve competitions" {
-  assert_eq(@sai-chang-guan-jia-moonbit.all_competitions().length(), 12)
+test "registry has nineteen competitions" {
+  assert_eq(@sai-chang-guan-jia-moonbit.all_competitions().length(), 19)
 }
 
 ///|
@@ -214,13 +214,14 @@ test "collision helpers on empty registry" {
 test "xiaodianjie triggers moda P0 via submitted_to" {
   // 小店日结从未公开（first_public_date 为空），但已投过涌现奖；
   // 规则 1 的第二条分支（已投过其他比赛）仍应触发魔搭 P0。
+  // 另有软件创新大赛规则 3（原创条款）同样触发 P0，共 2 个冲突。
   match @sai-chang-guan-jia-moonbit.work_by_name("小店日结") {
     Some(w) => {
       let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
         w,
         @sai-chang-guan-jia-moonbit.all_competitions(),
       )
-      assert_eq(conflicts.length(), 1)
+      assert_eq(conflicts.length(), 2)
       assert_eq(conflicts[0].level, "P0")
       assert_eq(
         conflicts[0].competition,
@@ -257,11 +258,12 @@ test "join and contains on empty list" {
 }
 
 ///|
-test "exactly two collision dates" {
+test "exactly three collision dates" {
   let dates = @sai-chang-guan-jia-moonbit.collision_dates(
     @sai-chang-guan-jia-moonbit.all_competitions(),
   )
-  assert_eq(dates.length(), 2)
+  assert_eq(dates.length(), 3)
+  assert_true(@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-11-30"))
   assert_true(@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-12-01"))
   assert_true(@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-12-06"))
 }
@@ -293,8 +295,8 @@ test "pack xiaodianjie to moda is blocked" {
 ///|
 test "benchmark sweep counts" {
   // 全量扫描的计数与 benchmark 子命令打印的数字一致：
-  // 3 作品 × 12 比赛，冲突 4 个（P0 3 个，P1 1 个），投稿包 36 个，
-  // 其中 P0 挡住 3 个，撞期 2 个日期。
+  // 3 作品 × 19 比赛，冲突 8 个（P0 6 个，P1 2 个），投稿包 57 个，
+  // 其中 P0 挡住 6 个，撞期 3 个日期。
   let comps = @sai-chang-guan-jia-moonbit.all_competitions()
   let works = @sai-chang-guan-jia-moonbit.all_works()
   let mut total_conflicts = 0
@@ -325,12 +327,12 @@ test "benchmark sweep counts" {
       }
     }
   }
-  assert_eq(total_conflicts, 4)
-  assert_eq(p0, 3)
-  assert_eq(p1, 1)
-  assert_eq(total_packs, 36)
-  assert_eq(blocked_packs, 3)
-  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates(comps).length(), 2)
+  assert_eq(total_conflicts, 8)
+  assert_eq(p0, 6)
+  assert_eq(p1, 2)
+  assert_eq(total_packs, 57)
+  assert_eq(blocked_packs, 6)
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates(comps).length(), 3)
 }
 
 ///|
@@ -516,7 +518,7 @@ test "p0 message has no empty parens for xiaodianjie" {
         w,
         @sai-chang-guan-jia-moonbit.all_competitions(),
       )
-      assert_eq(conflicts.length(), 1)
+      assert_eq(conflicts.length(), 2)
       assert_true(!conflicts[0].message.contains("（）"))
       assert_true(conflicts[0].message.contains("已投 涌现奖"))
     }
@@ -554,7 +556,7 @@ test "is_valid_date rejects non-digit in date" {
 ///|
 test "verified_at is valid for all competitions" {
   // 台账每行都有最后核实日期：10 行是 2026-11-13 全量核实轮次，
-  // 2 行是 2026-11-15 同步脚本重核过的（绿联、PAYATHON）。
+  // 9 行是 2026-11-15（绿联、PAYATHON 同步脚本重核 + 7 个新关注比赛）。
   let comps = @sai-chang-guan-jia-moonbit.all_competitions()
   let mut count_1113 = 0
   let mut count_1115 = 0
@@ -568,7 +570,7 @@ test "verified_at is valid for all competitions" {
     }
   }
   assert_eq(count_1113, 10)
-  assert_eq(count_1115, 2)
+  assert_eq(count_1115, 9)
 }
 
 ///|
@@ -593,8 +595,7 @@ test "validate flags bad verified_at" {
 
 ///|
 test "plan status counts" {
-  // 本轮只加了字段、还没加新比赛：12 行全是在途，关注 0 行。
-  // 加 7 个关注比赛后改成 12 / 7。
+  // 12 行在途（原计划），7 行关注（本轮新增）。
   let comps = @sai-chang-guan-jia-moonbit.all_competitions()
   let mut in_plan = 0
   let mut watching = 0
@@ -606,7 +607,7 @@ test "plan status counts" {
     }
   }
   assert_eq(in_plan, 12)
-  assert_eq(watching, 0)
+  assert_eq(watching, 7)
 }
 
 ///|
@@ -691,4 +692,46 @@ test "no-prior-entry rule fires on submitted_to only" {
     comp,
   ])
   assert_eq(conflicts2.length(), 0)
+}
+
+///|
+test "software innovation P0 for all three works" {
+  // 软件创新大赛原创条款（规则 3）：三件作品都已投过其他比赛，
+  // 应全部报 P0。参赛管家本身已投 MoonBit，按此条款同样冲突
+  //（它不在作品表里，见该比赛的 note）。
+  let comps = @sai-chang-guan-jia-moonbit.all_competitions()
+  let works = @sai-chang-guan-jia-moonbit.all_works()
+  for wi in 0..<works.length() {
+    let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+      works[wi],
+      comps,
+    )
+    let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+      conflicts, "第二十届全国大学生软件创新大赛",
+    )
+    assert_eq(list.length(), 1)
+    assert_eq(list[0].level, "P0")
+    assert_true(
+      list[0].message.contains("未参加过其他国家级公开比赛"),
+    )
+  }
+}
+
+///|
+test "zaohua requires new work P1 for dawn" {
+  // 造化要求用天工引擎新做体素游戏，黎明已有公开版本，应报 P1。
+  match @sai-chang-guan-jia-moonbit.work_by_name("第零次黎明") {
+    Some(w) => {
+      let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+        w,
+        @sai-chang-guan-jia-moonbit.all_competitions(),
+      )
+      let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+        conflicts, "造化首届体素游戏创作大赛",
+      )
+      assert_eq(list.length(), 1)
+      assert_eq(list[0].level, "P1")
+    }
+    None => assert_true(false)
+  }
 }
