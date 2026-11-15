@@ -26,8 +26,14 @@
 - PAYATHON 官网：核实报名阶段最后一天、作品提交阶段最后一天、
   Vibe Pay 一等奖 ¥30,000（日期是日历格推断，只核实不自动写；
   奖金是明确标注，可自动更新）。
+- 松江专题页：核实投稿截止（页面明文“投稿截止时间 2026.12.06 23:59”）。
+  只核实、不自动写（2026-11-15 新增）。
+- 涌现奖官网：页面是 JS 壳，内容在 async JS 包里（与 MoonBit 检查
+  同款做法：HTML 里找包地址再抓包搜文本）。核实提交截止
+  （包里明文“12月6日零点截止提交”）。只核实、不自动写
+  （2026-11-15 新增）；页面不写年份，按 2026 赛季理解。
 未覆盖（页面打不开、登录墙、或日期不在公开页上）：AI PLAY、
-BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、松江、涌现奖、Rokid。
+BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、Rokid。
 """
 
 import argparse
@@ -232,6 +238,74 @@ def check_payathon(report: Report, data: dict, dry_run: bool):
         report.unknown("页面里找不到 Vibe Pay 一等奖金额")
 
 
+def check_songjiang(report: Report, data: dict):
+    """松江：核实投稿截止。只核实、不自动写。"""
+    report.add("松江·创世纪 AI 游戏大赛 https://aiplaylab.cn/topics/songjiang-ai-genesis-2026")
+    comp = find_comp(data, "松江·创世纪 AI 游戏大赛")
+    if comp is None:
+        report.unknown("台账里没有松江，跳过")
+        return
+    try:
+        page = fetch("https://aiplaylab.cn/topics/songjiang-ai-genesis-2026")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    m = re.search(r"投稿截止时间</dt><dd>(\d{4})\.(\d{2})\.(\d{2})", page)
+    if m:
+        page_date = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+        if page_date == comp["deadline_date"]:
+            report.ok(f"投稿截止 {page_date}，与台账一致")
+        else:
+            report.add(
+                f"  [需人工确认] 投稿截止是 {page_date}，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("页面里找不到“投稿截止时间”对应的日期")
+
+
+def check_emerge(report: Report, data: dict):
+    """涌现奖：核实提交截止。页面是 JS 壳，内容在 async JS 包里
+    （与 MoonBit 检查同款做法：HTML 里找包地址再抓包搜文本）。
+    只核实、不自动写。页面只写“12月6日零点”，不写年份，
+    按 2026 赛季理解，年份取台账的 2026。"""
+    report.add("支付宝智能体涌现奖 https://abao.alipay.com/emerge")
+    comp = find_comp(data, "支付宝智能体涌现奖")
+    if comp is None:
+        report.unknown("台账里没有涌现奖，跳过")
+        return
+    try:
+        html = fetch("https://abao.alipay.com/emerge")
+    except Exception as e:
+        report.fail(f"官网打不开：{type(e).__name__}: {e}")
+        return
+    m = re.search(
+        r'https://gw\.alipayobjects\.com/render/p/yuyan/[^"\']+/async\.[^"\']+\.js',
+        html,
+    )
+    if not m:
+        report.unknown("官网 HTML 里找不到 async JS 包地址，无法读取页面内容")
+        return
+    try:
+        bundle = fetch(m.group(0))
+    except Exception as e:
+        report.fail(f"JS 包抓不到：{type(e).__name__}: {e}")
+        return
+    m2 = re.search(r"(\d+)月(\d+)日零点截止提交", bundle)
+    if m2:
+        month, day = int(m2.group(1)), int(m2.group(2))
+        want_month, want_day = comp["deadline_date"][5:7], comp["deadline_date"][8:10]
+        if f"{month:02d}" == want_month and f"{day:02d}" == want_day:
+            report.ok(f"提交截止 {month}月{day}日零点，与台账 {comp['deadline_date']} 一致")
+        else:
+            report.add(
+                f"  [需人工确认] 提交截止是 {month}月{day}日零点，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("JS 包里找不到“零点截止提交”的日期")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="同步比赛数据（只更新能核实的字段）")
     parser.add_argument("--dry-run", action="store_true", help="只打印报告，不改文件")
@@ -245,8 +319,10 @@ def main() -> int:
     check_moonbit(report)
     check_ugreen(report, data, args.dry_run)
     check_payathon(report, data, args.dry_run)
+    check_songjiang(report, data)
+    check_emerge(report, data)
     report.add("未覆盖：AI PLAY、BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、"
-               "松江、涌现奖、Rokid（页面打不开、登录墙、或日期不在公开页上），"
+               "Rokid（页面打不开、登录墙、或日期不在公开页上），"
                "均保留旧值。")
     if report.updates > 0 and not args.dry_run:
         with open(JSON_PATH, "w", encoding="utf-8") as f:

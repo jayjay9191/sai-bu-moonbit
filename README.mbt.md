@@ -41,7 +41,7 @@ moon run cmd/main help
 ```
 
 不需要联网、不需要 API Key、不读写任何外部服务，纯本地运行。
-只有 `scripts/sync_data.py` 需要联网（抓三个公开官网核对数据）。
+只有 `scripts/sync_data.py` 需要联网（抓五个公开官网核对数据）。
 
 ## 不用读代码，先跑这两条
 
@@ -96,9 +96,10 @@ python3 scripts/sync_data.py            # 核实并更新（有变化才写 JSON
 python3 scripts/sync_data.py --dry-run  # 只打印报告，不改任何文件
 ```
 
-覆盖 3 个公开可读的来源：MoonBit 官网（11 月轮截止是否公布，只报告）、
+覆盖 5 个公开可读的来源：MoonBit 官网（11 月轮截止是否公布，只报告）、
 绿联官网（初稿截止与总奖金池）、PAYATHON 官网（两阶段最后一天与
-Vibe Pay 一等奖）。其余 9 个比赛因页面打不开、登录墙、或日期不在
+Vibe Pay 一等奖）、松江专题页（投稿截止，只核实）、涌现奖官网
+（提交截止，只核实）。其余 8 个比赛因页面打不开、登录墙、或日期不在
 公开页上，脚本不碰，只在报告里列出。明确标注的值可以自动更新；
 需要推断的值（PAYATHON 日历格的阶段最后一天）只核实不自动写，
 对不上就报“需人工确认”。
@@ -177,6 +178,7 @@ validate 分支补齐 2 个、verified_at 校验 2 个。）
 | 2026-11-15 | P0 文案回归测试 | 小店日结→魔搭 P0 文案不断言含“（）”，且含“已投 涌现奖” |
 | 2026-11-15 | 行覆盖率（`moon coverage`） | 核心库 122/122（pack 14/14、conflict 54/54、validate 42/42、competition 10/10、competition_data 2/2）；CLI 入口 `cmd/main/main.mbt` 0/186（moon test 不跑可执行包入口）；合计 122/308 |
 | 2026-11-15 | `verified_at` 字段 + validate 校验 | 12 行全部有效（10 行 2026-11-13、2 行 2026-11-15）；坏日期检出 1 个问题；`moon test` 31/31；无参数输出与基线逐行一致 |
+| 2026-11-15 | 同步覆盖扩到 5 个来源 | 松江投稿截止 2026-12-06 与涌现奖提交截止 12月6日零点均与台账一致（只核实、不自动写）；本次 8 项检查、0 项更新，JSON 未改动 |
 
 ## 模块说明
 
@@ -184,7 +186,7 @@ validate 分支补齐 2 个、verified_at 校验 2 个。）
 |---|---|
 | `data/competitions.json` | 唯一数据源：12 个比赛 + 3 件作品的真实数据（改数据只改这里） |
 | `scripts/generate_data.py` | 从 JSON 生成 `competition_data.mbt`（确定性输出，生成后跑 `moon fmt`） |
-| `scripts/sync_data.py` | 联网核对 3 个公开官网（MoonBit / 绿联 / PAYATHON），只更新能核实的字段 |
+| `scripts/sync_data.py` | 联网核对 5 个公开官网（MoonBit / 绿联 / PAYATHON / 松江 / 涌现奖），只更新能核实的字段 |
 | `competition.mbt` | 比赛台账的结构定义与按名查找（`pub(all)`，字段公开以便外部构造校验数据） |
 | `competition_data.mbt` | 由生成器从 JSON 生成的台账数据，不要手改 |
 | `validate.mbt` | 数据校验：名字 / 日期格式 / 材料非空 / 标志位矛盾 |
@@ -240,12 +242,13 @@ validate 分支补齐 2 个、verified_at 校验 2 个。）
 
 未完成：
 
-- 联网同步只覆盖 3 个比赛：`scripts/sync_data.py` 目前只核实
+- 联网同步只覆盖 5 个比赛：`scripts/sync_data.py` 目前核实
   MoonBit（11 月轮截止是否公布，只报告）、绿联（初稿截止与总奖金池）、
-  PAYATHON（两阶段最后一天与 Vibe Pay 一等奖）。MoonBit 11 月轮截止
+  PAYATHON（两阶段最后一天与 Vibe Pay 一等奖）、松江（投稿截止，
+  只核实）、涌现奖（提交截止，只核实）。MoonBit 11 月轮截止
   官网仍写“以官方通知为准”，未公布具体日期。
-- 其余 9 个比赛未覆盖同步：AI PLAY、BayHack、荣耀、华为、Qoder、
-  魔搭、知乎 S3、松江、涌现奖、Rokid——页面打不开、登录墙、
+- 其余 8 个比赛未覆盖同步：AI PLAY、BayHack、荣耀、华为、Qoder、
+  魔搭、知乎 S3、Rokid——页面打不开、登录墙、
   或日期不在公开页上，仍需人工核对更新 JSON。
 - CLI 入口的行覆盖率 0/186：`cmd/main/main.mbt` 不在 moon test 的
   统计范围内（工具链不跑可执行包入口），不是代码问题；子命令目前
