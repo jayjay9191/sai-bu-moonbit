@@ -23,7 +23,7 @@
 需要 MoonBit 工具链（`moon`，0.1.20261104 或更新）。
 
 ```sh
-# 1. 跑测试（29 个，全部通过才算数）
+# 1. 跑测试（31 个，全部通过才算数）
 moon test
 
 # 2. 跑 CLI：无参数跑整条流水线
@@ -105,9 +105,9 @@ Vibe Pay 一等奖）。其余 9 个比赛因页面打不开、登录墙、或�
 
 ## 跑出来的结果（实测）
 
-`moon test`：**29 个测试，29 个通过，0 个失败。**（v0.1.0 时 9 个，
+`moon test`：**31 个测试，31 个通过，0 个失败。**（v0.1.0 时 9 个，
 2026-11-15 扩到 19 个，之后加 validate 校验 7 个、P0 文案回归 1 个、
-validate 分支补齐 2 个。）
+validate 分支补齐 2 个、verified_at 校验 2 个。）
 
 `moon run cmd/main` 的输出要点：
 
@@ -155,10 +155,10 @@ validate 分支补齐 2 个。）
 |---|---|---|
 | 人工基线 | 36 格全对 | 3 件作品 × 12 个比赛，逐格核对（底稿 `docs/manual-baseline-2026-11-15.md`） |
 | benchmark | 100 轮总计 7 毫秒，平均每轮 70 微秒 | 每轮 72 次规则评估（3 × 12 × 2）；三次跑 7、8、7 毫秒，量级在毫秒 |
-| 测试 | 29 个，29 个通过，0 个失败 | `moon test` |
-| 核心库行覆盖率 | 119/119 | pack 14/14、conflict 54/54、validate 39/39、competition 10/10、competition_data 2/2 |
+| 测试 | 31 个，31 个通过，0 个失败 | `moon test` |
+| 核心库行覆盖率 | 122/122 | pack 14/14、conflict 54/54、validate 42/42、competition 10/10、competition_data 2/2 |
 | CLI 入口行覆盖率 | 0/186 | `cmd/main/main.mbt`：moon test 不跑可执行包入口，是工具链限制，不是代码问题 |
-| 合计行覆盖率 | 119/305（39%） | 核心库 119/119 + CLI 入口 0/186 |
+| 合计行覆盖率 | 122/308（约 40%） | 核心库 122/122 + CLI 入口 0/186 |
 
 ## 验证记录
 
@@ -175,7 +175,8 @@ validate 分支补齐 2 个。）
 | 2026-11-15 | `validate` 子命令 | 真实数据 0 个问题；往坏数据里改 1 个日期 + 1 个重名，检出 2 个问题、返回码 1 |
 | 2026-11-15 | 联网同步实测 | `scripts/sync_data.py`：MoonBit 官网 11 月轮截止仍未公布；绿联初稿 2026-12-07 与奖金 ¥34,000 一致；PAYATHON 两阶段最后一天 2026-12-01/12-09 与一等奖 ¥30,000 一致；0 项更新 |
 | 2026-11-15 | P0 文案回归测试 | 小店日结→魔搭 P0 文案不断言含“（）”，且含“已投 涌现奖” |
-| 2026-11-15 | 行覆盖率（`moon coverage`） | 核心库 119/119（pack 14/14、conflict 54/54、validate 39/39、competition 10/10、competition_data 2/2）；CLI 入口 `cmd/main/main.mbt` 0/186（moon test 不跑可执行包入口）；合计 119/305 |
+| 2026-11-15 | 行覆盖率（`moon coverage`） | 核心库 122/122（pack 14/14、conflict 54/54、validate 42/42、competition 10/10、competition_data 2/2）；CLI 入口 `cmd/main/main.mbt` 0/186（moon test 不跑可执行包入口）；合计 122/308 |
+| 2026-11-15 | `verified_at` 字段 + validate 校验 | 12 行全部有效（10 行 2026-11-13、2 行 2026-11-15）；坏日期检出 1 个问题；`moon test` 31/31；无参数输出与基线逐行一致 |
 
 ## 模块说明
 
@@ -190,7 +191,7 @@ validate 分支补齐 2 个。）
 | `conflict.mbt` | 冲突检测引擎：首次发布 / 须新做 / 截止撞期（规则来自台账数据的标志位，不是按比赛硬编码） |
 | `pack.mbt` | 投稿包生成：标题、一句话介绍、材料清单与缺口 |
 | `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / validate / help |
-| `sai-chang-guan-jia-moonbit_test.mbt` | 29 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试） |
+| `sai-chang-guan-jia-moonbit_test.mbt` | 31 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试） |
 | `docs/design-notes-2026-11-15.md` | 设计手记：三个真实决策（数据外置 / 同步脚本 bug / benchmark 与人工基线），带数字与代价 |
 | `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（2026-11-15 首次跑通，success） |
 

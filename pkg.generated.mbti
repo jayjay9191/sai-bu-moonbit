@@ -37,6 +37,7 @@ pub(all) struct Competition {
   name : String
   deadline : String
   deadline_date : String
+  verified_at : String
   prize : String
   track : String
   status : String

@@ -29,6 +29,7 @@ COMP_FIELDS = [
     "name",
     "deadline",
     "deadline_date",
+    "verified_at",
     "prize",
     "track",
     "status",

@@ -3,6 +3,7 @@
 /// 校验项：
 /// - 每个比赛有名字；比赛名字不重复
 /// - deadline_date 符合 YYYY-MM-DD（月 01–12，日 01–31）
+/// - verified_at 符合 YYYY-MM-DD（同上；表示该行最后核实日期）
 /// - 每个比赛的材料清单非空
 /// - 每件作品有名字；作品名字不重复
 /// - 标志位不自相矛盾：allows_existing_works 与 requires_first_publish
@@ -30,6 +31,15 @@ pub fn validate_data(
         c.name +
         "》deadline_date 格式不对：" +
         c.deadline_date +
+        "（应为 YYYY-MM-DD）",
+      )
+    }
+    if !is_valid_date(c.verified_at) {
+      issues.push(
+        "比赛《" +
+        c.name +
+        "》verified_at 格式不对：" +
+        c.verified_at +
         "（应为 YYYY-MM-DD）",
       )
     }

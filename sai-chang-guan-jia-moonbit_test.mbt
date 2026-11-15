@@ -364,11 +364,13 @@ fn test_competition(
   requires_first_publish : Bool,
   requires_new_work : Bool,
   materials : Array[String],
+  verified_at : String,
 ) -> @sai-chang-guan-jia-moonbit.Competition {
   {
     name,
     deadline: "2026-12-01",
     deadline_date,
+    verified_at,
     prize: "¥0",
     track: "测试",
     status: "测试",
@@ -389,6 +391,7 @@ test "validate flags bad date" {
     false,
     false,
     ["材料 A"],
+    "2026-11-13",
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [bad],
@@ -399,12 +402,24 @@ test "validate flags bad date" {
 
 ///|
 test "validate flags duplicate competition names" {
-  let a = test_competition("测试比赛", "2026-12-01", false, false, false, [
-    "材料 A",
-  ])
-  let b = test_competition("测试比赛", "2026-12-02", false, false, false, [
-    "材料 A",
-  ])
+  let a = test_competition(
+    "测试比赛",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+  )
+  let b = test_competition(
+    "测试比赛",
+    "2026-12-02",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+  )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [a, b],
     @sai-chang-guan-jia-moonbit.all_works(),
@@ -421,6 +436,7 @@ test "validate flags empty materials" {
     false,
     false,
     [],
+    "2026-11-13",
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [empty],
@@ -431,12 +447,24 @@ test "validate flags empty materials" {
 
 ///|
 test "validate flags contradictory flags" {
-  let c1 = test_competition("测试比赛 A", "2026-12-01", true, true, false, [
-    "材料 A",
-  ])
-  let c2 = test_competition("测试比赛 B", "2026-12-01", true, false, true, [
-    "材料 A",
-  ])
+  let c1 = test_competition(
+    "测试比赛 A",
+    "2026-12-01",
+    true,
+    true,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+  )
+  let c2 = test_competition(
+    "测试比赛 B",
+    "2026-12-01",
+    true,
+    false,
+    true,
+    ["材料 A"],
+    "2026-11-13",
+  )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [c1, c2],
     @sai-chang-guan-jia-moonbit.all_works(),
@@ -482,9 +510,15 @@ test "p0 message has no empty parens for xiaodianjie" {
 
 ///|
 test "validate flags unnamed competition" {
-  let unnamed = test_competition("", "2026-12-01", false, false, false, [
-    "材料 A",
-  ])
+  let unnamed = test_competition(
+    "",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+  )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [unnamed],
     @sai-chang-guan-jia-moonbit.all_works(),
@@ -497,4 +531,42 @@ test "is_valid_date rejects non-digit in date" {
   // '-' 位置正确但混入非数字：覆盖 is_valid_date 里的逐字符检查分支。
   assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-1X-01"))
   assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("202X-12-01"))
+}
+
+///|
+test "verified_at is valid for all competitions" {
+  // 台账每行都有最后核实日期：10 行是 2026-11-13 全量核实轮次，
+  // 2 行是 2026-11-15 同步脚本重核过的（绿联、PAYATHON）。
+  let comps = @sai-chang-guan-jia-moonbit.all_competitions()
+  let mut count_1113 = 0
+  let mut count_1115 = 0
+  for i in 0..<comps.length() {
+    let v = comps[i].verified_at
+    assert_true(@sai-chang-guan-jia-moonbit.is_valid_date(v))
+    if v == "2026-11-13" {
+      count_1113 = count_1113 + 1
+    } else if v == "2026-11-15" {
+      count_1115 = count_1115 + 1
+    }
+  }
+  assert_eq(count_1113, 10)
+  assert_eq(count_1115, 2)
+}
+
+///|
+test "validate flags bad verified_at" {
+  let bad = test_competition(
+    "测试比赛",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-13-01",
+  )
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [bad],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
 }
