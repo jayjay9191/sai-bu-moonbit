@@ -117,6 +117,19 @@ validate 分支补齐 2 个。）
 原始规则页逐项核对，耗时只会比 7 秒更久，具体多久没测过，不编数字。
 耗时是机器速度，三次跑分别是 7、8、7 毫秒，量级在几毫秒，不用当精确值较真。
 
+## 实测数据
+
+下面每个数字都是当场跑出来的，带分母，不用形容词代替：
+
+| 指标 | 实测值 | 分母 / 说明 |
+|---|---|---|
+| 人工基线 | 36 格全对 | 3 件作品 × 12 个比赛，逐格核对（底稿 `docs/manual-baseline-2026-11-15.md`） |
+| benchmark | 100 轮总计 7 毫秒，平均每轮 70 微秒 | 每轮 72 次规则评估（3 × 12 × 2）；三次跑 7、8、7 毫秒，量级在毫秒 |
+| 测试 | 29 个，29 个通过，0 个失败 | `moon test` |
+| 核心库行覆盖率 | 119/119 | pack 14/14、conflict 54/54、validate 39/39、competition 10/10、competition_data 2/2 |
+| CLI 入口行覆盖率 | 0/186 | `cmd/main/main.mbt`：moon test 不跑可执行包入口，是工具链限制，不是代码问题 |
+| 合计行覆盖率 | 119/305（39%） | 核心库 119/119 + CLI 入口 0/186 |
+
 ## 验证记录
 
 | 日期 | 检查 | 结果 |
@@ -125,7 +138,7 @@ validate 分支补齐 2 个。）
 | 2026-11-15 | `moon run cmd/main`（无参数） | 输出与 v0.1.0 逐行一致（diff 验证过两次）；冲突：黎明→魔搭 P0、→知乎 S3 P1；撞期 12-01、12-06；投稿包黎明→魔搭 blocked、→松江可提交（缺口 1 项） |
 | 2026-11-15 | `moon run cmd/main benchmark` | 全量扫描：冲突 4 个（P0 3、P1 1）、投稿包 36 个（P0 挡住 3 个）；100 轮 7 毫秒（三次跑 7、8、7 毫秒） |
 | 2026-11-15 | 子命令实测 | list / conflicts / pack / collisions / help 均跑通；`moon run cmd/main -- list` 也通过；未知子命令与缺参数时打印用法 |
-| — | GitHub Actions CI | 未跑过：workflow 已加，首次推送后需在 Actions 里确认变绿 |
+| 2026-11-15 | GitHub Actions CI | 首次跑通（MoonBit test workflow，结论 success） |
 | 2026-11-15 | 人工手动核对（36 格逐项，底稿 `docs/manual-baseline-2026-11-15.md`） | 与工具结果一致：冲突 4 个（P0 3、P1 1）、投稿包 36 个（挡住 3 个）、撞期 2 个日期；耗时约 7 秒（对照已整理台账；非盲测，0 漏检不能当强证据） |
 | 2026-11-15 | P0 文案修复 | `conflicts 小店日结` 不再显示空括号；`moon test` 仍 19/19 通过 |
 | 2026-11-15 | 数据 JSON 外置 | `data/competitions.json` 为唯一数据源，`scripts/generate_data.py` 生成 `competition_data.mbt`；逐字核对与外置前一致（135 个字符串 + 36 个布尔值）；无参数输出与改前逐行一致 |
@@ -149,7 +162,7 @@ validate 分支补齐 2 个。）
 | `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / validate / help |
 | `sai-chang-guan-jia-moonbit_test.mbt` | 29 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试） |
 | `docs/design-notes-2026-11-15.md` | 设计手记：三个真实决策（数据外置 / 同步脚本 bug / benchmark 与人工基线），带数字与代价 |
-| `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（尚未在 GitHub 上跑过） |
+| `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（2026-11-15 首次跑通，success） |
 
 ## 60% 借鉴 / 40% 创新（诚实说明）
 
