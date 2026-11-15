@@ -1,0 +1,82 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/sai-chang-guan-jia-moonbit"
+
+// Values
+pub fn all_competitions() -> Array[Competition]
+
+pub fn all_works() -> Array[Work]
+
+pub fn collision_conflicts(Array[Competition]) -> Array[Conflict]
+
+pub fn collision_dates(Array[Competition]) -> Array[String]
+
+pub fn competition_by_name(String) -> Competition?
+
+pub fn conflicts_for_competition(Array[Conflict], String) -> Array[Conflict]
+
+pub fn contains_string(Array[String], String) -> Bool
+
+pub fn detect_conflicts(Work, Array[Competition]) -> Array[Conflict]
+
+pub fn generate_pack(Work, Competition, Array[Conflict]) -> SubmissionPack
+
+pub fn has_p0_conflict(Array[Conflict], String) -> Bool
+
+pub fn join_strings(Array[String], String) -> String
+
+pub fn work_by_name(String) -> Work?
+
+// Errors
+
+// Types and methods
+pub struct Competition {
+  name : String
+  deadline : String
+  deadline_date : String
+  prize : String
+  track : String
+  status : String
+  requires_first_publish : Bool
+  requires_new_work : Bool
+  allows_existing_works : Bool
+  materials : Array[String]
+  note : String
+}
+
+pub struct Conflict {
+  level : String
+  competition : String
+  work : String
+  message : String
+}
+
+pub struct SubmissionPack {
+  work : String
+  competition : String
+  title : String
+  oneliner : String
+  materials : Array[String]
+  ready : Array[String]
+  gaps : Array[String]
+  blocked : Bool
+  note : String
+}
+
+pub struct Work {
+  name : String
+  kind : WorkKind
+  oneliner : String
+  first_public_date : String
+  submitted_to : Array[String]
+  materials_ready : Array[String]
+  note : String
+}
+
+pub enum WorkKind {
+  Game
+  Tool
+}
+
+// Type aliases
+
+// Traits

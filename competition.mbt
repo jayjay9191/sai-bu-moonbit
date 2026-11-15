@@ -1,0 +1,279 @@
+///|
+/// 比赛台账：12 个比赛的真实数据。
+/// 数据来源：《最近要参加的比赛汇总》（2026-11-13 晚四路核实后的状态）。
+/// 注意：Rokid 截止（01-28 vs 01-22）、魔搭“首次发布”条款（AIBetas 转述，
+/// 官网原文未直接读到）等未核实项都在 note 里标明了，不编数据。
+
+///|
+pub struct Competition {
+  name : String
+  deadline : String // 人类可读的截止，如 "2026-12-01 12:00（报名）/ 18:00（提交）"
+  deadline_date : String // 机器可比的日期 "YYYY-MM-DD"，用于撞期检测
+  prize : String
+  track : String
+  status : String
+  requires_first_publish : Bool // 要求活动期间首次公开发布（如魔搭）
+  requires_new_work : Bool // 要求必须新做（如知乎 S3）
+  allows_existing_works : Bool // 明确已有成品可参赛（如松江）
+  materials : Array[String] // 投稿需要的材料清单
+  note : String // 核实状态与备注
+}
+
+///|
+pub enum WorkKind {
+  Game
+  Tool
+}
+
+///|
+pub struct Work {
+  name : String
+  kind : WorkKind
+  oneliner : String
+  first_public_date : String // 首次公开时间；"" 表示未公开
+  submitted_to : Array[String] // 已投过的比赛
+  materials_ready : Array[String] // 已就绪的材料
+  note : String
+}
+
+///|
+pub fn all_competitions() -> Array[Competition] {
+  [
+    {
+      name: "AI PLAY 72H 创作黑客松",
+      deadline: "2026-11-17 23:59（提案）",
+      deadline_date: "2026-11-17",
+      prize: "冠军最高 ¥10,000",
+      track: "游戏/互动剧 · 主题：重启 RESET · 2–4 人团队",
+      status: "提案草稿已写好，等队名/队员/格式",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: true,
+      materials: [
+        "提案文档（主题：重启 RESET）", "可体验原型链接（核心试玩 ≥1 分钟）",
+        "队名 + 队员姓名与分工",
+      ],
+      note: "报名只走小红书群（LinkLike 科创社区，8609354634），无 URL；完整格式清单须在群里问",
+    },
+    {
+      name: "BayHack 大湾区黑客松",
+      deadline: "2026-11-18 00:00（报名）",
+      deadline_date: "2026-11-18",
+      prize: "奖金池 30 万元（现金分配未核实）",
+      track: "软件/硬件赛道 · 3–6 人队 · 12-18–12-20 佛山线下 48h",
+      status: "未报名，官网打不开，走公众号",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: false,
+      materials: [
+        "报名表（公众号「BayHack」）", "3–6 人队伍（至少 1 技术 + 1 非技术）",
+      ],
+      note: "官网 bayhack.cn 打不开",
+    },
+    {
+      name: "荣耀·英特尔 AI 智造创新赛",
+      deadline: "2026-11-22（只写日期，未写几点）",
+      deadline_date: "2026-11-22",
+      prize: "创意赛道最高 ¥10,000（一等奖 ¥10,000×1 + 笔记本）",
+      track: "AI 创意赛道 · 个人 · 命题二",
+      status: "已交：小红书图文已发 11-13，个人页有参赛记录",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: true,
+      materials: [
+        "小红书图文/视频（带话题）", "官网上传页提交链接 + 信息表",
+        "学信网学籍验证截图",
+      ],
+      note: "转评赞 ≥10 待确认；结果 12-10 公布",
+    },
+    {
+      name: "华为小红书 Skill 创新赛",
+      deadline: "2026-11-24（缓冲）",
+      deadline_date: "2026-11-24",
+      prize: "三等奖 ¥20,000；现金合计 ¥392,500",
+      track: "Skill 创新赛 · GIS 旅行地图笔记",
+      status: "已完成（用户确认）",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: true,
+      materials: [
+        "Skill ZIP（≤30 个文件/≤40MB）", "演示视频/GIF", "晒单笔记",
+      ],
+      note: "两市场均已发布；晒单笔记、演示视频/GIF、200 元券未确认",
+    },
+    {
+      name: "Qoder 高校创造力大赛",
+      deadline: "2026-11-30 18:00",
+      deadline_date: "2026-11-30",
+      prize: "奖池 ¥88,500（每赛道一等奖 ¥5,000×2）",
+      track: "LifeHack 赛道 · 1–3 人 · 须用 Qoder 开发",
+      status: "开发中（Codex 为主）；用户称已提交",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: true,
+      materials: [
+        "Qoder Sites 公开链接", "天池论坛帖（标题“[作品名称]+一句话介绍”，5 部分）",
+        "天池实名 + 阿里云学生认证",
+      ],
+      note: "镜像站一句“作品应在活动规定时间内创作并发布”——须在官方群确认是否影响黎明",
+    },
+    {
+      name: "魔搭 AI+∞ 第三期「AI 造游戏」",
+      deadline: "2026-12-01 12:00（报名）/ 18:00（提交）",
+      deadline_date: "2026-12-01",
+      prize: "现金 ¥40,000（金奖 ¥15,000）",
+      track: "AI 造游戏 · Roguelike 为官方列出方向",
+      status: "构想帖草稿已给，未确认是否发",
+      requires_first_publish: true,
+      requires_new_work: false,
+      allows_existing_works: false,
+      materials: [
+        "小红书构想帖（5 个指定话题 + @魔搭ModelScope社区 @Qoder）",
+        "魔搭创空间可试玩链接", "创作手记 + 演示视频",
+      ],
+      note: "⚠️ 参赛须知第 1 条（AIBetas 转述官方页）：“参赛作品必须为活动期间首次公开发布的原创作品，不得使用已参加其他比赛或由其他比赛产生的作品、成果参赛”——官网原文因登录墙未直接读到，12-01 前务必问清",
+    },
+    {
+      name: "PAYATHON 2026",
+      deadline: "2026-12-01 23:59（报名）/ 2026-12-09 23:59（作品）",
+      deadline_date: "2026-12-01",
+      prize: "奖池 ¥200,000（Vibe Pay 一等奖 ¥30,000）",
+      track: "Vibe Pay 赛道 · 个人可申请独立开发者",
+      status: "未报名，可先行",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: false,
+      materials: [
+        "报名表", "Vibe Pay 真实支付闭环（跑通一次真实支付）",
+        "作品演示",
+      ],
+      note: "小店工具走 Vibe Pay；决赛 12-26 线下",
+    },
+    {
+      name: "知乎黑客松 S3",
+      deadline: "2026-12-04 15:59（报名）",
+      deadline_date: "2026-12-04",
+      prize: "奖池 ¥120,000（一等奖 ¥30,000）",
+      track: "AI×知识/陪伴/出海 · 48h 新做 · 1–5 人",
+      status: "未报名，细则登录墙后",
+      requires_first_publish: false,
+      requires_new_work: true,
+      allows_existing_works: false,
+      materials: [
+        "48h 新做作品（未公开发布、不得一稿多投）", "ModelScope 活动页提交",
+      ],
+      note: "必须新做，黎明不能直接交；决赛 12-19",
+    },
+    {
+      name: "松江·创世纪 AI 游戏大赛",
+      deadline: "2026-12-06 23:59",
+      deadline_date: "2026-12-06",
+      prize: "现金 ¥30,000 税前（自由创作一等奖 ¥6,000）",
+      track: "自由创作赛道 · 明确已有成品可参赛",
+      status: "未投稿",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: true,
+      materials: ["爱玩 AI 创作者工作台提交", "作品链接"],
+      note: "规则：新创作或已有成品作品均可参赛；人气 20 分（点赞至 12-14）；决赛 2027-01-09 松江线下（线上条件待定）",
+    },
+    {
+      name: "支付宝智能体涌现奖",
+      deadline: "2026-12-06 零点",
+      deadline_date: "2026-12-06",
+      prize: "首轮前 200 各“价值 5000 元”；年度最佳 ¥1,000,000（2027 Q4）",
+      track: "生活好帮手 / 消费新体验",
+      status: "已投 3 件，均审核中",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: true,
+      materials: ["智能体公开链接"],
+      note: "评审 12-07–12-15；用户已决定不为参赛管家再加投第 4 件",
+    },
+    {
+      name: "绿联首届黑客松",
+      deadline: "2026-12-07（初稿）",
+      deadline_date: "2026-12-07",
+      prize: "奖池 ¥34,000（冠军 ¥15,000 + NAS）",
+      track: "效率工具 / 生活助手 / 智能管理 / 开放创新",
+      status: "未开始",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: false,
+      materials: [
+        "开发规划书（站内表单）", "原型演示视频", "Skill 预测试安装包",
+      ],
+      note: "官网 https://hackathon.ugnas.com/l/htyda3",
+    },
+    {
+      name: "Rokid Spatial Joy 2026",
+      deadline: "2027-01-28（待核对：另有 01-22 的说法）",
+      deadline_date: "2027-01-28",
+      prize: "总奖池 ¥5,000,000（AI 赛道约 ¥2,100,000+）",
+      track: "AI 赛道 · AIUI 智能体 · 循环打榜",
+      status: "未开始",
+      requires_first_publish: false,
+      requires_new_work: false,
+      allows_existing_works: false,
+      materials: ["作品策划案", "AIUI 智能体（Rokid AIUI Studio）"],
+      note: "⚠️ 截止、奖金分项、决赛日期多处数字冲突，官网链接未找到，核对前不要以任一版本为准",
+    },
+  ]
+}
+
+///|
+pub fn all_works() -> Array[Work] {
+  [
+    {
+      name: "第零次黎明",
+      kind: WorkKind::Game,
+      oneliner: "Roguelike 动作构筑游戏：死亡重启、遗物抽取、R 键共鸣爆发",
+      first_public_date: "2026-11-02 之前",
+      submitted_to: ["Qoder", "AI PLAY"],
+      materials_ready: [
+        "可体验原型链接", "Qoder Sites 公开链接", "作品链接",
+      ],
+      note: "AI PLAY 提案是否已交未确认（用户 2026-11-15 表述含糊）；桌面版第 5 轮实测 6.0/10，P0 死亡螺旋未修好",
+    },
+    {
+      name: "小店日结",
+      kind: WorkKind::Tool,
+      oneliner: "餐饮收摊复盘助手：店主 10 秒记账，AI 生成收摊复盘",
+      first_public_date: "",
+      submitted_to: ["涌现奖"],
+      materials_ready: ["智能体公开链接"],
+      note: "已投涌现奖，审核中；真实餐饮店场景",
+    },
+    {
+      name: "诉求整理台",
+      kind: WorkKind::Tool,
+      oneliner: "12345 诉求草稿助手：语音转文字 + AI 起草诉求",
+      first_public_date: "",
+      submitted_to: ["涌现奖"],
+      materials_ready: ["智能体公开链接"],
+      note: "已投涌现奖，审核中",
+    },
+  ]
+}
+
+///|
+pub fn work_by_name(name : String) -> Work? {
+  let works = all_works()
+  for i in 0..<works.length() {
+    if works[i].name == name {
+      return Some(works[i])
+    }
+  }
+  None
+}
+
+///|
+pub fn competition_by_name(name : String) -> Competition? {
+  let comps = all_competitions()
+  for i in 0..<comps.length() {
+    if comps[i].name == name {
+      return Some(comps[i])
+    }
+  }
+  None
+}

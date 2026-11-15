@@ -1,0 +1,5 @@
+import {
+  "jayjay9191/sai-chang-guan-jia-moonbit" @lib,
+}
+
+pkgtype(kind: "executable")
