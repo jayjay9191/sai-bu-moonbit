@@ -50,10 +50,20 @@
   造化：官方活动页 zaohua.qq.com/activity/voxel-jam-2026
   是 JS 渲染壳（HTML 里只有内联脚本，无正文），“12 月 15 日 23:59”
   不在公开 HTML 里，只能报告。
-未覆盖（页面打不开、登录墙、或日期不在公开页上）：AI PLAY、
-BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、Rokid、第二十届全国
-大学生软件创新大赛（共 9 个；前 8 个排在第二批“只报告、不写数据”
-检查里，软件创新大赛尚未排进任何一批——它的官方规则页还没定位到）。
+- 第二批（2026-11-16 新增，全部只报告、不写数据）：
+  Qoder：天池赛题页需登录后查看（页面显示“登录后您可以获得”），
+  赛题正文不在公开 HTML 里；入口 ID 532536 来自 CompeteHub
+  赛事页 slug，未在公开内容里得到确认；
+  魔搭：赛事页为 JS 渲染，参赛方式与日程在海报图片里，不在页面文本上；
+  AI PLAY：无公开报名页面，报名只走小红书群，无 URL 可抓；
+  BayHack：官网 bayhack.cn 打不开，报名走公众号「BayHack」；
+  荣耀：参赛协议页是公开页，明文写“截止投稿日期为2026 年 11 月
+  22 日 23:59”，只报告、不自动写；
+  华为：华为云开发者大赛平台页面，需登录报名；
+  知乎 S3：赛事挂在魔搭活动列表里，细则登录墙后；
+  Rokid：官网链接未找到，无法检查。
+未覆盖：第二十届全国大学生软件创新大赛（1 个；尚未排进任何一批——
+它的官方规则页还没定位到）。
 """
 
 import argparse
@@ -62,6 +72,7 @@ import re
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -90,8 +101,46 @@ def js_shell_note(page: str) -> str:
     return "页面有正文，但里面找不到该日期"
 
 
+def quote_url(url: str) -> str:
+    """把 URL 里的非 ASCII 字符百分号编码（魔搭赛事页路径里有中文，
+    urllib 直接传会报 UnicodeEncodeError）。safe 保留已有结构字符
+    与百分号，不重复编码。"""
+    return urllib.parse.quote(url, safe="/:?&=#@%+")
+
+
+def fetch_with_url(url: str) -> tuple[str, str]:
+    """抓页面，返回 (正文, 最终 URL)。
+    只报告的检查用：登录墙常表现为重定向到登录页。"""
+    req = urllib.request.Request(quote_url(url), headers=UA)
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        return resp.read().decode("utf-8", "replace"), resp.geturl()
+
+
+def page_state(page: str, final_url: str) -> str:
+    """给只报告的检查用：判断抓到的页面处于哪种状态。
+    返回 'login'（登录墙）/ 'js-shell'（JS 渲染壳，无正文）/
+    'readable'（有正文可读）。强登录墙标记（“登录后您可以获得”、
+    “请先登录”等）一旦出现就判登录墙，不看可见文本长度——天池
+    这类页导航文字很多，但赛题正文仍在登录墙后。弱登录字样
+    （导航栏里的“登录”）只在可见文本很少时才算登录墙。"""
+    if "login" in final_url.lower() or "signin" in final_url.lower():
+        return "login"
+    low = page.lower()
+    if any(m in low for m in ("登录后您可以获得", "请先登录", "请登录后",
+                              "需要登录后", "登录后查看")):
+        return "login"
+    text = visible_text(page)
+    if len(text) < 200 and any(
+        m in low for m in ("请登录", "登录后", "login", "sign in")
+    ):
+        return "login"
+    if len(text) < 200:
+        return "js-shell"
+    return "readable"
+
+
 def fetch(url: str) -> str:
-    req = urllib.request.Request(url, headers=UA)
+    req = urllib.request.Request(quote_url(url), headers=UA)
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         return resp.read().decode("utf-8", "replace")
 
@@ -533,6 +582,211 @@ def check_zaohua(report: Report, data: dict):
         report.unknown("页面里找不到报名投稿期截止日期；" + js_shell_note(page))
 
 
+def check_qoder(report: Report, data: dict):
+    """Qoder：天池赛题页需登录后查看。只报告页面状态，不写数据。
+    入口 ID 532536 来自 CompeteHub 赛事页 slug，未在公开内容里
+    得到确认（页面标题仅为通用“算法大赛-天池大赛”）。"""
+    report.add("Qoder 高校创造力大赛 "
+               "https://tianchi.aliyun.com/competition/entrance/532536")
+    comp = find_comp(data, "Qoder 高校创造力大赛")
+    if comp is None:
+        report.unknown("台账里没有 Qoder，跳过")
+        return
+    try:
+        page, final_url = fetch_with_url(
+            "https://tianchi.aliyun.com/competition/entrance/532536"
+        )
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    state = page_state(page, final_url)
+    if state == "login":
+        report.unknown("天池赛题页需登录后查看（页面显示“登录后您可以获得”），"
+                       "赛题正文不在公开 HTML 里；截止 2026-11-30 仍靠人工核对")
+    elif state == "js-shell":
+        report.unknown("天池赛题页为 JS 渲染，HTML 里无赛题正文；"
+                       "截止 2026-11-30 仍靠人工核对")
+    elif "Qoder" in page and "11 月 30 日" in page:
+        report.add("  [仅报告] 页面可读且提到 Qoder 与 11 月 30 日，"
+                   "未自动写数据，仍请人工核对")
+    else:
+        report.unknown("页面可读，但里面找不到 Qoder 赛题的截止日期")
+
+
+def check_modelscope(report: Report, data: dict):
+    """魔搭 AI+∞ 第三期：赛事页为 JS 渲染，参赛方式与日程在海报
+    图片里，不在页面文本上。只报告页面状态，不写数据。"""
+    report.add("魔搭 AI+∞ 第三期「AI 造游戏」 "
+               "https://modelscope.cn/events/394/比赛介绍")
+    comp = find_comp(data, "魔搭 AI+∞ 第三期「AI 造游戏」")
+    if comp is None:
+        report.unknown("台账里没有魔搭，跳过")
+        return
+    try:
+        page, final_url = fetch_with_url(
+            "https://modelscope.cn/events/394/比赛介绍"
+        )
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    state = page_state(page, final_url)
+    if state == "login":
+        report.unknown("魔搭赛事页需登录后查看，赛题正文不在公开 HTML 里；"
+                       "截止 2026-12-01 与“首次发布”条款仍靠人工核对")
+    elif state == "js-shell":
+        report.unknown("魔搭赛事页为 JS 渲染，HTML 里无正文；参赛方式与日程"
+                       "在海报图片里，不在页面文本上；截止 2026-12-01 与"
+                       "“首次发布”条款仍靠人工核对")
+    elif "12月1日" in page or "12 月 1 日" in page:
+        report.add("  [仅报告] 页面可读且提到 12月1日，未自动写数据，"
+                   "仍请人工核对")
+    else:
+        report.unknown("页面可读，但里面找不到 12月1日截止日期")
+
+
+def check_aiplay(report: Report, data: dict):
+    """AI PLAY：无公开报名页面，报名只走小红书群。只报告，不写数据。"""
+    report.add("AI PLAY 72H 创作黑客松（无公开报名页面）")
+    comp = find_comp(data, "AI PLAY 72H 创作黑客松")
+    if comp is None:
+        report.unknown("台账里没有 AI PLAY，跳过")
+        return
+    report.unknown("无公开页面可抓：报名只走小红书群（LinkLike 科创社区，"
+                   "8609354634）；提案截止 2026-11-17 仍靠人工核对")
+
+
+def check_bayhack(report: Report, data: dict):
+    """BayHack：官网打不开。只报告页面状态，不写数据。"""
+    report.add("BayHack 大湾区黑客松 https://bayhack.cn")
+    comp = find_comp(data, "BayHack 大湾区黑客松")
+    if comp is None:
+        report.unknown("台账里没有 BayHack，跳过")
+        return
+    page = None
+    last_err = None
+    for url in ("https://bayhack.cn", "http://bayhack.cn"):
+        try:
+            page = fetch(url)
+            break
+        except Exception as e:
+            last_err = e
+    if page is None:
+        report.fail(f"官网打不开：{type(last_err).__name__}: {last_err}；"
+                    "报名截止 2026-11-18 仍靠人工核对（报名走公众号「BayHack」）")
+        return
+    if "BayHack" in page or "bayhack" in page.lower():
+        report.unknown("官网能打开，但页面里找不到报名截止日期；"
+                       + js_shell_note(page))
+    else:
+        report.unknown("官网能打开，但页面内容与 BayHack 对不上")
+
+
+def check_honor(report: Report, data: dict):
+    """荣耀：参赛协议页是公开页，明文写截止投稿日期。只报告，
+    即使页面写明了日期也不自动写数据。"""
+    report.add("荣耀·英特尔 AI 智造创新赛 "
+               "https://www.honor.com/cn/ai-smart-innovation-challenge/terms/")
+    comp = find_comp(data, "荣耀·英特尔 AI 智造创新赛")
+    if comp is None:
+        report.unknown("台账里没有荣耀，跳过")
+        return
+    try:
+        page, final_url = fetch_with_url(
+            "https://www.honor.com/cn/ai-smart-innovation-challenge/terms/"
+        )
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    state = page_state(page, final_url)
+    if state in ("login", "js-shell"):
+        report.unknown("参赛协议页为登录墙/JS 渲染，HTML 里无正文；"
+                       "截止 2026-11-22 仍靠人工核对")
+        return
+    # 日期被 <span> 隔开（“为<span>2026 年 11 月 22 日 …”），
+    # 在可见文本里搜，不在原始 HTML 里搜。
+    text = visible_text(page)
+    m = re.search(r"截止投稿日期为\s*2026\s*年\s*11\s*月\s*22\s*日\s*23:59", text)
+    if m:
+        if comp["deadline_date"] == "2026-11-22":
+            report.ok("参赛协议页明文：截止投稿 2026-11-22 23:59，"
+                      "与台账一致（仅报告，未写数据）")
+        else:
+            report.add(
+                f"  [需人工确认] 参赛协议页写截止投稿 2026-11-22 23:59，"
+                f"台账是 {comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("参赛协议页可读，但里面找不到截止投稿日期")
+
+
+def check_huawei(report: Report, data: dict):
+    """华为小红书 Skill 创新赛：华为云开发者大赛平台页面，
+    需登录报名。只报告页面状态，不写数据。"""
+    report.add("华为小红书 Skill 创新赛 "
+               "https://developer.huaweicloud.com/competition/information/1300000350/html1")
+    comp = find_comp(data, "华为小红书 Skill 创新赛")
+    if comp is None:
+        report.unknown("台账里没有华为，跳过")
+        return
+    try:
+        page, final_url = fetch_with_url(
+            "https://developer.huaweicloud.com/competition/information/1300000350/html1"
+        )
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    state = page_state(page, final_url)
+    if state == "login":
+        report.unknown("华为云赛题页需登录后查看，赛题正文不在公开 HTML 里；"
+                       "截止 2026-11-24 仍靠人工核对")
+    elif state == "js-shell":
+        report.unknown("华为云赛题页为 JS 渲染，HTML 里无正文；"
+                       "截止 2026-11-24 仍靠人工核对")
+    elif "小红书" in page and "Skill" in page:
+        report.add("  [仅报告] 页面可读且提到小红书 Skill 赛，未自动写数据，"
+                   "仍请人工核对")
+    else:
+        report.unknown("页面可读，但里面找不到小红书 Skill 赛的截止日期")
+
+
+def check_zhihu(report: Report, data: dict):
+    """知乎黑客松 S3：赛事挂在魔搭活动列表里，细则登录墙后。
+    只报告页面状态，不写数据。"""
+    report.add("知乎黑客松 S3 https://modelscope.cn/events")
+    comp = find_comp(data, "知乎黑客松 S3")
+    if comp is None:
+        report.unknown("台账里没有知乎 S3，跳过")
+        return
+    try:
+        page, final_url = fetch_with_url("https://modelscope.cn/events")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    state = page_state(page, final_url)
+    if state == "login":
+        report.unknown("魔搭活动列表页需登录后查看；报名截止 2026-12-04 "
+                       "仍靠人工核对")
+    elif state == "js-shell":
+        report.unknown("魔搭活动列表页为 JS 渲染，HTML 里无赛事列表；"
+                       "报名截止 2026-12-04 仍靠人工核对")
+    elif "知乎黑客松" in page and "2026-12-04" in page:
+        report.add("  [仅报告] 活动列表页可读且列出知乎黑客松 S3、"
+                   "报名截止 2026-12-04，未自动写数据，仍请人工核对")
+    else:
+        report.unknown("活动列表页可读，但里面找不到知乎黑客松 S3 的截止日期")
+
+
+def check_rokid(report: Report, data: dict):
+    """Rokid：官网链接未找到，无法检查。只报告，不写数据。"""
+    report.add("Rokid Spatial Joy 2026（官网链接未找到）")
+    comp = find_comp(data, "Rokid Spatial Joy 2026")
+    if comp is None:
+        report.unknown("台账里没有 Rokid，跳过")
+        return
+    report.unknown("官网链接未找到，无法检查；截止 2027-01-28 与奖金分项"
+                   "多处数字冲突，核对前不要以任一版本为准")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="同步比赛数据（只更新能核实的字段）")
     parser.add_argument("--dry-run", action="store_true", help="只打印报告，不改文件")
@@ -554,10 +808,16 @@ def main() -> int:
     check_caai_youth(report, data)
     check_xingzhi(report, data)
     check_zaohua(report, data)
-    report.add("未覆盖：AI PLAY、BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、"
-               "Rokid、第二十届全国大学生软件创新大赛"
-               "（共 9 个；前 8 个排在第二批“只报告、不写数据”检查里，"
-               "软件创新大赛尚未排进任何一批），均保留旧值。")
+    check_qoder(report, data)
+    check_modelscope(report, data)
+    check_aiplay(report, data)
+    check_bayhack(report, data)
+    check_honor(report, data)
+    check_huawei(report, data)
+    check_zhihu(report, data)
+    check_rokid(report, data)
+    report.add("未覆盖：第二十届全国大学生软件创新大赛（1 个；"
+               "尚未排进任何一批——它的官方规则页还没定位到），保留旧值。")
     if report.updates > 0 and not args.dry_run:
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, separators=(",", ":"),

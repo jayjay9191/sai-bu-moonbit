@@ -215,6 +215,41 @@ class TestSyncHelpers(unittest.TestCase):
         self.assertGreater(len(sync_data.visible_text(real)), 200)
         self.assertIn("有正文", sync_data.js_shell_note(real))
 
+    def test_page_state_login_redirect(self):
+        self.assertEqual(
+            sync_data.page_state("<html></html>",
+                                 "https://example.com/login?next=/x"),
+            "login")
+
+    def test_page_state_strong_login_marker(self):
+        # 天池这类页导航文字很多，但“登录后您可以获得”一出现就说明
+        # 赛题正文在登录墙后，不看可见文本长度。
+        body = "<p>登录后您可以获得</p>" + "<p>探索发现</p>" * 100
+        page = f"<html><body>{body}</body></html>"
+        self.assertEqual(sync_data.page_state(page, "https://example.com/"), "login")
+
+    def test_quote_url_encodes_chinese_path(self):
+        url = "https://modelscope.cn/events/394/比赛介绍"
+        quoted = sync_data.quote_url(url)
+        self.assertNotIn("比赛", quoted)
+        self.assertIn("%E6%AF%94%E8%B5%9B", quoted)
+        self.assertTrue(quoted.startswith("https://modelscope.cn/events/394/"))
+
+    def test_page_state_login_wall_short_text(self):
+        page = "<html><body><p>登录后您可以获得</p><button>登录</button></body></html>"
+        self.assertEqual(sync_data.page_state(page, "https://example.com/"), "login")
+
+    def test_page_state_js_shell(self):
+        shell = ('<html><head><script>"use strict";var x=1;</script></head>'
+                 '<body><div id="app"></div></body></html>')
+        self.assertEqual(sync_data.page_state(shell, "https://example.com/"), "js-shell")
+
+    def test_page_state_readable_with_login_nav(self):
+        # 可读页面导航栏里也有“登录”，不能只因出现登录字样就判登录墙。
+        body = "<p>登录</p>" + "<p>报名截止时间为2026年11月30日24:00截止。</p>" * 30
+        page = f"<html><body>{body}</body></html>"
+        self.assertEqual(sync_data.page_state(page, "https://example.com/"), "readable")
+
 
 class TestCellTestGenerator(unittest.TestCase):
     def test_cell_table_covers_eight_conflict_cells(self):
