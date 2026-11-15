@@ -250,6 +250,35 @@ class TestSyncHelpers(unittest.TestCase):
         page = f"<html><body>{body}</body></html>"
         self.assertEqual(sync_data.page_state(page, "https://example.com/"), "readable")
 
+    def test_today_cst_is_shanghai_date(self):
+        # VM 是 UTC，用户在 Asia/Shanghai：today_cst 必须等于 UTC+8 的今天，
+        # 不能等于 date.today()（UTC 日期，半夜会差一天）。
+        import re
+        from datetime import datetime, timedelta, timezone
+        got = sync_data.today_cst()
+        self.assertRegex(got, r"^\d{4}-\d{2}-\d{2}$")
+        want = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
+        self.assertEqual(got, want)
+
+    def test_mark_verified_records_name(self):
+        report = sync_data.Report()
+        report.mark_verified("松江·创世纪 AI 游戏大赛", "投稿截止已确认")
+        self.assertEqual(report.verified, ["松江·创世纪 AI 游戏大赛"])
+        self.assertEqual(report.updates, 0)
+
+    def test_apply_verified_at_only_changes_listed_rows(self):
+        data = {"competitions": [
+            {"name": "甲", "verified_at": "2026-11-13"},
+            {"name": "乙", "verified_at": "2026-11-16"},
+            {"name": "丙", "verified_at": "2026-11-15"},
+        ], "works": []}
+        changed = sync_data.apply_verified_at(data, ["甲", "乙", "不存在"], "2026-11-16")
+        self.assertEqual(changed, ["甲"])
+        self.assertEqual(data["competitions"][0]["verified_at"], "2026-11-16")
+        self.assertEqual(data["competitions"][1]["verified_at"], "2026-11-16")
+        self.assertEqual(data["competitions"][2]["verified_at"], "2026-11-15")
+        self.assertEqual(data["works"], [])
+
 
 class TestCellTestGenerator(unittest.TestCase):
     def test_cell_table_covers_eight_conflict_cells(self):

@@ -69,6 +69,9 @@ CELL_EXPECT = {
 # 比赛名 -> (deadline_date, plan_status, verified_at,
 #            requires_first_publish, requires_new_work,
 #            requires_no_prior_entry, allows_existing_works)
+# 注意：verified_at 一列是数据镜像——同步脚本核实通过即更新 JSON
+# 里的值，这里跟随改日期（只改日期值，不改其他期望）；冲突等级与
+# 标志位期望仍以人工底稿为准，改它们先改底稿。
 ROW_EXPECT = {
     "AI PLAY 72H 创作黑客松": ("2026-11-17", "在途", "2026-11-13", False, False, False, True),
     "BayHack 大湾区黑客松": ("2026-11-18", "在途", "2026-11-13", False, False, False, False),
@@ -78,13 +81,13 @@ ROW_EXPECT = {
     "兴智杯": ("2026-11-28", "关注", "2026-11-15", False, False, False, False),
     "Qoder 高校创造力大赛": ("2026-11-30", "在途", "2026-11-13", False, False, False, True),
     "第二届 AIGC 青年大学生就业创业促进行动": ("2026-11-30", "关注", "2026-11-15", False, False, False, False),
-    "第十一届全国青年人工智能创新创业大赛": ("2026-11-30", "关注", "2026-11-15", False, False, False, False),
+    "第十一届全国青年人工智能创新创业大赛": ("2026-11-30", "关注", "2026-11-16", False, False, False, False),
     "魔搭 AI+∞ 第三期「AI 造游戏」": ("2026-12-01", "在途", "2026-11-13", True, False, False, False),
-    "PAYATHON 2026": ("2026-12-01", "在途", "2026-11-15", False, False, False, False),
+    "PAYATHON 2026": ("2026-12-01", "在途", "2026-11-16", False, False, False, False),
     "知乎黑客松 S3": ("2026-12-04", "在途", "2026-11-13", False, True, False, False),
-    "松江·创世纪 AI 游戏大赛": ("2026-12-06", "在途", "2026-11-13", False, False, False, True),
-    "支付宝智能体涌现奖": ("2026-12-06", "在途", "2026-11-13", False, False, False, True),
-    "绿联首届黑客松": ("2026-12-07", "在途", "2026-11-15", False, False, False, False),
+    "松江·创世纪 AI 游戏大赛": ("2026-12-06", "在途", "2026-11-16", False, False, False, True),
+    "支付宝智能体涌现奖": ("2026-12-06", "在途", "2026-11-16", False, False, False, True),
+    "绿联首届黑客松": ("2026-12-07", "在途", "2026-11-16", False, False, False, False),
     "中小企业 AI 应用产品大赛": ("2026-12-10", "关注", "2026-11-15", False, False, False, False),
     "造化首届体素游戏创作大赛": ("2026-12-15", "关注", "2026-11-15", False, True, False, False),
     "第二十届全国大学生软件创新大赛": ("2027-01-15", "关注", "2026-11-15", False, False, True, False),

@@ -1656,7 +1656,7 @@ test "row: 第十一届全国青年人工智能创新创业大赛" {
     Some(c) => {
       assert_eq(c.deadline_date, "2026-11-30")
       assert_eq(c.plan_status, "关注")
-      assert_eq(c.verified_at, "2026-11-15")
+      assert_eq(c.verified_at, "2026-11-16")
       assert_eq(c.requires_first_publish, false)
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
@@ -1699,7 +1699,7 @@ test "row: PAYATHON 2026" {
     Some(c) => {
       assert_eq(c.deadline_date, "2026-12-01")
       assert_eq(c.plan_status, "在途")
-      assert_eq(c.verified_at, "2026-11-15")
+      assert_eq(c.verified_at, "2026-11-16")
       assert_eq(c.requires_first_publish, false)
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
@@ -1742,7 +1742,7 @@ test "row: 松江·创世纪 AI 游戏大赛" {
     Some(c) => {
       assert_eq(c.deadline_date, "2026-12-06")
       assert_eq(c.plan_status, "在途")
-      assert_eq(c.verified_at, "2026-11-13")
+      assert_eq(c.verified_at, "2026-11-16")
       assert_eq(c.requires_first_publish, false)
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
@@ -1765,7 +1765,7 @@ test "row: 支付宝智能体涌现奖" {
     Some(c) => {
       assert_eq(c.deadline_date, "2026-12-06")
       assert_eq(c.plan_status, "在途")
-      assert_eq(c.verified_at, "2026-11-13")
+      assert_eq(c.verified_at, "2026-11-16")
       assert_eq(c.requires_first_publish, false)
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
@@ -1786,7 +1786,7 @@ test "row: 绿联首届黑客松" {
     Some(c) => {
       assert_eq(c.deadline_date, "2026-12-07")
       assert_eq(c.plan_status, "在途")
-      assert_eq(c.verified_at, "2026-11-15")
+      assert_eq(c.verified_at, "2026-11-16")
       assert_eq(c.requires_first_publish, false)
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)

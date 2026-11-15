@@ -14,6 +14,11 @@
   日期、总奖金池金额，PAYATHON 明确写出的奖金）可以自动更新；
   需要推断的值（PAYATHON 日历格里各阶段的最后一天）只核实、
   不自动写，对不上就报“需人工确认”，绝不靠推断改数据。
+- verified_at 自动更新（2026-11-16 接，规则见 README“下一步路线图”
+  第三批）：某行检查覆盖的全部字段都被确认，才把该行 verified_at
+  更新为运行当天日期；任一字段未核实，该行不动；只报告的检查
+  （MoonBit、第二批 8 个）永远不更新 verified_at；dry-run 只报告
+  “哪些行会被更新”，不写 JSON。
 - 绝不编造数据。每次运行都打印“改了什么、没核实什么”。
 - 更新 JSON 后自动跑 scripts/generate_data.py 重新生成
   competition_data.mbt；生成后请跑 moon fmt && moon test。
@@ -74,6 +79,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -99,6 +105,16 @@ def js_shell_note(page: str) -> str:
     if n < 200:
         return f"页面为 JS 渲染壳，HTML 里无正文（可见文本仅 {n} 字）"
     return "页面有正文，但里面找不到该日期"
+
+
+CST = timezone(timedelta(hours=8))  # 用户在 Asia/Shanghai，无夏令时
+
+
+def today_cst() -> str:
+    """用户所在时区（Asia/Shanghai）的今天，YYYY-MM-DD。
+    VM 是 UTC，直接用 date.today() 会差一天
+    （UTC 11-15 17:00 = CST 11-16 01:00），verified_at 必须按用户日期写。"""
+    return datetime.now(CST).date().isoformat()
 
 
 def quote_url(url: str) -> str:
@@ -168,6 +184,7 @@ class Report:
     def __init__(self):
         self.lines = []
         self.updates = 0
+        self.verified = []
 
     def add(self, line: str):
         self.lines.append(line)
@@ -185,6 +202,25 @@ class Report:
 
     def fail(self, line: str):
         self.add("  [抓取失败] " + line)
+
+    def mark_verified(self, comp_name: str, what: str):
+        """该行检查覆盖的字段全部确认，verified_at 可更新为今天。
+        只记录，不直接改 JSON（写 JSON 在 main 里统一做，
+        dry-run 时只报告不写）。只报告的检查不调这个方法。"""
+        self.verified.append(comp_name)
+        self.add(f"  [已核实] {comp_name}：{what}")
+
+
+def apply_verified_at(data: dict, names: list[str], today: str) -> list[str]:
+    """把 names 里各行的 verified_at 改成 today，返回实际改了的行。
+    只改 verified_at，不碰其他字段、不碰 works 数组。"""
+    changed = []
+    for name in names:
+        comp = find_comp(data, name)
+        if comp is not None and comp["verified_at"] != today:
+            comp["verified_at"] = today
+            changed.append(name)
+    return changed
 
 
 def check_moonbit(report: Report):
@@ -226,10 +262,12 @@ def check_ugreen(report: Report, data: dict, dry_run: bool):
         r'datetime="(\d{4}-\d{2}-\d{2})"[^>]*>[^<]*</time>\s*</p>\s*<h3>初稿作品提交</h3>',
         page,
     )
+    date_ok = False
     if m:
         page_date = m.group(1)
         if page_date == comp["deadline_date"]:
             report.ok(f"初稿截止 {page_date}，与台账一致")
+            date_ok = True
         else:
             report.update(
                 f"初稿截止：台账 {comp['deadline_date']} → 官网 {page_date}"
@@ -239,24 +277,30 @@ def check_ugreen(report: Report, data: dict, dry_run: bool):
                     comp["deadline"], comp["deadline_date"], page_date
                 )
                 comp["deadline_date"] = page_date
+            date_ok = True  # 明确标注的值被自动更新，也算确认
     else:
         report.unknown("页面里找不到“初稿作品提交”对应的截止日期")
     m = re.search(r"总奖金池 ¥([\d,]+)", page)
+    prize_ok = False
     if m:
         page_pool = m.group(1)
         old_pool = re.search(r"¥([\d,]+)", comp["prize"])
         if old_pool and old_pool.group(1) == page_pool:
             report.ok(f"总奖金池 ¥{page_pool}，与台账一致")
+            prize_ok = True
         elif old_pool:
             report.update(f"总奖金池：台账 ¥{old_pool.group(1)} → 官网 ¥{page_pool}")
             if not dry_run:
                 comp["prize"] = replace_first_amount(
                     comp["prize"], old_pool.group(1), page_pool
                 )
+            prize_ok = True  # 明确标注的值被自动更新，也算确认
         else:
             report.unknown("台账奖金串里找不到 ¥ 金额，无法比对")
     else:
         report.unknown("页面里找不到“总奖金池”金额")
+    if date_ok and prize_ok:
+        report.mark_verified(comp["name"], "初稿截止与总奖金池均已确认")
 
 
 def check_payathon(report: Report, data: dict, dry_run: bool):
@@ -281,9 +325,11 @@ def check_payathon(report: Report, data: dict, dry_run: bool):
         return max(dates) if dates else None
 
     reg_end = phase_end("报名")
+    reg_ok = False
     if reg_end is not None:
         if reg_end == comp["deadline_date"]:
             report.ok(f"报名阶段最后一天 {reg_end}，与台账报名截止一致")
+            reg_ok = True
         else:
             report.add(
                 f"  [需人工确认] 报名阶段最后一天是 {reg_end}，台账报名截止是 "
@@ -292,9 +338,11 @@ def check_payathon(report: Report, data: dict, dry_run: bool):
     else:
         report.unknown("页面日历里找不到报名阶段的日期")
     sub_end = phase_end("作品提交")
+    sub_ok = False
     if sub_end is not None:
         if sub_end in comp["deadline"]:
             report.ok(f"作品提交阶段最后一天 {sub_end}，与台账一致")
+            sub_ok = True
         else:
             report.add(
                 f"  [需人工确认] 作品提交阶段最后一天是 {sub_end}，台账写的是 "
@@ -303,11 +351,13 @@ def check_payathon(report: Report, data: dict, dry_run: bool):
     else:
         report.unknown("页面日历里找不到作品提交阶段的日期")
     m = re.search(r"Vibe Pay，一等奖，数量 1，税前 ¥([\d,]+)", page)
+    prize_ok = False
     if m:
         page_first = m.group(1)
         old = re.search(r"Vibe Pay 一等奖 ¥([\d,]+)", comp["prize"])
         if old and old.group(1) == page_first:
             report.ok(f"Vibe Pay 一等奖 ¥{page_first}，与台账一致")
+            prize_ok = True
         elif old:
             report.update(
                 f"Vibe Pay 一等奖：台账 ¥{old.group(1)} → 官网 ¥{page_first}"
@@ -318,10 +368,13 @@ def check_payathon(report: Report, data: dict, dry_run: bool):
                     "Vibe Pay 一等奖 ¥" + page_first,
                     1,
                 )
+            prize_ok = True  # 明确标注的值被自动更新，也算确认
         else:
             report.unknown("台账奖金串里找不到 Vibe Pay 一等奖金额，无法比对")
     else:
         report.unknown("页面里找不到 Vibe Pay 一等奖金额")
+    if reg_ok and sub_ok and prize_ok:
+        report.mark_verified(comp["name"], "报名/作品提交两阶段与 Vibe Pay 一等奖均已确认")
 
 
 def check_songjiang(report: Report, data: dict):
@@ -341,6 +394,7 @@ def check_songjiang(report: Report, data: dict):
         page_date = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
         if page_date == comp["deadline_date"]:
             report.ok(f"投稿截止 {page_date}，与台账一致")
+            report.mark_verified(comp["name"], "投稿截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 投稿截止是 {page_date}，台账是 "
@@ -383,6 +437,7 @@ def check_emerge(report: Report, data: dict):
         want_month, want_day = comp["deadline_date"][5:7], comp["deadline_date"][8:10]
         if f"{month:02d}" == want_month and f"{day:02d}" == want_day:
             report.ok(f"提交截止 {month}月{day}日零点，与台账 {comp['deadline_date']} 一致")
+            report.mark_verified(comp["name"], "提交截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 提交截止是 {month}月{day}日零点，台账是 "
@@ -413,6 +468,7 @@ def check_shifangronghai(report: Report, data: dict):
         if f"{month:02d}" == want_month and f"{day:02d}" == want_day:
             report.ok(f"作品与方案提交截止 {month}月{day}日，与台账 "
                       f"{comp['deadline_date']} 一致")
+            report.mark_verified(comp["name"], "作品与方案提交截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 作品与方案提交截止是 {month}月{day}日，台账是 "
@@ -453,6 +509,7 @@ def check_dobe(report: Report, data: dict):
     if m:
         if comp["deadline_date"] == "2026-11-27":
             report.ok("报名截止 11月27日，与台账一致")
+            report.mark_verified(comp["name"], "报名截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 页面写报名截止 11月27日，台账是 "
@@ -483,6 +540,7 @@ def check_sme(report: Report, data: dict):
     if m:
         if comp["deadline_date"] == "2026-12-10":
             report.ok("报名及材料提交截止 12月10日，与台账一致")
+            report.mark_verified(comp["name"], "报名及材料提交截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 页面写截止 12月10日，台账是 "
@@ -511,6 +569,7 @@ def check_caai_youth(report: Report, data: dict):
         page_date = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
         if page_date == comp["deadline_date"]:
             report.ok(f"报名截止 {page_date}，与台账一致")
+            report.mark_verified(comp["name"], "报名截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 报名截止是 {page_date}，台账是 "
@@ -545,6 +604,7 @@ def check_xingzhi(report: Report, data: dict):
         page_date = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
         if page_date == comp["deadline_date"]:
             report.ok(f"报名截止 {page_date}，与台账一致")
+            report.mark_verified(comp["name"], "报名截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 报名截止是 {page_date}，台账是 "
@@ -573,6 +633,7 @@ def check_zaohua(report: Report, data: dict):
     if m:
         if comp["deadline_date"] == "2026-12-15":
             report.ok("报名投稿期截止 12月15日 23:59，与台账一致")
+            report.mark_verified(comp["name"], "报名投稿期截止已确认")
         else:
             report.add(
                 f"  [需人工确认] 页面写报名投稿期截止 12月15日 23:59，台账是 "
@@ -818,12 +879,27 @@ def main() -> int:
     check_rokid(report, data)
     report.add("未覆盖：第二十届全国大学生软件创新大赛（1 个；"
                "尚未排进任何一批——它的官方规则页还没定位到），保留旧值。")
-    if report.updates > 0 and not args.dry_run:
+    today = today_cst()
+    if args.dry_run:
+        # dry-run 只算“哪些行会被更新”，不改内存里的数据。
+        verified_changed = [
+            n for n in report.verified
+            if (c := find_comp(data, n)) is not None
+            and c["verified_at"] != today
+        ]
+    else:
+        verified_changed = apply_verified_at(data, report.verified, today)
+    if report.verified:
+        report.add(f"核实通过 {len(report.verified)} 行："
+                   + "、".join(report.verified))
+    if (report.updates > 0 or verified_changed) and not args.dry_run:
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, separators=(",", ":"),
                       sort_keys=True)
             f.write("\n")
-        report.add(f"已写入 {JSON_PATH}，共 {report.updates} 项更新")
+        report.add(f"已写入 {JSON_PATH}，共 {report.updates} 项更新、"
+                   f"verified_at 更新 {len(verified_changed)} 行"
+                   + (f"（{ '、'.join(verified_changed)}）" if verified_changed else ""))
         result = subprocess.run(
             [sys.executable, str(GENERATE_SCRIPT)],
             capture_output=True, text=True,
@@ -835,8 +911,9 @@ def main() -> int:
                        "python3 scripts/generate_data.py")
             return 1
         report.add("已重新生成 competition_data.mbt，请跑 moon fmt && moon test")
-    elif report.updates > 0:
-        report.add(f"dry-run：共 {report.updates} 项更新未写入")
+    elif report.updates > 0 or verified_changed:
+        report.add(f"dry-run：共 {report.updates} 项更新、verified_at 更新 "
+                   f"{len(verified_changed)} 行未写入")
     else:
         report.add("本次 0 项更新，JSON 未改动")
     return 0
