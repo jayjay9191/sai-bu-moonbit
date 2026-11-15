@@ -32,11 +32,28 @@
   同款做法：HTML 里找包地址再抓包搜文本）。核实提交截止
   （包里明文“12月6日零点截止提交”）。只核实、不自动写
   （2026-11-15 新增）；页面不写年份，按 2026 赛季理解。
+- 第一批（2026-11-16 新增，全部只核实、不自动写）：
+  十方融海（第二届 AIGC 促进行动）：协同方十方融海官网新闻页
+  明文“作品与方案提交截止时间统一为 11 月 30 日”；
+  DoBe：官方入口是微信文章（mp.weixin.qq.com），返回 TCaptcha
+  验证码页（HTML 里有 cap_appid / verify.js），需完成验证，
+  urllib 抓不到正文，只能报告、无法核实；
+  中小企业 AI 应用产品大赛：协会官网首页（www.zxsx.org）找
+  “AI 应用产品大赛”与“12月10日”，首页无专区入口时只报告；
+  CAAI 青年赛（第十一届全国青年人工智能创新创业大赛）：
+  承办方哈工大（深圳）计算机应用研究中心通知页明文
+  “报名截止时间为2026年11月30日24:00截止”；
+  兴智杯：官网 www.aiinnovation.com.cn 不稳定——https 常直接断开
+  连接（此前已确认 ERR_CONNECTION_CLOSED），http 返回 Vue 单页
+  应用壳（HTML 里无正文），报名截止不在公开 HTML 里，只能报告；
+  11-05 与 11-28 两来源冲突仍未解决，不要以任一版本为准；
+  造化：官方活动页 zaohua.qq.com/activity/voxel-jam-2026
+  是 JS 渲染壳（HTML 里只有内联脚本，无正文），“12 月 15 日 23:59”
+  不在公开 HTML 里，只能报告。
 未覆盖（页面打不开、登录墙、或日期不在公开页上）：AI PLAY、
-BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、Rokid、造化、十方融海、
-DoBe、中小企业、CAAI 青年赛、兴智杯（共 14 个；后 7 个是 2026-11-15
-第 5 轮新增的“关注”比赛，截止与奖金已人工核实过，只是不在同步
-脚本的覆盖里）。
+BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、Rokid、第二十届全国
+大学生软件创新大赛（共 9 个；前 8 个排在第二批“只报告、不写数据”
+检查里，软件创新大赛尚未排进任何一批——它的官方规则页还没定位到）。
 """
 
 import argparse
@@ -54,6 +71,23 @@ GENERATE_SCRIPT = ROOT / "scripts" / "generate_data.py"
 
 UA = {"User-Agent": "Mozilla/5.0 (sai-chang-guan-jia sync check)"}
 TIMEOUT = 25
+
+
+def visible_text(page: str) -> str:
+    """去掉 script/style 标签及所有 HTML 标签后剩下的可见文本。
+    用于判断一个页面是不是 JS 渲染壳：壳的可见文本只有几十字。"""
+    no_script = re.sub(r"<script[\s\S]*?</script>", "", page, flags=re.I)
+    no_style = re.sub(r"<style[\s\S]*?</style>", "", no_script, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", no_style)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def js_shell_note(page: str) -> str:
+    """日期没找到时，补一句页面形态的判断（JS 壳 / 有正文但无该字段）。"""
+    n = len(visible_text(page))
+    if n < 200:
+        return f"页面为 JS 渲染壳，HTML 里无正文（可见文本仅 {n} 字）"
+    return "页面有正文，但里面找不到该日期"
 
 
 def fetch(url: str) -> str:
@@ -309,6 +343,196 @@ def check_emerge(report: Report, data: dict):
         report.unknown("JS 包里找不到“零点截止提交”的日期")
 
 
+def check_shifangronghai(report: Report, data: dict):
+    """十方融海（第二届 AIGC 青年大学生就业创业促进行动）：
+    协同方十方融海官网新闻页明文。只核实、不自动写。"""
+    report.add("十方融海 / 第二届 AIGC 青年大学生就业创业促进行动 "
+               "https://www.goweike.cn/new_pages/det_news_1008.html")
+    comp = find_comp(data, "第二届 AIGC 青年大学生就业创业促进行动")
+    if comp is None:
+        report.unknown("台账里没有十方融海，跳过")
+        return
+    try:
+        page = fetch("https://www.goweike.cn/new_pages/det_news_1008.html")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    m = re.search(r"作品与方案提交截止时间统一为\s*(\d+)\s*月\s*(\d+)\s*日", page)
+    if m:
+        month, day = int(m.group(1)), int(m.group(2))
+        want_month, want_day = comp["deadline_date"][5:7], comp["deadline_date"][8:10]
+        if f"{month:02d}" == want_month and f"{day:02d}" == want_day:
+            report.ok(f"作品与方案提交截止 {month}月{day}日，与台账 "
+                      f"{comp['deadline_date']} 一致")
+        else:
+            report.add(
+                f"  [需人工确认] 作品与方案提交截止是 {month}月{day}日，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("页面里找不到“作品与方案提交截止时间统一为”对应的日期")
+
+
+def check_dobe(report: Report, data: dict):
+    """DoBe 全球 AI 创客大赛：官方入口是微信文章，需完成验证。
+    urllib 抓到的是验证墙，只能报告、无法核实。只核实、不自动写。"""
+    report.add("DoBe 全球 AI 创客大赛 "
+               "https://mp.weixin.qq.com/s?__biz=MzcxMDEyMjk4OQ==&mid=2247485348"
+               "&idx=1&sn=dd7274e14d2a419debd961d057d3643a")
+    comp = find_comp(data, "DoBe 全球 AI 创客大赛")
+    if comp is None:
+        report.unknown("台账里没有 DoBe，跳过")
+        return
+    try:
+        page = fetch(
+            "https://mp.weixin.qq.com/s?__biz=MzcxMDEyMjk4OQ==&mid=2247485348"
+            "&idx=1&sn=dd7274e14d2a419debd961d057d3643a"
+        )
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    if "环境异常" in page or "完成验证" in page:
+        report.unknown("官方入口（微信文章）需完成验证，urllib 抓到的是验证墙，"
+                       "无法核实报名截止")
+        return
+    if ("TCaptcha" in page or "cap_appid" in page
+            or "secitptpage/template/verify.js" in page):
+        report.unknown("官方入口（微信文章）返回验证码页（TCaptcha），"
+                       "需完成验证后才能读正文，无法核实报名截止")
+        return
+    m = re.search(r"11\s*月\s*27\s*日", page)
+    if m:
+        if comp["deadline_date"] == "2026-11-27":
+            report.ok("报名截止 11月27日，与台账一致")
+        else:
+            report.add(
+                f"  [需人工确认] 页面写报名截止 11月27日，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("微信文章可读，但里面找不到报名截止日期")
+
+
+def check_sme(report: Report, data: dict):
+    """中小企业 AI 应用产品大赛：协会官网首页找大赛与截止日期。
+    首页无专区入口时只报告。只核实、不自动写。"""
+    report.add("中小企业 AI 应用产品大赛 https://www.zxsx.org/")
+    comp = find_comp(data, "中小企业 AI 应用产品大赛")
+    if comp is None:
+        report.unknown("台账里没有中小企业，跳过")
+        return
+    try:
+        page = fetch("https://www.zxsx.org/")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    if "AI 应用产品大赛" not in page and "AI应用产品大赛" not in page:
+        report.unknown("协会官网首页无“AI 应用产品大赛”相关内容，"
+                       "大赛专区可能在公众号或子页面，日期不在首页上")
+        return
+    m = re.search(r"12\s*月\s*10\s*日", page)
+    if m:
+        if comp["deadline_date"] == "2026-12-10":
+            report.ok("报名及材料提交截止 12月10日，与台账一致")
+        else:
+            report.add(
+                f"  [需人工确认] 页面写截止 12月10日，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("首页提到大赛，但里面找不到截止日期")
+
+
+def check_caai_youth(report: Report, data: dict):
+    """CAAI 青年赛（第十一届全国青年人工智能创新创业大赛）：
+    承办方哈工大（深圳）通知页明文。只核实、不自动写。"""
+    report.add("第十一届全国青年人工智能创新创业大赛 "
+               "https://carc.hitsz.edu.cn/info/1033/3934.htm")
+    comp = find_comp(data, "第十一届全国青年人工智能创新创业大赛")
+    if comp is None:
+        report.unknown("台账里没有 CAAI 青年赛，跳过")
+        return
+    try:
+        page = fetch("https://carc.hitsz.edu.cn/info/1033/3934.htm")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    m = re.search(r"报名截止时间为\s*(\d{4})年(\d{1,2})月(\d{1,2})日", page)
+    if m:
+        page_date = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+        if page_date == comp["deadline_date"]:
+            report.ok(f"报名截止 {page_date}，与台账一致")
+        else:
+            report.add(
+                f"  [需人工确认] 报名截止是 {page_date}，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("页面里找不到“报名截止时间”对应的日期")
+
+
+def check_xingzhi(report: Report, data: dict):
+    """兴智杯：官网打不开，只能报告。11-05 与 11-28 两来源冲突
+    仍未解决，不要以任一版本为准。只核实、不自动写。"""
+    report.add("兴智杯 http://www.aiinnovation.com.cn")
+    comp = find_comp(data, "兴智杯")
+    if comp is None:
+        report.unknown("台账里没有兴智杯，跳过")
+        return
+    page = None
+    last_err = None
+    for url in ("https://www.aiinnovation.com.cn", "http://www.aiinnovation.com.cn"):
+        try:
+            page = fetch(url)
+            break
+        except Exception as e:
+            last_err = e
+    if page is None:
+        report.fail(f"官网打不开：{type(last_err).__name__}: {last_err}；"
+                    "截止仍有 11-05 与 11-28 两来源冲突，未核实")
+        return
+    m = re.search(r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?报名截止", page)
+    if m:
+        page_date = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+        if page_date == comp["deadline_date"]:
+            report.ok(f"报名截止 {page_date}，与台账一致")
+        else:
+            report.add(
+                f"  [需人工确认] 报名截止是 {page_date}，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("官网能打开，但页面里找不到报名截止日期；"
+                       + js_shell_note(page))
+
+
+def check_zaohua(report: Report, data: dict):
+    """造化首届体素游戏创作大赛：官方活动页找报名投稿期截止。
+    页面为 JS 渲染时只能报告。只核实、不自动写。"""
+    report.add("造化首届体素游戏创作大赛 "
+               "https://zaohua.qq.com/activity/voxel-jam-2026")
+    comp = find_comp(data, "造化首届体素游戏创作大赛")
+    if comp is None:
+        report.unknown("台账里没有造化，跳过")
+        return
+    try:
+        page = fetch("https://zaohua.qq.com/activity/voxel-jam-2026")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    m = re.search(r"12\s*月\s*15\s*日\s*23:59", page)
+    if m:
+        if comp["deadline_date"] == "2026-12-15":
+            report.ok("报名投稿期截止 12月15日 23:59，与台账一致")
+        else:
+            report.add(
+                f"  [需人工确认] 页面写报名投稿期截止 12月15日 23:59，台账是 "
+                f"{comp['deadline_date']}，不一致，未自动改"
+            )
+    else:
+        report.unknown("页面里找不到报名投稿期截止日期；" + js_shell_note(page))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="同步比赛数据（只更新能核实的字段）")
     parser.add_argument("--dry-run", action="store_true", help="只打印报告，不改文件")
@@ -324,10 +548,16 @@ def main() -> int:
     check_payathon(report, data, args.dry_run)
     check_songjiang(report, data)
     check_emerge(report, data)
+    check_shifangronghai(report, data)
+    check_dobe(report, data)
+    check_sme(report, data)
+    check_caai_youth(report, data)
+    check_xingzhi(report, data)
+    check_zaohua(report, data)
     report.add("未覆盖：AI PLAY、BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、"
-               "Rokid、造化、十方融海、DoBe、中小企业、CAAI 青年赛、兴智杯"
-               "（共 14 个；页面打不开、登录墙、或日期不在公开页上），"
-               "均保留旧值。")
+               "Rokid、第二十届全国大学生软件创新大赛"
+               "（共 9 个；前 8 个排在第二批“只报告、不写数据”检查里，"
+               "软件创新大赛尚未排进任何一批），均保留旧值。")
     if report.updates > 0 and not args.dry_run:
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, separators=(",", ":"),

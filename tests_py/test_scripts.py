@@ -173,6 +173,48 @@ class TestSyncHelpers(unittest.TestCase):
             r'data-date="(\d{4}-\d{2}-\d{2})"[^>]*aria-label="[^"]*报名', html)
         self.assertEqual(max(dates), "2026-12-01")
 
+    def test_shifangronghai_deadline_regex(self):
+        text = "作品与方案提交截止时间统一为 11 月 30 日，请参赛团队合理规划"
+        m = sync_data.re.search(
+            r"作品与方案提交截止时间统一为\s*(\d+)\s*月\s*(\d+)\s*日", text)
+        self.assertIsNotNone(m)
+        self.assertEqual((int(m.group(1)), int(m.group(2))), (11, 30))
+
+    def test_caai_youth_deadline_regex(self):
+        text = "报名截止时间为2026年11月30日24:00截止。"
+        m = sync_data.re.search(r"报名截止时间为\s*(\d{4})年(\d{1,2})月(\d{1,2})日", text)
+        self.assertIsNotNone(m)
+        self.assertEqual(
+            (m.group(1), f"{int(m.group(2)):02d}", f"{int(m.group(3)):02d}"),
+            ("2026", "11", "30"))
+
+    def test_zaohua_deadline_regex(self):
+        text = "报名投稿期为 11 月 3 日至 12 月 15 日 23:59；"
+        m = sync_data.re.search(r"12\s*月\s*15\s*日\s*23:59", text)
+        self.assertIsNotNone(m)
+
+    def test_dobe_verification_wall_markers(self):
+        page = "环境异常\n当前环境异常，完成验证后即可继续访问。"
+        self.assertTrue("环境异常" in page or "完成验证" in page)
+        captcha = '<script src="TCaptcha.js"></script> cap_appid : "2003810213"'
+        self.assertTrue("TCaptcha" in captcha or "cap_appid" in captcha)
+
+    def test_visible_text_strips_js_shell(self):
+        shell = ('<html><head><script>"use strict";var x=1;</script></head>'
+                 '<body><div id="app"></div></body></html>')
+        self.assertEqual(sync_data.visible_text(shell), "")
+        self.assertIn("JS 渲染壳", sync_data.js_shell_note(shell))
+        real = ("<html><body><h1>第十一届全国青年人工智能创新创业大赛</h1>"
+                "<p>经研究，决定举办第十一届全国青年人工智能创新创业大赛。"
+                "现将大赛有关事宜通知如下：主办单位是中国人工智能学会，"
+                "承办单位是哈尔滨工业大学（深圳）。报名截止时间为2026年11月30日"
+                "24:00截止，参赛团队需在规定时间前将参赛项目内容发送至指定邮箱，"
+                "初赛阶段为2026年12月初，总决赛阶段为2026年12月末，地点在深圳。"
+                "本次比赛不收取报名费用，请勿轻信非官方渠道的收费信息。</p></body></html>")
+        self.assertIn("报名截止", sync_data.visible_text(real))
+        self.assertGreater(len(sync_data.visible_text(real)), 200)
+        self.assertIn("有正文", sync_data.js_shell_note(real))
+
 
 class TestCellTestGenerator(unittest.TestCase):
     def test_cell_table_covers_eight_conflict_cells(self):
