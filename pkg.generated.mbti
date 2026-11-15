@@ -2,9 +2,15 @@
 package "jayjay9191/sai-chang-guan-jia-moonbit"
 
 // Values
+pub const STALE_DAYS : Int32 = 30
+
 pub fn all_competitions() -> Array[Competition]
 
 pub fn all_works() -> Array[Work]
+
+pub fn certify_pack(Work, Competition, Array[Conflict], RowVerdict) -> PackVerdict
+
+pub fn civil_from_days(Int32) -> (Int32, Int32, Int32)
 
 pub fn collision_conflicts(Array[Competition]) -> Array[Conflict]
 
@@ -16,6 +22,8 @@ pub fn conflicts_for_competition(Array[Conflict], String) -> Array[Conflict]
 
 pub fn contains_string(Array[String], String) -> Bool
 
+pub fn date_to_days(String) -> Int32
+
 pub fn detect_conflicts(Work, Array[Competition]) -> Array[Conflict]
 
 pub fn generate_pack(Work, Competition, Array[Conflict]) -> SubmissionPack
@@ -25,6 +33,18 @@ pub fn has_p0_conflict(Array[Conflict], String) -> Bool
 pub fn is_valid_date(String) -> Bool
 
 pub fn join_strings(Array[String], String) -> String
+
+pub fn manifest_canonical(Array[Competition], Array[Work]) -> String
+
+pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
+
+pub fn row_verdict(Competition, Int32) -> RowVerdict
+
+pub fn sha256_hex(String) -> String
+
+pub fn today_days(UInt64) -> Int32
+
+pub fn today_string(UInt64) -> String
 
 pub fn validate_data(Array[Competition], Array[Work]) -> Array[String]
 
@@ -41,8 +61,10 @@ pub(all) struct Competition {
   prize : String
   track : String
   status : String
+  plan_status : String
   requires_first_publish : Bool
   requires_new_work : Bool
+  requires_no_prior_entry : Bool
   allows_existing_works : Bool
   materials : Array[String]
   note : String
@@ -53,6 +75,31 @@ pub struct Conflict {
   competition : String
   work : String
   message : String
+}
+
+pub struct PackVerdict {
+  work : String
+  competition : String
+  certifiable : Bool
+  blocked : Bool
+  reasons : Array[String]
+}
+
+pub struct PreflightReport {
+  today : String
+  validate_issues : Array[String]
+  rows : Array[RowVerdict]
+  packs : Array[PackVerdict]
+  collisions : Array[String]
+  certifiable_count : Int32
+  blocked_count : Int32
+  manifest_hash : String
+}
+
+pub struct RowVerdict {
+  competition : String
+  verified : Bool
+  reason : String
 }
 
 pub struct SubmissionPack {

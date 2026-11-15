@@ -50,23 +50,11 @@ fn digit_value(c : Char) -> Int32 {
 
 ///|
 fn days_from_civil(y0 : Int32, m : Int32, d : Int32) -> Int32 {
-  let y = if m <= 2 {
-    y0 - 1
-  } else {
-    y0
-  }
-  let era_num = if y >= 0 {
-    y
-  } else {
-    y - 399
-  }
+  let y = if m <= 2 { y0 - 1 } else { y0 }
+  let era_num = if y >= 0 { y } else { y - 399 }
   let era = era_num / 400
   let yoe = y - era * 400
-  let mp = if m > 2 {
-    m - 3
-  } else {
-    m + 9
-  }
+  let mp = if m > 2 { m - 3 } else { m + 9 }
   let doy = (153 * mp + 2) / 5 + d - 1
   let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
   era * 146097 + doe - 719468
@@ -76,11 +64,7 @@ fn days_from_civil(y0 : Int32, m : Int32, d : Int32) -> Int32 {
 /// 天数 → (年, 月, 日)。算法：Howard Hinnant civil_from_days。
 pub fn civil_from_days(z0 : Int32) -> (Int32, Int32, Int32) {
   let z = z0 + 719468
-  let era_num = if z >= 0 {
-    z
-  } else {
-    z - 146096
-  }
+  let era_num = if z >= 0 { z } else { z - 146096 }
   let era = era_num / 146097
   let doe = z - era * 146097
   let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
@@ -88,11 +72,7 @@ pub fn civil_from_days(z0 : Int32) -> (Int32, Int32, Int32) {
   let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
   let mp = (5 * doy + 2) / 153
   let d = doy - (153 * mp + 2) / 5 + 1
-  let m = if mp < 10 {
-    mp + 3
-  } else {
-    mp - 9
-  }
+  let m = if mp < 10 { mp + 3 } else { mp - 9 }
   if m <= 2 {
     (y + 1, m, d)
   } else {
@@ -148,8 +128,8 @@ pub struct PreflightReport {
   rows : Array[RowVerdict]
   packs : Array[PackVerdict]
   collisions : Array[String] // 撞期日期
-  certifiable_count : Int
-  blocked_count : Int
+  certifiable_count : Int32
+  blocked_count : Int32
   manifest_hash : String
 }
 
@@ -158,7 +138,9 @@ pub struct PreflightReport {
 /// 逐字匹配，不猜含义；标记本身是数据里的原话。
 fn has_unverified_marker(c : Competition) -> Bool {
   let text = c.deadline + "|" + c.prize + "|" + c.note
-  let markers = ["未核实", "待核对", "未确认", "待确认", "未公布", "打不开"]
+  let markers = [
+    "未核实", "待核对", "未确认", "待确认", "未公布", "打不开",
+  ]
   for i in 0..<markers.length() {
     if text.contains(markers[i]) {
       return true
@@ -198,11 +180,14 @@ pub fn row_verdict(c : Competition, today : Int32) -> RowVerdict {
     return {
       competition: c.name,
       verified: false,
-      reason: "核验过期：verified_at " + c.verified_at + " 距今 " +
-      (today - verified).to_string() + " 天（超过 30 天）",
+      reason: "核验过期：verified_at " +
+      c.verified_at +
+      " 距今 " +
+      (today - verified).to_string() +
+      " 天（超过 30 天）",
     }
   }
-  { competition: c.name, verified: true, reason: "" }
+  { competition: c.name, verified: true, reason: "", }
 }
 
 ///|
@@ -254,12 +239,33 @@ pub fn manifest_canonical(
   let mut out = ""
   for i in 0..<comps.length() {
     let c = comps[i]
-    out = out + "C|" + c.name + "|" + c.deadline + "|" + c.deadline_date + "|" +
-      c.verified_at + "|" + c.prize + "|" + c.track + "|" + c.status + "|" +
-      c.plan_status + "|" + bool01(c.requires_first_publish) +
-      bool01(c.requires_new_work) + bool01(c.requires_no_prior_entry) +
-      bool01(c.allows_existing_works) + "|" +
-      join_strings(c.materials, ",") + "|" + c.note + "\n"
+    out = out +
+      "C|" +
+      c.name +
+      "|" +
+      c.deadline +
+      "|" +
+      c.deadline_date +
+      "|" +
+      c.verified_at +
+      "|" +
+      c.prize +
+      "|" +
+      c.track +
+      "|" +
+      c.status +
+      "|" +
+      c.plan_status +
+      "|" +
+      bool01(c.requires_first_publish) +
+      bool01(c.requires_new_work) +
+      bool01(c.requires_no_prior_entry) +
+      bool01(c.allows_existing_works) +
+      "|" +
+      join_strings(c.materials, ",") +
+      "|" +
+      c.note +
+      "\n"
   }
   for i in 0..<works.length() {
     let w = works[i]
@@ -267,9 +273,22 @@ pub fn manifest_canonical(
       Game => "Game"
       Tool => "Tool"
     }
-    out = out + "W|" + w.name + "|" + kind + "|" + w.oneliner + "|" +
-      w.first_public_date + "|" + join_strings(w.submitted_to, ",") + "|" +
-      join_strings(w.materials_ready, ",") + "|" + w.note + "\n"
+    out = out +
+      "W|" +
+      w.name +
+      "|" +
+      kind +
+      "|" +
+      w.oneliner +
+      "|" +
+      w.first_public_date +
+      "|" +
+      join_strings(w.submitted_to, ",") +
+      "|" +
+      join_strings(w.materials_ready, ",") +
+      "|" +
+      w.note +
+      "\n"
   }
   out
 }

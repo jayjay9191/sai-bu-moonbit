@@ -285,11 +285,15 @@ fn cmd_preflight() -> Unit {
   println("== preflight 全链路预检 ==")
   println("今天：\{report.today}")
   if report.validate_issues.length() > 0 {
-    println("数据校验失败：\{report.validate_issues.length()} 个问题：")
+    println(
+      "数据校验失败：\{report.validate_issues.length()} 个问题：",
+    )
     for i in 0..<report.validate_issues.length() {
       println("  - \{report.validate_issues[i]}")
     }
-    println("拒绝认证：台账数据自相矛盾，先修数据再跑 preflight。")
+    println(
+      "拒绝认证：台账数据自相矛盾，先修数据再跑 preflight。",
+    )
     @env.exit(1)
   }
   println("数据校验：通过（0 个问题）")

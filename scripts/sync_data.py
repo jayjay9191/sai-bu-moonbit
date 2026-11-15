@@ -33,7 +33,10 @@
   （包里明文“12月6日零点截止提交”）。只核实、不自动写
   （2026-11-15 新增）；页面不写年份，按 2026 赛季理解。
 未覆盖（页面打不开、登录墙、或日期不在公开页上）：AI PLAY、
-BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、Rokid。
+BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、Rokid、造化、十方融海、
+DoBe、中小企业、CAAI 青年赛、兴智杯（共 14 个；后 7 个是 2026-11-15
+第 5 轮新增的“关注”比赛，截止与奖金已人工核实过，只是不在同步
+脚本的覆盖里）。
 """
 
 import argparse
@@ -322,7 +325,8 @@ def main() -> int:
     check_songjiang(report, data)
     check_emerge(report, data)
     report.add("未覆盖：AI PLAY、BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、"
-               "Rokid（页面打不开、登录墙、或日期不在公开页上），"
+               "Rokid、造化、十方融海、DoBe、中小企业、CAAI 青年赛、兴智杯"
+               "（共 14 个；页面打不开、登录墙、或日期不在公开页上），"
                "均保留旧值。")
     if report.updates > 0 and not args.dry_run:
         with open(JSON_PATH, "w", encoding="utf-8") as f:

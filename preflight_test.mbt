@@ -156,14 +156,8 @@ test "date_to_days rejects invalid dates" {
 ///|
 test "civil_from_days vectors" {
   assert_eq(@sai-chang-guan-jia-moonbit.civil_from_days(0), (1970, 1, 1))
-  assert_eq(
-    @sai-chang-guan-jia-moonbit.civil_from_days(10957),
-    (2000, 1, 1),
-  )
-  assert_eq(
-    @sai-chang-guan-jia-moonbit.civil_from_days(20772),
-    (2026, 11, 15),
-  )
+  assert_eq(@sai-chang-guan-jia-moonbit.civil_from_days(10957), (2000, 1, 1))
+  assert_eq(@sai-chang-guan-jia-moonbit.civil_from_days(20772), (2026, 11, 15))
 }
 
 ///|
@@ -171,10 +165,18 @@ test "date round-trip" {
   let days = @sai-chang-guan-jia-moonbit.date_to_days("2027-01-28")
   assert_eq(@sai-chang-guan-jia-moonbit.civil_from_days(days), (2027, 1, 28))
   let days2 = @sai-chang-guan-jia-moonbit.date_to_days("2026-02-28")
-  assert_eq(
-    @sai-chang-guan-jia-moonbit.civil_from_days(days2),
-    (2026, 2, 28),
+  assert_eq(@sai-chang-guan-jia-moonbit.civil_from_days(days2), (2026, 2, 28))
+}
+
+///|
+test "row verdict flags bad verified_at" {
+  let today = @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15")
+  let c = fixture_competition(
+    "测试比赛", "2026-12-01", "2026-12-01", "不是日期", "¥0", "",
   )
+  let v = @sai-chang-guan-jia-moonbit.row_verdict(c, today)
+  assert_true(!v.verified)
+  assert_true(v.reason.contains("核验日期格式不对"))
 }
 
 ///|
@@ -182,12 +184,7 @@ test "date round-trip" {
 test "row verdict fresh at exactly 30 days" {
   let today = @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15")
   let c = fixture_competition(
-    "测试比赛",
-    "2026-12-01",
-    "2026-12-01",
-    "2026-10-16",
-    "¥0",
-    "",
+    "测试比赛", "2026-12-01", "2026-12-01", "2026-10-16", "¥0", "",
   )
   let v = @sai-chang-guan-jia-moonbit.row_verdict(c, today)
   assert_true(v.verified)
@@ -197,12 +194,7 @@ test "row verdict fresh at exactly 30 days" {
 test "row verdict stale at 31 days" {
   let today = @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15")
   let c = fixture_competition(
-    "测试比赛",
-    "2026-12-01",
-    "2026-12-01",
-    "2026-10-15",
-    "¥0",
-    "",
+    "测试比赛", "2026-12-01", "2026-12-01", "2026-10-15", "¥0", "",
   )
   let v = @sai-chang-guan-jia-moonbit.row_verdict(c, today)
   assert_true(!v.verified)
@@ -213,12 +205,7 @@ test "row verdict stale at 31 days" {
 test "row verdict flags unverified marker in note" {
   let today = @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15")
   let c = fixture_competition(
-    "测试比赛",
-    "2026-12-01",
-    "2026-12-01",
-    "2026-11-13",
-    "¥0",
-    "奖金未核实",
+    "测试比赛", "2026-12-01", "2026-12-01", "2026-11-13", "¥0", "奖金未核实",
   )
   let v = @sai-chang-guan-jia-moonbit.row_verdict(c, today)
   assert_true(!v.verified)
@@ -229,11 +216,7 @@ test "row verdict flags unverified marker in note" {
 test "row verdict flags unverified marker in deadline display" {
   let today = @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15")
   let c = fixture_competition(
-    "测试比赛",
-    "2026-12-01（待核对）",
-    "2026-12-01",
-    "2026-11-13",
-    "¥0",
+    "测试比赛", "2026-12-01（待核对）", "2026-12-01", "2026-11-13", "¥0",
     "",
   )
   let v = @sai-chang-guan-jia-moonbit.row_verdict(c, today)
@@ -244,12 +227,7 @@ test "row verdict flags unverified marker in deadline display" {
 test "row verdict flags past deadline" {
   let today = @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15")
   let c = fixture_competition(
-    "测试比赛",
-    "2026-11-01",
-    "2026-11-01",
-    "2026-11-13",
-    "¥0",
-    "",
+    "测试比赛", "2026-11-01", "2026-11-01", "2026-11-13", "¥0", "",
   )
   let v = @sai-chang-guan-jia-moonbit.row_verdict(c, today)
   assert_true(!v.verified)
@@ -273,28 +251,13 @@ test "manifest hash is deterministic and 64 chars" {
 ///|
 test "manifest hash changes when data changes" {
   let c1 = fixture_competition(
-    "比赛 A",
-    "2026-12-01",
-    "2026-12-01",
-    "2026-11-13",
-    "¥0",
-    "",
+    "比赛 A", "2026-12-01", "2026-12-01", "2026-11-13", "¥0", "",
   )
   let c2 = fixture_competition(
-    "比赛 B",
-    "2026-12-02",
-    "2026-12-02",
-    "2026-11-13",
-    "¥0",
-    "",
+    "比赛 B", "2026-12-02", "2026-12-02", "2026-11-13", "¥0", "",
   )
   let c2_changed = fixture_competition(
-    "比赛 B",
-    "2026-12-02",
-    "2026-12-02",
-    "2026-11-13",
-    "¥999",
-    "",
+    "比赛 B", "2026-12-02", "2026-12-02", "2026-11-13", "¥999", "",
   )
   let w = fixture_work("作品 A", "2026-11-01", [], [])
   let h1 = @sai-chang-guan-jia-moonbit.sha256_hex(
@@ -336,12 +299,7 @@ test "preflight on real data at 2026-11-15" {
 ///|
 test "preflight reports validate issues" {
   let bad = fixture_competition(
-    "测试比赛",
-    "2026-12-01",
-    "2026-13-40",
-    "2026-11-13",
-    "¥0",
-    "",
+    "测试比赛", "2026-12-01", "2026-13-40", "2026-11-13", "¥0", "",
   )
   let report = @sai-chang-guan-jia-moonbit.preflight(
     [bad],
@@ -369,10 +327,7 @@ test "certify dawn to moda is blocked with P0 and gaps" {
             @sai-chang-guan-jia-moonbit.date_to_days("2026-11-15"),
           )
           let v = @sai-chang-guan-jia-moonbit.certify_pack(
-            dawn,
-            moda,
-            conflicts,
-            row,
+            dawn, moda, conflicts, row,
           )
           assert_true(!v.certifiable)
           assert_true(v.blocked)
@@ -390,7 +345,9 @@ test "certify dawn to moda is blocked with P0 and gaps" {
 test "certify xiaodian and suqiu to emerge are submittable" {
   let comps = @sai-chang-guan-jia-moonbit.all_competitions()
   match
-    @sai-chang-guan-jia-moonbit.competition_by_name("支付宝智能体涌现奖") {
+    @sai-chang-guan-jia-moonbit.competition_by_name(
+      "支付宝智能体涌现奖",
+    ) {
     Some(emerge) => {
       let row = @sai-chang-guan-jia-moonbit.row_verdict(
         emerge,
@@ -401,14 +358,10 @@ test "certify xiaodian and suqiu to emerge are submittable" {
         match @sai-chang-guan-jia-moonbit.work_by_name(name) {
           Some(w) => {
             let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
-              w,
-              comps,
+              w, comps,
             )
             let v = @sai-chang-guan-jia-moonbit.certify_pack(
-              w,
-              emerge,
-              conflicts,
-              row,
+              w, emerge, conflicts, row,
             )
             assert_true(v.certifiable)
             assert_eq(v.reasons.length(), 0)
