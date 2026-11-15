@@ -19,6 +19,16 @@ jobs:
         run: |
           export PATH="$HOME/.moon/bin:$PATH"
           moon update
+      - name: Check generated data is in sync
+        run: |
+          python3 scripts/generate_data.py
+          export PATH="$HOME/.moon/bin:$PATH"
+          moon fmt
+          git diff --exit-code -- competition_data.mbt
+      - name: Validate data
+        run: |
+          export PATH="$HOME/.moon/bin:$PATH"
+          moon run cmd/main -- validate
       - name: Run tests
         run: |
           export PATH="$HOME/.moon/bin:$PATH"

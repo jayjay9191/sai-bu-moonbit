@@ -23,7 +23,7 @@
 需要 MoonBit 工具链（`moon`，0.1.20261104 或更新）。
 
 ```sh
-# 1. 跑测试（19 个，全部通过才算数）
+# 1. 跑测试（29 个，全部通过才算数）
 moon test
 
 # 2. 跑 CLI：无参数跑整条流水线
@@ -36,16 +36,48 @@ moon run cmd/main conflicts 第零次黎明
 moon run cmd/main pack 第零次黎明 "松江·创世纪 AI 游戏大赛"
 moon run cmd/main collisions
 moon run cmd/main benchmark
+moon run cmd/main validate
 moon run cmd/main help
 ```
 
 不需要联网、不需要 API Key、不读写任何外部服务，纯本地运行。
+只有 `scripts/sync_data.py` 需要联网（抓三个公开官网核对数据）。
+
+## 数据怎么改（JSON 是唯一数据源）
+
+比赛数据不在 `.mbt` 代码里，全部在 `data/competitions.json`：
+
+```sh
+# 1. 改 JSON（只改这个文件）
+# 2. 重新生成数据代码
+python3 scripts/generate_data.py
+# 3. 格式化 + 校验 + 测试（生成器输出必须先过 moon fmt 再提交）
+moon fmt && moon run cmd/main -- validate && moon test
+```
+
+生成器是确定性的：同一份 JSON 每次生成字节一致；生成内容已验证
+与外置前的 `competition.mbt` 数据逐字一致（135 个字符串 + 36 个布尔值）。
+CI 里也有一道检查：改 JSON 却忘了重新生成，流水线会失败。
+
+## 同步：联网核对官方信息
+
+```sh
+python3 scripts/sync_data.py            # 核实并更新（有变化才写 JSON）
+python3 scripts/sync_data.py --dry-run  # 只打印报告，不改任何文件
+```
+
+覆盖 3 个公开可读的来源：MoonBit 官网（11 月轮截止是否公布，只报告）、
+绿联官网（初稿截止与总奖金池）、PAYATHON 官网（两阶段最后一天与
+Vibe Pay 一等奖）。其余 9 个比赛因页面打不开、登录墙、或日期不在
+公开页上，脚本不碰，只在报告里列出。明确标注的值可以自动更新；
+需要推断的值（PAYATHON 日历格的阶段最后一天）只核实不自动写，
+对不上就报“需人工确认”。
 
 ## 跑出来的结果（实测）
 
-`moon test`：**19 个测试，19 个通过，0 个失败。**（v0.1.0 时 9 个，
-2026-11-15 扩到 19 个：加了未知作品/比赛、空台账、规则边界、撞期计数、
-全量扫描计数等边界测试，原 9 个未动。）
+`moon test`：**29 个测试，29 个通过，0 个失败。**（v0.1.0 时 9 个，
+2026-11-15 扩到 19 个，之后加 validate 校验 7 个、P0 文案回归 1 个、
+validate 分支补齐 2 个。）
 
 `moon run cmd/main` 的输出要点：
 
@@ -96,16 +128,26 @@ moon run cmd/main help
 | — | GitHub Actions CI | 未跑过：workflow 已加，首次推送后需在 Actions 里确认变绿 |
 | 2026-11-15 | 人工手动核对（36 格逐项，底稿 `docs/manual-baseline-2026-11-15.md`） | 与工具结果一致：冲突 4 个（P0 3、P1 1）、投稿包 36 个（挡住 3 个）、撞期 2 个日期；耗时约 7 秒（对照已整理台账；非盲测，0 漏检不能当强证据） |
 | 2026-11-15 | P0 文案修复 | `conflicts 小店日结` 不再显示空括号；`moon test` 仍 19/19 通过 |
+| 2026-11-15 | 数据 JSON 外置 | `data/competitions.json` 为唯一数据源，`scripts/generate_data.py` 生成 `competition_data.mbt`；逐字核对与外置前一致（135 个字符串 + 36 个布尔值）；无参数输出与改前逐行一致 |
+| 2026-11-15 | `validate` 子命令 | 真实数据 0 个问题；往坏数据里改 1 个日期 + 1 个重名，检出 2 个问题、返回码 1 |
+| 2026-11-15 | 联网同步实测 | `scripts/sync_data.py`：MoonBit 官网 11 月轮截止仍未公布；绿联初稿 2026-12-07 与奖金 ¥34,000 一致；PAYATHON 两阶段最后一天 2026-12-01/12-09 与一等奖 ¥30,000 一致；0 项更新 |
+| 2026-11-15 | P0 文案回归测试 | 小店日结→魔搭 P0 文案不断言含“（）”，且含“已投 涌现奖” |
+| 2026-11-15 | 行覆盖率（`moon coverage`） | 核心库 119/119（pack 14/14、conflict 54/54、validate 39/39、competition 10/10、competition_data 2/2）；CLI 入口 `cmd/main/main.mbt` 0/186（moon test 不跑可执行包入口）；合计 119/305 |
 
 ## 模块说明
 
 | 文件 | 作用 |
 |---|---|
-| `competition.mbt` | 比赛台账：12 个比赛 + 3 件作品的真实数据 |
+| `data/competitions.json` | 唯一数据源：12 个比赛 + 3 件作品的真实数据（改数据只改这里） |
+| `scripts/generate_data.py` | 从 JSON 生成 `competition_data.mbt`（确定性输出，生成后跑 `moon fmt`） |
+| `scripts/sync_data.py` | 联网核对 3 个公开官网（MoonBit / 绿联 / PAYATHON），只更新能核实的字段 |
+| `competition.mbt` | 比赛台账的结构定义与按名查找（`pub(all)`，字段公开以便外部构造校验数据） |
+| `competition_data.mbt` | 由生成器从 JSON 生成的台账数据，不要手改 |
+| `validate.mbt` | 数据校验：名字 / 日期格式 / 材料非空 / 标志位矛盾 |
 | `conflict.mbt` | 冲突检测引擎：首次发布 / 须新做 / 截止撞期（规则来自台账数据的标志位，不是按比赛硬编码） |
 | `pack.mbt` | 投稿包生成：标题、一句话介绍、材料清单与缺口 |
-| `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / help |
-| `sai-chang-guan-jia-moonbit_test.mbt` | 19 个黑盒测试（含边界测试） |
+| `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / validate / help |
+| `sai-chang-guan-jia-moonbit_test.mbt` | 29 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试） |
 | `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（尚未在 GitHub 上跑过） |
 
 ## 60% 借鉴 / 40% 创新（诚实说明）
@@ -142,8 +184,16 @@ moon run cmd/main help
 ## 还缺什么（v1 没做的）
 
 - ~~交互式 CLI 参数~~——已做（2026-11-15）：list / conflicts / pack /
-  collisions / benchmark / help 六个子命令。
-- 联网同步比赛信息（目前数据是内嵌的静态快照，比赛改规则要手动更新台账）。
+  collisions / benchmark / validate / help 七个子命令。
+- ~~数据外置与校验~~——已做（2026-11-15）：JSON 唯一数据源 +
+  生成器 + validate 校验。
+- 联网同步比赛信息——半自动（2026-11-15）：`scripts/sync_data.py`
+  已覆盖 MoonBit、绿联、PAYATHON 3 个公开来源；其余 9 个比赛
+  （AI PLAY、BayHack、荣耀、华为、Qoder、魔搭、知乎 S3、松江、
+  涌现奖、Rokid）因页面打不开、登录墙、或日期不在公开页上，
+  仍需人工核对更新 JSON。
+- CLI 入口的行覆盖率——`cmd/main/main.mbt` 0/186：moon test 不跑
+  可执行包入口，子命令目前靠人工实测（见验证记录）。
 - 演示视频、报名表申报、进群改昵称——这些是参赛流程里的步骤，
   由作者本人完成（见下）。公开仓库已建（见下第 1 条）。
 

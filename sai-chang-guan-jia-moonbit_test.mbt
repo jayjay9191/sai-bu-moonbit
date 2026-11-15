@@ -461,3 +461,40 @@ test "validate flags unnamed and duplicate works" {
   let issues2 = @sai-chang-guan-jia-moonbit.validate_data([], [base, base])
   assert_eq(issues2.length(), 1)
 }
+
+///|
+test "p0 message has no empty parens for xiaodianjie" {
+  // 回归测试：2648796 修过的 bug——小店日结从未公开，
+  // P0 文案曾显示“已公开（）”。保证不再复发。
+  match @sai-chang-guan-jia-moonbit.work_by_name("小店日结") {
+    Some(w) => {
+      let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+        w,
+        @sai-chang-guan-jia-moonbit.all_competitions(),
+      )
+      assert_eq(conflicts.length(), 1)
+      assert_true(!conflicts[0].message.contains("（）"))
+      assert_true(conflicts[0].message.contains("已投 涌现奖"))
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "validate flags unnamed competition" {
+  let unnamed = test_competition("", "2026-12-01", false, false, false, [
+    "材料 A",
+  ])
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [unnamed],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "is_valid_date rejects non-digit in date" {
+  // '-' 位置正确但混入非数字：覆盖 is_valid_date 里的逐字符检查分支。
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-1X-01"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("202X-12-01"))
+}
