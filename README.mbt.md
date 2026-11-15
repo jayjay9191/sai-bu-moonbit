@@ -68,6 +68,19 @@ moon run cmd/main help
 不需要联网、不需要 API Key、不读写任何外部服务，纯本地运行。
 只有 `scripts/sync_data.py` 需要联网（抓五个公开官网核对数据）。
 
+### 提交前检查（pre-commit 钩子）
+
+```sh
+bash scripts/setup-hooks.sh   # 只需跑一次：把本地仓库的钩子指向 .githooks
+```
+
+此后每次 `git commit` 都会先跑 `moon test`，失败则阻止提交。
+钩子放在 `.githooks/pre-commit` 里随仓库走——git 默认不提交
+`.git/hooks` 下的钩子，所以不能直接放那里；`core.hooksPath` 是
+本地仓库配置，不进 git，换电脑或重克隆后要重跑一次启用脚本。
+钩子只跑 `moon test`（保持提交前检查够快）；完整检查是上面
+的三条（`moon test` + Python 测试 + preflight）。
+
 ## 不用读代码，先跑这两条
 
 复制粘贴就能验证核心价值。作品名、比赛名必须写全名
@@ -262,6 +275,8 @@ preflight 与 SHA-256 26 个。）
 | `tests_py/test_scripts.py` | 22 个 Python 测试：生成器、同步脚本纯函数、测试生成器自测 |
 | `docs/design-notes-2026-11-15.md` | 设计手记：数据外置 / 同步脚本 bug / benchmark 与人工基线 / Auto-Lexmount 阅读（§6）/ 第 5 轮数字（§7）/ 架构对比（§8） |
 | `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（2026-11-15 首次跑通，success） |
+| `.githooks/pre-commit` | 提交前钩子：跑 `moon test`，失败阻止提交（启用方法见“怎么跑 / 提交前检查”） |
+| `scripts/setup-hooks.sh` | 启用钩子：`git config core.hooksPath .githooks`（只需跑一次，本地配置，不进 git） |
 
 ## 60% 借鉴 / 40% 创新（诚实说明）
 

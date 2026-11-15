@@ -1,3 +1,30 @@
 #!/bin/sh
+# 提交前钩子：跑 moon test，失败则阻止提交。
+#
+# 为什么钩子放在 .githooks 而不是 .git/hooks：
+# git 默认不提交 .git/hooks 下的钩子（那是本地目录），所以钩子放在
+# .githooks 里随仓库走，每个人克隆后跑一次启用脚本即可：
+#   bash scripts/setup-hooks.sh
+# 启用后每次 git commit 都会先跑这个钩子。
+#
+# 注意：钩子只跑 moon test（不跑 Python 测试和 preflight），
+# 保持提交前检查够快；完整检查（moon test + Python 测试 +
+# preflight）见 README“怎么跑”。
 
-moon check
+# moon 可能不在默认 PATH 上（官方安装在 ~/.moon/bin），先找一找。
+if ! command -v moon >/dev/null 2>&1; then
+  if [ -x "$HOME/.moon/bin/moon" ]; then
+    PATH="$HOME/.moon/bin:$PATH"
+  else
+    echo "pre-commit: 找不到 moon（~/.moon/bin/moon 也不在），无法跑测试，提交已阻止。"
+    echo "pre-commit: 请先装 MoonBit 工具链，或确认 ~/.moon/bin/moon 存在。"
+    exit 1
+  fi
+fi
+
+echo "pre-commit: 跑 moon test ..."
+if ! moon test; then
+  echo "pre-commit: moon test 失败，提交已阻止。修好测试再提交。"
+  exit 1
+fi
+echo "pre-commit: moon test 通过。"
