@@ -164,3 +164,171 @@ test "pack tool to emerge is clear" {
     None => assert_true(false)
   }
 }
+
+///|
+test "unknown work returns none" {
+  assert_true(
+    @sai-chang-guan-jia-moonbit.work_by_name("不存在的作品") is None,
+  )
+}
+
+///|
+test "unknown competition returns none" {
+  assert_true(
+    @sai-chang-guan-jia-moonbit.competition_by_name("不存在的比赛")
+    is None,
+  )
+}
+
+///|
+test "detect conflicts on empty registry" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("第零次黎明") {
+    Some(w) => {
+      let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(w, [])
+      assert_eq(conflicts.length(), 0)
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "collision helpers on empty registry" {
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates([]).length(), 0)
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_conflicts([]).length(), 0)
+  assert_eq(
+    @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+      [],
+      "魔搭 AI+∞ 第三期「AI 造游戏」",
+    ).length(),
+    0,
+  )
+  assert_true(
+    !@sai-chang-guan-jia-moonbit.has_p0_conflict(
+      [],
+      "魔搭 AI+∞ 第三期「AI 造游戏」",
+    ),
+  )
+}
+
+///|
+test "xiaodianjie triggers moda P0 via submitted_to" {
+  // 小店日结从未公开（first_public_date 为空），但已投过涌现奖；
+  // 规则 1 的第二条分支（已投过其他比赛）仍应触发魔搭 P0。
+  match @sai-chang-guan-jia-moonbit.work_by_name("小店日结") {
+    Some(w) => {
+      let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+        w,
+        @sai-chang-guan-jia-moonbit.all_competitions(),
+      )
+      assert_eq(conflicts.length(), 1)
+      assert_eq(conflicts[0].level, "P0")
+      assert_eq(
+        conflicts[0].competition,
+        "魔搭 AI+∞ 第三期「AI 造游戏」",
+      )
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "suqiu has no P1 for zhihu" {
+  // 诉求整理台从未公开，知乎“须新做”规则只针对已有公开版本的作品，
+  // 所以不应报 P1。
+  match @sai-chang-guan-jia-moonbit.work_by_name("诉求整理台") {
+    Some(w) => {
+      let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+        w,
+        @sai-chang-guan-jia-moonbit.all_competitions(),
+      )
+      let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+        conflicts, "知乎黑客松 S3",
+      )
+      assert_eq(list.length(), 0)
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "join and contains on empty list" {
+  assert_eq(@sai-chang-guan-jia-moonbit.join_strings([], "、"), "")
+  assert_true(!@sai-chang-guan-jia-moonbit.contains_string([], "x"))
+}
+
+///|
+test "exactly two collision dates" {
+  let dates = @sai-chang-guan-jia-moonbit.collision_dates(
+    @sai-chang-guan-jia-moonbit.all_competitions(),
+  )
+  assert_eq(dates.length(), 2)
+  assert_true(@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-12-01"))
+  assert_true(@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-12-06"))
+}
+
+///|
+test "pack xiaodianjie to moda is blocked" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("小店日结") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "魔搭 AI+∞ 第三期「AI 造游戏」",
+        ) {
+        Some(comp) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+            w, comp, conflicts,
+          )
+          assert_true(pack.blocked)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "benchmark sweep counts" {
+  // 全量扫描的计数与 benchmark 子命令打印的数字一致：
+  // 3 作品 × 12 比赛，冲突 4 个（P0 3 个，P1 1 个），投稿包 36 个，
+  // 其中 P0 挡住 3 个，撞期 2 个日期。
+  let comps = @sai-chang-guan-jia-moonbit.all_competitions()
+  let works = @sai-chang-guan-jia-moonbit.all_works()
+  let mut total_conflicts = 0
+  let mut p0 = 0
+  let mut p1 = 0
+  let mut total_packs = 0
+  let mut blocked_packs = 0
+  for wi in 0..<works.length() {
+    let w = works[wi]
+    let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(w, comps)
+    total_conflicts = total_conflicts + conflicts.length()
+    for i in 0..<conflicts.length() {
+      if conflicts[i].level == "P0" {
+        p0 = p0 + 1
+      } else {
+        p1 = p1 + 1
+      }
+    }
+    for ci in 0..<comps.length() {
+      let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+        w,
+        comps[ci],
+        conflicts,
+      )
+      total_packs = total_packs + 1
+      if pack.blocked {
+        blocked_packs = blocked_packs + 1
+      }
+    }
+  }
+  assert_eq(total_conflicts, 4)
+  assert_eq(p0, 3)
+  assert_eq(p1, 1)
+  assert_eq(total_packs, 36)
+  assert_eq(blocked_packs, 3)
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates(comps).length(), 2)
+}
