@@ -148,6 +148,7 @@ validate 分支补齐 2 个。）
 | `pack.mbt` | 投稿包生成：标题、一句话介绍、材料清单与缺口 |
 | `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / validate / help |
 | `sai-chang-guan-jia-moonbit_test.mbt` | 29 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试） |
+| `docs/design-notes-2026-11-15.md` | 设计手记：三个真实决策（数据外置 / 同步脚本 bug / benchmark 与人工基线），带数字与代价 |
 | `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（尚未在 GitHub 上跑过） |
 
 ## 60% 借鉴 / 40% 创新（诚实说明）
