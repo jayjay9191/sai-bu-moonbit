@@ -735,3 +735,356 @@ test "zaohua requires new work P1 for dawn" {
     None => assert_true(false)
   }
 }
+
+///|
+test "synthetic clean work has zero conflicts" {
+  // 既没公开、也没投过任何比赛的作品：三条规则都不应触发。
+  let base = @sai-chang-guan-jia-moonbit.all_works()[0]
+  let clean : @sai-chang-guan-jia-moonbit.Work = {
+    name: "干净的新作品",
+    kind: base.kind,
+    oneliner: "测试用作品",
+    first_public_date: "",
+    submitted_to: [],
+    materials_ready: [],
+    note: "",
+  }
+  let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+    clean,
+    @sai-chang-guan-jia-moonbit.all_competitions(),
+  )
+  assert_eq(conflicts.length(), 0)
+}
+
+///|
+test "public-only work hits three rules" {
+  // 只公开、没投过任何比赛的作品：魔搭 P0（规则 1 公开分支），
+  // 知乎 P1 + 造化 P1（规则 2）；规则 3 不触发（只看 submitted_to）。
+  let base = @sai-chang-guan-jia-moonbit.all_works()[0]
+  let pub_only : @sai-chang-guan-jia-moonbit.Work = {
+    name: "只公开未投过",
+    kind: base.kind,
+    oneliner: "测试用作品",
+    first_public_date: "2026-11-01",
+    submitted_to: [],
+    materials_ready: [],
+    note: "",
+  }
+  let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+    pub_only,
+    @sai-chang-guan-jia-moonbit.all_competitions(),
+  )
+  assert_eq(conflicts.length(), 3)
+  assert_eq(
+    conflicts[0].competition,
+    "魔搭 AI+∞ 第三期「AI 造游戏」",
+  )
+  assert_eq(conflicts[0].level, "P0")
+  assert_eq(conflicts[1].competition, "知乎黑客松 S3")
+  assert_eq(conflicts[1].level, "P1")
+  assert_eq(conflicts[2].competition, "造化首届体素游戏创作大赛")
+  assert_eq(conflicts[2].level, "P1")
+}
+
+///|
+test "pack dawn to zaohua gaps one not blocked" {
+  // 造化是 P1 不是 P0，投稿包不 blocked，但材料缺 1 项（天工引擎新做游戏）。
+  match @sai-chang-guan-jia-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "造化首届体素游戏创作大赛",
+        ) {
+        Some(comp) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+            w, comp, conflicts,
+          )
+          assert_true(!pack.blocked)
+          assert_eq(pack.gaps.length(), 1)
+          assert_eq(pack.ready.length(), 0)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "pack dawn to software innovation is blocked" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "第二十届全国大学生软件创新大赛",
+        ) {
+        Some(comp) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+            w, comp, conflicts,
+          )
+          assert_true(pack.blocked)
+          assert_eq(pack.gaps.length(), 1)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "pack tools to software innovation are blocked" {
+  // 两件工具都已投涌现奖，软件创新大赛原创条款 P0，投稿包挡住。
+  for name in ["小店日结", "诉求整理台"] {
+    match @sai-chang-guan-jia-moonbit.work_by_name(name) {
+      Some(w) =>
+        match
+          @sai-chang-guan-jia-moonbit.competition_by_name(
+            "第二十届全国大学生软件创新大赛",
+          ) {
+          Some(comp) => {
+            let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+              w,
+              @sai-chang-guan-jia-moonbit.all_competitions(),
+            )
+            let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+              w, comp, conflicts,
+            )
+            assert_true(pack.blocked)
+          }
+          None => assert_true(false)
+        }
+      None => assert_true(false)
+    }
+  }
+}
+
+///|
+test "pack dawn to shifang has two gaps" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "第二届 AIGC 青年大学生就业创业促进行动",
+        ) {
+        Some(comp) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+            w, comp, conflicts,
+          )
+          assert_true(!pack.blocked)
+          assert_eq(pack.materials.length(), 2)
+          assert_eq(pack.gaps.length(), 2)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "pack title starts with work name in brackets" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "松江·创世纪 AI 游戏大赛",
+        ) {
+        Some(comp) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+            w, comp, conflicts,
+          )
+          assert_eq(
+            pack.title,
+            "[第零次黎明] Roguelike 动作构筑游戏：死亡重启、遗物抽取、R 键共鸣爆发",
+          )
+          assert_eq(pack.oneliner, w.oneliner)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "gapless pack note says ready to submit" {
+  // 小店日结→涌现奖：材料齐全、无 P0，note 应为“材料齐全，可以提交”。
+  match @sai-chang-guan-jia-moonbit.work_by_name("小店日结") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "支付宝智能体涌现奖",
+        ) {
+        Some(comp) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(
+            w, comp, conflicts,
+          )
+          assert_true(!pack.blocked)
+          assert_eq(pack.gaps.length(), 0)
+          assert_eq(pack.note, "材料齐全，可以提交")
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "nov thirty collision lists three names" {
+  // 11-30 三赛撞期：Qoder、十方融海、CAAI 青年赛，缺一不可。
+  let collisions = @sai-chang-guan-jia-moonbit.collision_conflicts(
+    @sai-chang-guan-jia-moonbit.all_competitions(),
+  )
+  let mut found = false
+  for i in 0..<collisions.length() {
+    if collisions[i].message.contains("2026-11-30") {
+      found = true
+      assert_true(collisions[i].message.contains("Qoder 高校创造力大赛"))
+      assert_true(
+        collisions[i].message.contains(
+          "第二届 AIGC 青年大学生就业创业促进行动",
+        ),
+      )
+      assert_true(
+        collisions[i].message.contains(
+          "第十一届全国青年人工智能创新创业大赛",
+        ),
+      )
+      assert_true(collisions[i].message.contains("共 3 个比赛撞期"))
+    }
+  }
+  assert_true(found)
+}
+
+///|
+test "collision helpers on custom fixtures" {
+  // 两个比赛同一天 → 1 个撞期日期；三个同一天 → 还是 1 个日期；
+  // 各自不同天 → 0 个。
+  let a = test_competition(
+    "测试 A",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-15",
+    "在途",
+    false,
+  )
+  let b = test_competition(
+    "测试 B",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-15",
+    "在途",
+    false,
+  )
+  let c = test_competition(
+    "测试 C",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-15",
+    "在途",
+    false,
+  )
+  let d = test_competition(
+    "测试 D",
+    "2026-12-02",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-15",
+    "在途",
+    false,
+  )
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates([a, b]).length(), 1)
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates([a, b, c]).length(), 1)
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_dates([a, d]).length(), 0)
+  assert_eq(@sai-chang-guan-jia-moonbit.collision_conflicts([a, b]).length(), 1)
+}
+
+///|
+test "collision dates exclude single dates" {
+  // 真实台账 19 个截止对应 15 个不同日期，其中 3 个撞期，其余 12 个日期各只有 1 个比赛。
+  let dates = @sai-chang-guan-jia-moonbit.collision_dates(
+    @sai-chang-guan-jia-moonbit.all_competitions(),
+  )
+  assert_true(!@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-11-17"))
+  assert_true(!@sai-chang-guan-jia-moonbit.contains_string(dates, "2026-12-15"))
+  assert_true(!@sai-chang-guan-jia-moonbit.contains_string(dates, "2027-01-15"))
+}
+
+///|
+test "is_valid_date feb 29 passes by design" {
+  // is_valid_date 只校验格式（月 01–12、日 01–31），不校验每月实际天数；
+  // 2026-02-29 通过是已知的设计取舍，写在 validate.mbt 的注释里。
+  assert_true(@sai-chang-guan-jia-moonbit.is_valid_date("2026-02-29"))
+  assert_true(@sai-chang-guan-jia-moonbit.is_valid_date("2026-02-31"))
+}
+
+///|
+test "is_valid_date year boundaries" {
+  assert_true(@sai-chang-guan-jia-moonbit.is_valid_date("2026-12-31"))
+  assert_true(@sai-chang-guan-jia-moonbit.is_valid_date("2027-01-01"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-12-31 "))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date(" 2026-12-31"))
+}
+
+///|
+test "validate flags empty plan_status" {
+  let bad = test_competition(
+    "测试比赛",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+    "",
+    false,
+  )
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [bad],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "join and contains on nonempty lists" {
+  assert_eq(
+    @sai-chang-guan-jia-moonbit.join_strings(["甲", "乙", "丙"], "、"),
+    "甲、乙、丙",
+  )
+  assert_eq(@sai-chang-guan-jia-moonbit.join_strings(["甲"], "、"), "甲")
+  assert_true(
+    @sai-chang-guan-jia-moonbit.contains_string(["甲", "乙"], "乙"),
+  )
+  assert_true(
+    !@sai-chang-guan-jia-moonbit.contains_string(["甲", "乙"], "丙"),
+  )
+}
