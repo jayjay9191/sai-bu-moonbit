@@ -23,18 +23,29 @@
 需要 MoonBit 工具链（`moon`，0.1.20261104 或更新）。
 
 ```sh
-# 1. 跑测试（9 个，全部通过才算数）
+# 1. 跑测试（19 个，全部通过才算数）
 moon test
 
-# 2. 跑 CLI：打印 12 个比赛台账 → 冲突检测 → 截止撞期提醒 → 投稿包
+# 2. 跑 CLI：无参数跑整条流水线
+#    打印 12 个比赛台账 → 冲突检测 → 截止撞期提醒 → 投稿包
 moon run cmd/main
+
+# 3. 子命令：只做一件事（作品名、比赛名含空格时加引号）
+moon run cmd/main list
+moon run cmd/main conflicts 第零次黎明
+moon run cmd/main pack 第零次黎明 "松江·创世纪 AI 游戏大赛"
+moon run cmd/main collisions
+moon run cmd/main benchmark
+moon run cmd/main help
 ```
 
 不需要联网、不需要 API Key、不读写任何外部服务，纯本地运行。
 
 ## 跑出来的结果（实测）
 
-`moon test`：**9 个测试，9 个通过，0 个失败。**
+`moon test`：**19 个测试，19 个通过，0 个失败。**（v0.1.0 时 9 个，
+2026-11-15 扩到 19 个：加了未知作品/比赛、空台账、规则边界、撞期计数、
+全量扫描计数等边界测试，原 9 个未动。）
 
 `moon run cmd/main` 的输出要点：
 
@@ -70,15 +81,26 @@ moon run cmd/main
 明确标“待用户本人实测”，不编基线。耗时是机器速度，
 三次跑分别是 7、8、7 毫秒，量级在几毫秒，不用当精确值较真。
 
+## 验证记录
+
+| 日期 | 检查 | 结果 |
+|---|---|---|
+| 2026-11-15 | `moon test` | 19 个测试，19 个通过，0 个失败 |
+| 2026-11-15 | `moon run cmd/main`（无参数） | 输出与 v0.1.0 逐行一致（diff 验证过两次）；冲突：黎明→魔搭 P0、→知乎 S3 P1；撞期 12-01、12-06；投稿包黎明→魔搭 blocked、→松江可提交（缺口 1 项） |
+| 2026-11-15 | `moon run cmd/main benchmark` | 全量扫描：冲突 4 个（P0 3、P1 1）、投稿包 36 个（P0 挡住 3 个）；100 轮 7 毫秒（三次跑 7、8、7 毫秒） |
+| 2026-11-15 | 子命令实测 | list / conflicts / pack / collisions / help 均跑通；`moon run cmd/main -- list` 也通过；未知子命令与缺参数时打印用法 |
+| — | GitHub Actions CI | 未跑过：workflow 已加，首次推送后需在 Actions 里确认变绿 |
+
 ## 模块说明
 
 | 文件 | 作用 |
 |---|---|
 | `competition.mbt` | 比赛台账：12 个比赛 + 3 件作品的真实数据 |
-| `conflict.mbt` | 冲突检测引擎：首次发布 / 须新做 / 截止撞期 |
+| `conflict.mbt` | 冲突检测引擎：首次发布 / 须新做 / 截止撞期（规则来自台账数据的标志位，不是按比赛硬编码） |
 | `pack.mbt` | 投稿包生成：标题、一句话介绍、材料清单与缺口 |
-| `cmd/main/main.mbt` | CLI 入口：跑通整条流水线并打印结果 |
-| `sai-chang-guan-jia-moonbit_test.mbt` | 9 个黑盒测试 |
+| `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / help |
+| `sai-chang-guan-jia-moonbit_test.mbt` | 19 个黑盒测试（含边界测试） |
+| `.github/workflows/moon-test.yml` | CI：推送时自动装 MoonBit 并跑 `moon test`（尚未在 GitHub 上跑过） |
 
 ## 60% 借鉴 / 40% 创新（诚实说明）
 
@@ -113,16 +135,18 @@ moon run cmd/main
 
 ## 还缺什么（v1 没做的）
 
-- 交互式 CLI 参数（目前 `moon run cmd/main` 跑固定流程；选作品/选比赛
-  要通过库函数调用，见 `pack.mbt` 的 `generate_pack`）。
+- ~~交互式 CLI 参数~~——已做（2026-11-15）：list / conflicts / pack /
+  collisions / benchmark / help 六个子命令。
 - 联网同步比赛信息（目前数据是内嵌的静态快照，比赛改规则要手动更新台账）。
-- 演示视频、公开仓库、报名表申报——这些是参赛流程里的步骤，
-  由作者本人完成（见下）。
+- 演示视频、报名表申报、进群改昵称——这些是参赛流程里的步骤，
+  由作者本人完成（见下）。公开仓库已建（见下第 1 条）。
 
 ## 作者参赛要做的事（工具帮不了的）
 
-1. 在 GitHub 建**公开仓库**，把本项目推上去，保留持续提交记录；
-   并把 `moon.mod` 里的 `username` 改成自己的 GitHub ID。
+1. GitHub **公开仓库**已建（2026-11-15，v0.1.0 已推送）；
+   本次新增的提交还在本地，拿到推送凭证后推上去，
+   并保持持续提交记录。
+   `moon.mod` 里的用户名已改成自己的 GitHub ID（jayjay9191）。
 2. 填**飞书报名表**申报项目（一页项目说明 + 公开仓库链接）。
 3. 进**赛事交流群**，把群昵称改成自己的 GitHub ID，否则影响奖金发放。
 4. 注意：11 月轮报名/验收截止官网未公布具体日期（按每月滚动规律推测
