@@ -295,8 +295,8 @@ test "pack xiaodianjie to moda is blocked" {
 ///|
 test "benchmark sweep counts" {
   // 全量扫描的计数与 benchmark 子命令打印的数字一致：
-  // 3 作品 × 19 比赛，冲突 8 个（P0 6 个，P1 2 个），投稿包 57 个，
-  // 其中 P0 挡住 6 个，撞期 3 个日期。
+  // 4 作品 × 19 比赛，冲突 11 个（P0 7 个，P1 4 个），投稿包 76 个，
+  // 其中 P0 挡住 7 个，撞期 3 个日期。
   let comps = @sai-chang-guan-jia-moonbit.all_competitions()
   let works = @sai-chang-guan-jia-moonbit.all_works()
   let mut total_conflicts = 0
@@ -327,11 +327,11 @@ test "benchmark sweep counts" {
       }
     }
   }
-  assert_eq(total_conflicts, 8)
-  assert_eq(p0, 6)
-  assert_eq(p1, 2)
-  assert_eq(total_packs, 57)
-  assert_eq(blocked_packs, 6)
+  assert_eq(total_conflicts, 11)
+  assert_eq(p0, 7)
+  assert_eq(p1, 4)
+  assert_eq(total_packs, 76)
+  assert_eq(blocked_packs, 7)
   assert_eq(@sai-chang-guan-jia-moonbit.collision_dates(comps).length(), 3)
 }
 
@@ -701,10 +701,12 @@ test "no-prior-entry rule fires on submitted_to only" {
 }
 
 ///|
-test "software innovation P0 for all three works" {
-  // 软件创新大赛原创条款（规则 3）：三件作品都已投过其他比赛，
-  // 应全部报 P0。参赛管家本身已投 MoonBit，按此条款同样冲突
-  //（它不在作品表里，见该比赛的 note）。
+test "software innovation P0 for submitted works only" {
+  // 软件创新大赛原创条款（规则 3）：只看 submitted_to，不看
+  // first_public_date。已投过其他比赛的三件作品应报 P0；AI 工具
+  // 定价核验只公开、未投过任何比赛，应为 0 个冲突——它是规则 3
+  // 不读公开日期的直接证据。参赛管家本身已投 MoonBit，按此条款
+  // 同样冲突（它不在作品表里，见该比赛的 note）。
   let comps = @sai-chang-guan-jia-moonbit.all_competitions()
   let works = @sai-chang-guan-jia-moonbit.all_works()
   for wi in 0..<works.length() {
@@ -715,11 +717,15 @@ test "software innovation P0 for all three works" {
     let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
       conflicts, "第二十届全国大学生软件创新大赛",
     )
-    assert_eq(list.length(), 1)
-    assert_eq(list[0].level, "P0")
-    assert_true(
-      list[0].message.contains("未参加过其他国家级公开比赛"),
-    )
+    if works[wi].submitted_to.length() > 0 {
+      assert_eq(list.length(), 1)
+      assert_eq(list[0].level, "P0")
+      assert_true(
+        list[0].message.contains("未参加过其他国家级公开比赛"),
+      )
+    } else {
+      assert_eq(list.length(), 0)
+    }
   }
 }
 

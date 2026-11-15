@@ -97,7 +97,7 @@ class TestMbtEmit(unittest.TestCase):
         text = out_path.read_text(encoding="utf-8")
         data = json.loads((ROOT / "data" / "competitions.json").read_text(encoding="utf-8"))
         self.assertEqual(len(data["competitions"]), 19)
-        self.assertEqual(len(data["works"]), 3)
+        self.assertEqual(len(data["works"]), 4)
         for comp in data["competitions"]:
             self.assertIn(comp["name"], text)
         for work in data["works"]:
@@ -281,13 +281,13 @@ class TestSyncHelpers(unittest.TestCase):
 
 
 class TestCellTestGenerator(unittest.TestCase):
-    def test_cell_table_covers_eight_conflict_cells(self):
-        self.assertEqual(len(generate_tests.CELL_EXPECT), 8)
+    def test_cell_table_covers_eleven_conflict_cells(self):
+        self.assertEqual(len(generate_tests.CELL_EXPECT), 11)
         p0 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P0"])
         p1 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P1"])
-        self.assertEqual((p0, p1), (6, 2))
+        self.assertEqual((p0, p1), (7, 4))
 
     def test_row_table_covers_all_competitions(self):
         self.assertEqual(len(generate_tests.ROW_EXPECT), 19)

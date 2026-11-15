@@ -23,13 +23,13 @@ OUT_PATH = ROOT / "sai-chang-guan-jia-moonbit_generated_test.mbt"
 HEADER = """///|
 /// 由 scripts/generate_tests.py 生成，不要手改。
 /// 期望值来自 docs/manual-baseline-2026-11-15.md（人工手核底稿），
-/// 57 格逐格断言：每格的冲突等级 + 投稿包 blocked 状态；
+/// 76 格逐格断言：每格的冲突等级 + 投稿包 blocked 状态；
 /// 另有 19 行逐行断言（截止/计划状态/核验日期/标志位）
-/// 与 3 件作品断言（首次公开/已投比赛）。
+/// 与 4 件作品断言（首次公开/已投比赛）。
 /// 改期望先改底稿，再跑：python3 scripts/generate_tests.py
 """
 
-WORKS = ["第零次黎明", "小店日结", "诉求整理台"]
+WORKS = ["第零次黎明", "小店日结", "诉求整理台", "AI 工具定价核验"]
 
 COMPS = [
     "AI PLAY 72H 创作黑客松",
@@ -64,6 +64,9 @@ CELL_EXPECT = {
     ("小店日结", "第二十届全国大学生软件创新大赛"): (["P0"], True),
     ("诉求整理台", "魔搭 AI+∞ 第三期「AI 造游戏」"): (["P0"], True),
     ("诉求整理台", "第二十届全国大学生软件创新大赛"): (["P0"], True),
+    ("AI 工具定价核验", "魔搭 AI+∞ 第三期「AI 造游戏」"): (["P0"], True),
+    ("AI 工具定价核验", "知乎黑客松 S3"): (["P1"], False),
+    ("AI 工具定价核验", "造化首届体素游戏创作大赛"): (["P1"], False),
 }
 
 # 比赛名 -> (deadline_date, plan_status, verified_at,
@@ -99,6 +102,7 @@ WORK_EXPECT = {
     "第零次黎明": ("2026-11-02 之前", ["Qoder", "AI PLAY"]),
     "小店日结": ("", ["涌现奖"]),
     "诉求整理台": ("", ["涌现奖"]),
+    "AI 工具定价核验": ("2026-11-16", []),
 }
 
 
@@ -208,8 +212,8 @@ def main() -> int:
     assert set(WORK_EXPECT) == work_names, "作品期望表缺作品"
     for (w, c) in CELL_EXPECT:
         assert w in work_names and c in comp_names, (w, c)
-    assert len(COMPS) == 19 and len(WORKS) == 3
-    assert len(CELL_EXPECT) == 8, "冲突格应为 8 个（P0 6 + P1 2）"
+    assert len(COMPS) == 19 and len(WORKS) == 4
+    assert len(CELL_EXPECT) == 11, "冲突格应为 11 个（P0 7 + P1 4）"
 
     parts = [HEADER.rstrip("\n"), ""]
     for work in WORKS:

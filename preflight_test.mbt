@@ -272,7 +272,7 @@ test "manifest hash changes when data changes" {
 ///|
 /// 2026-11-15 00:00 UTC = 20772 天 × 86400000 毫秒。
 /// 真实数据在这一天的预期：validate 0 个问题；19 行中 11 行已核实；
-/// 57 个包可提交 2 个、P0 挡住 6 个；撞期 3 个日期。
+/// 76 个包可提交 2 个、P0 挡住 7 个；撞期 3 个日期。
 test "preflight on real data at 2026-11-15" {
   let report = @sai-chang-guan-jia-moonbit.preflight(
     @sai-chang-guan-jia-moonbit.all_competitions(),
@@ -289,9 +289,9 @@ test "preflight on real data at 2026-11-15" {
     }
   }
   assert_eq(verified_rows, 11)
-  assert_eq(report.packs.length(), 57)
+  assert_eq(report.packs.length(), 76)
   assert_eq(report.certifiable_count, 2)
-  assert_eq(report.blocked_count, 6)
+  assert_eq(report.blocked_count, 7)
   assert_eq(report.collisions.length(), 3)
   assert_eq(report.manifest_hash.length(), 64)
 }

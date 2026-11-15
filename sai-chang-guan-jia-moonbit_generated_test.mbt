@@ -1,9 +1,9 @@
 ///|
 /// 由 scripts/generate_tests.py 生成，不要手改。
 /// 期望值来自 docs/manual-baseline-2026-11-15.md（人工手核底稿），
-/// 57 格逐格断言：每格的冲突等级 + 投稿包 blocked 状态；
+/// 76 格逐格断言：每格的冲突等级 + 投稿包 blocked 状态；
 /// 另有 19 行逐行断言（截止/计划状态/核验日期/标志位）
-/// 与 3 件作品断言（首次公开/已投比赛）。
+/// 与 4 件作品断言（首次公开/已投比赛）。
 /// 改期望先改底稿，再跑：python3 scripts/generate_tests.py
 
 ///|
@@ -1467,6 +1467,493 @@ test "cell: 诉求整理台 × Rokid Spatial Joy 2026" {
 }
 
 ///|
+test "cell: AI 工具定价核验 × AI PLAY 72H 创作黑客松" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "AI PLAY 72H 创作黑客松",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "AI PLAY 72H 创作黑客松",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × BayHack 大湾区黑客松" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "BayHack 大湾区黑客松",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "BayHack 大湾区黑客松",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 荣耀·英特尔 AI 智造创新赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "荣耀·英特尔 AI 智造创新赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "荣耀·英特尔 AI 智造创新赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 华为小红书 Skill 创新赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "华为小红书 Skill 创新赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "华为小红书 Skill 创新赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × DoBe 全球 AI 创客大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "DoBe 全球 AI 创客大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "DoBe 全球 AI 创客大赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 兴智杯" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match @sai-chang-guan-jia-moonbit.competition_by_name("兴智杯") {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "兴智杯",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × Qoder 高校创造力大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "Qoder 高校创造力大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "Qoder 高校创造力大赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 第二届 AIGC 青年大学生就业创业促进行动" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "第二届 AIGC 青年大学生就业创业促进行动",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "第二届 AIGC 青年大学生就业创业促进行动",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 第十一届全国青年人工智能创新创业大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "第十一届全国青年人工智能创新创业大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "第十一届全国青年人工智能创新创业大赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 魔搭 AI+∞ 第三期「AI 造游戏」" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "魔搭 AI+∞ 第三期「AI 造游戏」",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "魔搭 AI+∞ 第三期「AI 造游戏」",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P0")
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, true)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × PAYATHON 2026" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match @sai-chang-guan-jia-moonbit.competition_by_name("PAYATHON 2026") {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "PAYATHON 2026",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 知乎黑客松 S3" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name("知乎黑客松 S3") {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "知乎黑客松 S3",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 松江·创世纪 AI 游戏大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "松江·创世纪 AI 游戏大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "松江·创世纪 AI 游戏大赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 支付宝智能体涌现奖" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "支付宝智能体涌现奖",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "支付宝智能体涌现奖",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 绿联首届黑客松" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name("绿联首届黑客松") {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "绿联首届黑客松",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 中小企业 AI 应用产品大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "中小企业 AI 应用产品大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "中小企业 AI 应用产品大赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 造化首届体素游戏创作大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "造化首届体素游戏创作大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "造化首届体素游戏创作大赛",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × 第二十届全国大学生软件创新大赛" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "第二十届全国大学生软件创新大赛",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "第二十届全国大学生软件创新大赛",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: AI 工具定价核验 × Rokid Spatial Joy 2026" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) =>
+      match
+        @sai-chang-guan-jia-moonbit.competition_by_name(
+          "Rokid Spatial Joy 2026",
+        ) {
+        Some(c) => {
+          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(
+            w,
+            @sai-chang-guan-jia-moonbit.all_competitions(),
+          )
+          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(
+            conflicts, "Rokid Spatial Joy 2026",
+          )
+          assert_eq(list.length(), 0)
+          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
 test "row: AI PLAY 72H 创作黑客松" {
   match
     @sai-chang-guan-jia-moonbit.competition_by_name(
@@ -1934,6 +2421,19 @@ test "work: 诉求整理台" {
       assert_true(
         @sai-chang-guan-jia-moonbit.contains_string(w.submitted_to, "涌现奖"),
       )
+      assert_true(w.oneliner != "")
+      assert_true(w.materials_ready.length() > 0)
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "work: AI 工具定价核验" {
+  match @sai-chang-guan-jia-moonbit.work_by_name("AI 工具定价核验") {
+    Some(w) => {
+      assert_eq(w.first_public_date, "2026-11-16")
+      assert_eq(w.submitted_to.length(), 0)
       assert_true(w.oneliner != "")
       assert_true(w.materials_ready.length() > 0)
     }

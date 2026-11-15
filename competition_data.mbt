@@ -374,5 +374,16 @@ pub fn all_works() -> Array[Work] {
       materials_ready: ["智能体公开链接"],
       note: "已投涌现奖，审核中",
     },
+    {
+      name: "AI 工具定价核验",
+      kind: WorkKind::Tool,
+      oneliner: "1000 条 AI 工具官网定价 + 5 步证据链 + 14 项验证规则",
+      first_public_date: "2026-11-16",
+      submitted_to: [],
+      materials_ready: [
+        "公开仓库链接", "Mooncakes 包", "可运行 CLI + 测试",
+      ],
+      note: "种子数据（20 条）曾在作者 2026-11-08 的 Lexmount 作品（20 工具定价核验）里出现过，那是另一件作品；作为 MoonBit CLI 的这件作品 2026-11-16 首次公开；MoonBit 第二份报名表尚未填，未投过任何比赛",
+    },
   ]
 }
