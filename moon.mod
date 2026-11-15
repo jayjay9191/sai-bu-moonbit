@@ -23,4 +23,4 @@ keywords = [ ]
 
 preferred_target = "native"
 
-description = ""
+description = "参赛管家：多比赛并行管理工具——比赛台账、冲突检测（首次发布/原创条款）、投稿包生成与全链路预检"
