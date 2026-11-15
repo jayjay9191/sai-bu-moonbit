@@ -5,7 +5,7 @@
 /// 改数据只改 JSON，改完跑：python3 scripts/generate_data.py
 
 ///|
-pub struct Competition {
+pub(all) struct Competition {
   name : String
   deadline : String // 人类可读的截止，如 "2026-12-01 12:00（报名）/ 18:00（提交）"
   deadline_date : String // 机器可比的日期 "YYYY-MM-DD"，用于撞期检测
@@ -26,7 +26,7 @@ pub enum WorkKind {
 }
 
 ///|
-pub struct Work {
+pub(all) struct Work {
   name : String
   kind : WorkKind
   oneliner : String

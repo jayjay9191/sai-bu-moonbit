@@ -22,14 +22,18 @@ pub fn generate_pack(Work, Competition, Array[Conflict]) -> SubmissionPack
 
 pub fn has_p0_conflict(Array[Conflict], String) -> Bool
 
+pub fn is_valid_date(String) -> Bool
+
 pub fn join_strings(Array[String], String) -> String
+
+pub fn validate_data(Array[Competition], Array[Work]) -> Array[String]
 
 pub fn work_by_name(String) -> Work?
 
 // Errors
 
 // Types and methods
-pub struct Competition {
+pub(all) struct Competition {
   name : String
   deadline : String
   deadline_date : String
@@ -62,7 +66,7 @@ pub struct SubmissionPack {
   note : String
 }
 
-pub struct Work {
+pub(all) struct Work {
   name : String
   kind : WorkKind
   oneliner : String

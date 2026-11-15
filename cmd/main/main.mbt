@@ -8,6 +8,7 @@
 ///   pack <作品名> <比赛名>        生成单个投稿包
 ///   collisions                    截止撞期提醒
 ///   benchmark                     实测扫描（比赛数/规则数/冲突数/投稿包数/耗时）
+///   validate                      校验台账数据（名字/日期/材料/标志位），有问题返回码 1
 ///   help                          显示本帮助
 /// 用法：moon run cmd/main [子命令 ...]
 /// 作品名、比赛名含空格时请加引号，例如：
@@ -24,6 +25,7 @@ fn main {
     "pack" => cmd_pack(args)
     "collisions" => cmd_collisions()
     "benchmark" => cmd_benchmark()
+    "validate" => cmd_validate()
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -140,6 +142,7 @@ fn print_usage() -> Unit {
   println(
     "benchmark：实测扫描（比赛数/规则数/冲突数/投稿包数/耗时）",
   )
+  println("validate：校验台账数据，有问题返回码 1")
   println("help：显示本帮助")
 }
 
@@ -236,6 +239,25 @@ fn cmd_collisions() -> Unit {
     for i in 0..<collisions.length() {
       println("[\{collisions[i].level}] \{collisions[i].message}")
     }
+  }
+}
+
+///|
+/// 数据校验：名字/日期/材料/标志位自洽则打印通过，否则列出问题并返回码 1。
+fn cmd_validate() -> Unit {
+  let comps = @lib.all_competitions()
+  let works = @lib.all_works()
+  let issues = @lib.validate_data(comps, works)
+  println("== 数据校验 ==")
+  println("比赛：\{comps.length()} 个，作品：\{works.length()} 件")
+  if issues.length() == 0 {
+    println("通过：0 个问题")
+  } else {
+    println("发现 \{issues.length()} 个问题：")
+    for i in 0..<issues.length() {
+      println("  - \{issues[i]}")
+    }
+    @env.exit(1)
   }
 }
 

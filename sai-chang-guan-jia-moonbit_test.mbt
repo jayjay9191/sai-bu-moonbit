@@ -332,3 +332,132 @@ test "benchmark sweep counts" {
   assert_eq(blocked_packs, 3)
   assert_eq(@sai-chang-guan-jia-moonbit.collision_dates(comps).length(), 2)
 }
+
+///|
+test "validate real data passes" {
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    @sai-chang-guan-jia-moonbit.all_competitions(),
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 0)
+}
+
+///|
+test "is_valid_date accepts and rejects" {
+  assert_true(@sai-chang-guan-jia-moonbit.is_valid_date("2026-12-01"))
+  assert_true(@sai-chang-guan-jia-moonbit.is_valid_date("2027-01-28"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-13-01"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-12-32"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026/12/01"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-12-1"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date(""))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-00-10"))
+  assert_true(!@sai-chang-guan-jia-moonbit.is_valid_date("2026-12-00"))
+}
+
+///|
+/// 测试用的比赛夹具：除指定字段外均为合法值。
+fn test_competition(
+  name : String,
+  deadline_date : String,
+  allows_existing_works : Bool,
+  requires_first_publish : Bool,
+  requires_new_work : Bool,
+  materials : Array[String],
+) -> @sai-chang-guan-jia-moonbit.Competition {
+  {
+    name,
+    deadline: "2026-12-01",
+    deadline_date,
+    prize: "¥0",
+    track: "测试",
+    status: "测试",
+    requires_first_publish,
+    requires_new_work,
+    allows_existing_works,
+    materials,
+    note: "",
+  }
+}
+
+///|
+test "validate flags bad date" {
+  let bad = test_competition(
+    "测试比赛",
+    "2026-13-40",
+    false,
+    false,
+    false,
+    ["材料 A"],
+  )
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [bad],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "validate flags duplicate competition names" {
+  let a = test_competition("测试比赛", "2026-12-01", false, false, false, [
+    "材料 A",
+  ])
+  let b = test_competition("测试比赛", "2026-12-02", false, false, false, [
+    "材料 A",
+  ])
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [a, b],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "validate flags empty materials" {
+  let empty = test_competition(
+    "测试比赛",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    [],
+  )
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [empty],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "validate flags contradictory flags" {
+  let c1 = test_competition("测试比赛 A", "2026-12-01", true, true, false, [
+    "材料 A",
+  ])
+  let c2 = test_competition("测试比赛 B", "2026-12-01", true, false, true, [
+    "材料 A",
+  ])
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [c1, c2],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 2)
+}
+
+///|
+test "validate flags unnamed and duplicate works" {
+  let base = @sai-chang-guan-jia-moonbit.all_works()[0]
+  let unnamed : @sai-chang-guan-jia-moonbit.Work = {
+    name: "",
+    kind: base.kind,
+    oneliner: base.oneliner,
+    first_public_date: base.first_public_date,
+    submitted_to: base.submitted_to,
+    materials_ready: base.materials_ready,
+    note: base.note,
+  }
+  let issues1 = @sai-chang-guan-jia-moonbit.validate_data([], [unnamed])
+  assert_eq(issues1.length(), 1)
+  let issues2 = @sai-chang-guan-jia-moonbit.validate_data([], [base, base])
+  assert_eq(issues2.length(), 1)
+}
