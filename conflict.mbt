@@ -47,14 +47,21 @@ pub fn detect_conflicts(
     let comp = competitions[i]
     if comp.requires_first_publish &&
       (work.first_public_date != "" || work.submitted_to.length() > 0) {
+      let reasons : Array[String] = []
+      if work.first_public_date != "" {
+        reasons.push(
+          "活动开始前已公开（" + work.first_public_date + "）",
+        )
+      }
+      if work.submitted_to.length() > 0 {
+        reasons.push("已投 " + join_strings(work.submitted_to, "、"))
+      }
       result.push({
         level: "P0",
         competition: comp.name,
         work: work.name,
-        message: "首次发布冲突：作品在活动开始前已公开（" +
-        work.first_public_date +
-        "），且已投 " +
-        join_strings(work.submitted_to, "、") +
+        message: "首次发布冲突：" +
+        join_strings(reasons, "，") +
         "，违反“活动期间首次公开发布、不得使用已参加其他比赛的作品”",
       })
     }
