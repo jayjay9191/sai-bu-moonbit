@@ -365,6 +365,8 @@ fn test_competition(
   requires_new_work : Bool,
   materials : Array[String],
   verified_at : String,
+  plan_status : String,
+  requires_no_prior_entry : Bool,
 ) -> @sai-chang-guan-jia-moonbit.Competition {
   {
     name,
@@ -374,8 +376,10 @@ fn test_competition(
     prize: "¥0",
     track: "测试",
     status: "测试",
+    plan_status,
     requires_first_publish,
     requires_new_work,
+    requires_no_prior_entry,
     allows_existing_works,
     materials,
     note: "",
@@ -392,6 +396,8 @@ test "validate flags bad date" {
     false,
     ["材料 A"],
     "2026-11-13",
+    "在途",
+    false,
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [bad],
@@ -410,6 +416,8 @@ test "validate flags duplicate competition names" {
     false,
     ["材料 A"],
     "2026-11-13",
+    "在途",
+    false,
   )
   let b = test_competition(
     "测试比赛",
@@ -419,6 +427,8 @@ test "validate flags duplicate competition names" {
     false,
     ["材料 A"],
     "2026-11-13",
+    "在途",
+    false,
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [a, b],
@@ -437,6 +447,8 @@ test "validate flags empty materials" {
     false,
     [],
     "2026-11-13",
+    "在途",
+    false,
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [empty],
@@ -455,6 +467,8 @@ test "validate flags contradictory flags" {
     false,
     ["材料 A"],
     "2026-11-13",
+    "在途",
+    false,
   )
   let c2 = test_competition(
     "测试比赛 B",
@@ -464,6 +478,8 @@ test "validate flags contradictory flags" {
     true,
     ["材料 A"],
     "2026-11-13",
+    "在途",
+    false,
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [c1, c2],
@@ -518,6 +534,8 @@ test "validate flags unnamed competition" {
     false,
     ["材料 A"],
     "2026-11-13",
+    "在途",
+    false,
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [unnamed],
@@ -563,10 +581,114 @@ test "validate flags bad verified_at" {
     false,
     ["材料 A"],
     "2026-13-01",
+    "在途",
+    false,
   )
   let issues = @sai-chang-guan-jia-moonbit.validate_data(
     [bad],
     @sai-chang-guan-jia-moonbit.all_works(),
   )
   assert_eq(issues.length(), 1)
+}
+
+///|
+test "plan status counts" {
+  // 本轮只加了字段、还没加新比赛：12 行全是在途，关注 0 行。
+  // 加 7 个关注比赛后改成 12 / 7。
+  let comps = @sai-chang-guan-jia-moonbit.all_competitions()
+  let mut in_plan = 0
+  let mut watching = 0
+  for i in 0..<comps.length() {
+    if comps[i].plan_status == "在途" {
+      in_plan = in_plan + 1
+    } else if comps[i].plan_status == "关注" {
+      watching = watching + 1
+    }
+  }
+  assert_eq(in_plan, 12)
+  assert_eq(watching, 0)
+}
+
+///|
+test "validate flags bad plan_status" {
+  let bad = test_competition(
+    "测试比赛",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+    "未知",
+    false,
+  )
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [bad],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "validate flags contradictory no-prior-entry flag" {
+  let bad = test_competition(
+    "测试比赛",
+    "2026-12-01",
+    true,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-13",
+    "在途",
+    true,
+  )
+  let issues = @sai-chang-guan-jia-moonbit.validate_data(
+    [bad],
+    @sai-chang-guan-jia-moonbit.all_works(),
+  )
+  assert_eq(issues.length(), 1)
+}
+
+///|
+test "no-prior-entry rule fires on submitted_to only" {
+  // 规则 3（原创条款）只看 submitted_to，不看 first_public_date：
+  // 小店日结从未公开但已投涌现奖，应报 P0；
+  // 一件只公开、没投过任何比赛的作品，不应报。
+  let comp = test_competition(
+    "测试原创条款赛",
+    "2026-12-01",
+    false,
+    false,
+    false,
+    ["材料 A"],
+    "2026-11-15",
+    "关注",
+    true,
+  )
+  match @sai-chang-guan-jia-moonbit.work_by_name("小店日结") {
+    Some(w) => {
+      let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(w, [comp])
+      assert_eq(conflicts.length(), 1)
+      assert_eq(conflicts[0].level, "P0")
+      assert_true(
+        conflicts[0].message.contains("未参加过其他国家级公开比赛"),
+      )
+    }
+    None => assert_true(false)
+  }
+  // WorkKind 构造子不对黑盒测试开放，从已有作品借 kind（与现有测试同款做法）。
+  let base = @sai-chang-guan-jia-moonbit.all_works()[0]
+  let only_public : @sai-chang-guan-jia-moonbit.Work = {
+    name: "只公开未投过",
+    kind: base.kind,
+    oneliner: "测试用作品",
+    first_public_date: "2026-11-01",
+    submitted_to: [],
+    materials_ready: [],
+    note: "",
+  }
+  let conflicts2 = @sai-chang-guan-jia-moonbit.detect_conflicts(only_public, [
+    comp,
+  ])
+  assert_eq(conflicts2.length(), 0)
 }

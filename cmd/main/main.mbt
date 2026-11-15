@@ -63,7 +63,7 @@ fn run_full_pipeline() -> Unit {
   for i in 0..<comps.length() {
     let c = comps[i]
     println(
-      "\{i + 1}. \{c.name} | 截止 \{c.deadline} | \{c.prize} | 状态：\{c.status}",
+      "\{i + 1}. \{c.name} | 截止 \{c.deadline} | \{c.prize} | 计划：\{c.plan_status} | 状态：\{c.status}",
     )
   }
   println("")
@@ -171,7 +171,7 @@ fn cmd_list() -> Unit {
   for i in 0..<comps.length() {
     let c = comps[i]
     println(
-      "\{i + 1}. \{c.name} | 截止 \{c.deadline} | \{c.prize} | 状态：\{c.status}",
+      "\{i + 1}. \{c.name} | 截止 \{c.deadline} | \{c.prize} | 计划：\{c.plan_status} | 状态：\{c.status}",
     )
   }
 }
@@ -278,8 +278,8 @@ fn cmd_benchmark() -> Unit {
     let w = works[wi]
     let conflicts = @lib.detect_conflicts(w, comps)
     total_conflicts = total_conflicts + conflicts.length()
-    // 每件作品 × 每场比赛评估 2 条规则：首次发布 / 须新做
-    rule_checks = rule_checks + comps.length() * 2
+    // 每件作品 × 每场比赛评估 3 条规则：首次发布 / 须新做 / 未参加过其他比赛
+    rule_checks = rule_checks + comps.length() * 3
     for i in 0..<conflicts.length() {
       if conflicts[i].level == "P0" {
         p0_conflicts = p0_conflicts + 1
@@ -313,7 +313,7 @@ fn cmd_benchmark() -> Unit {
   println("比赛数：\{comps.length()}")
   println("作品数：\{works.length()}")
   println(
-    "规则评估：\{rule_checks} 次/轮（每作品 × 每比赛 2 条规则）",
+    "规则评估：\{rule_checks} 次/轮（每作品 × 每比赛 3 条规则）",
   )
   println(
     "发现冲突：\{total_conflicts} 个（P0 \{p0_conflicts} 个，P1 \{p1_conflicts} 个）",

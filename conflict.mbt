@@ -38,6 +38,9 @@ pub fn contains_string(items : Array[String], target : String) -> Bool {
 /// 规则 1（P0）：比赛要求“活动期间首次公开发布”，但作品在活动开始前
 ///   已公开，或已投过其他比赛。
 /// 规则 2（P1）：比赛要求“必须新做”，但作品已有公开版本。
+/// 规则 3（P0）：比赛要求“未参加过其他国家级公开比赛”（原创条款，
+///   如软件创新大赛），但作品已投过其他比赛。注意：只看 submitted_to，
+///   不看 first_public_date——只公开、没投过别的比赛不违反这一条。
 pub fn detect_conflicts(
   work : Work,
   competitions : Array[Competition],
@@ -73,6 +76,16 @@ pub fn detect_conflicts(
         message: "须新做：作品已有公开版本（" +
         work.first_public_date +
         "），不能直接交",
+      })
+    }
+    if comp.requires_no_prior_entry && work.submitted_to.length() > 0 {
+      result.push({
+        level: "P0",
+        competition: comp.name,
+        work: work.name,
+        message: "原创条款冲突：已投 " +
+        join_strings(work.submitted_to, "、") +
+        "，违反“参赛作品必须为原创且未参加过其他国家级公开比赛”",
       })
     }
   }

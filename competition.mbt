@@ -12,9 +12,11 @@ pub(all) struct Competition {
   verified_at : String // 该行截止/奖金最后一次对照官方来源核实的日期 "YYYY-MM-DD"
   prize : String
   track : String
-  status : String
+  status : String // 投稿进度，如“未报名”“已投 3 件，均审核中”
+  plan_status : String // 计划状态：“在途”（12 个正式计划内）或“关注”（只看、不主动推进）
   requires_first_publish : Bool // 要求活动期间首次公开发布（如魔搭）
   requires_new_work : Bool // 要求必须新做（如知乎 S3）
+  requires_no_prior_entry : Bool // 要求未参加过其他国家级公开比赛（如软件创新大赛原创条款）
   allows_existing_works : Bool // 明确已有成品可参赛（如松江）
   materials : Array[String] // 投稿需要的材料清单
   note : String // 核实状态与备注

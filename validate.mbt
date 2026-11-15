@@ -4,10 +4,12 @@
 /// - 每个比赛有名字；比赛名字不重复
 /// - deadline_date 符合 YYYY-MM-DD（月 01–12，日 01–31）
 /// - verified_at 符合 YYYY-MM-DD（同上；表示该行最后核实日期）
+/// - plan_status 只能是“在途”或“关注”
 /// - 每个比赛的材料清单非空
 /// - 每件作品有名字；作品名字不重复
 /// - 标志位不自相矛盾：allows_existing_works 与 requires_first_publish
-///   同时为真；allows_existing_works 与 requires_new_work 同时为真
+///   同时为真；allows_existing_works 与 requires_new_work 同时为真；
+///   allows_existing_works 与 requires_no_prior_entry 同时为真
 
 ///|
 pub fn validate_data(
@@ -43,6 +45,14 @@ pub fn validate_data(
         "（应为 YYYY-MM-DD）",
       )
     }
+    if c.plan_status != "在途" && c.plan_status != "关注" {
+      issues.push(
+        "比赛《" +
+        c.name +
+        "》plan_status 只能是“在途”或“关注”，现在是：" +
+        c.plan_status,
+      )
+    }
     if c.materials.length() == 0 {
       issues.push("比赛《" + c.name + "》材料清单为空")
     }
@@ -58,6 +68,13 @@ pub fn validate_data(
         "比赛《" +
         c.name +
         "》标志位矛盾：既允许已有成品，又要求必须新做",
+      )
+    }
+    if c.allows_existing_works && c.requires_no_prior_entry {
+      issues.push(
+        "比赛《" +
+        c.name +
+        "》标志位矛盾：既允许已有成品，又要求未参加过其他比赛",
       )
     }
   }
