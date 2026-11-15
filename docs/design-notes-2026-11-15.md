@@ -264,15 +264,32 @@ presentation.py 72、release_browser.py 171、reader_presentation.py 36），
   清单 SHA-256 `7652425c…caa5`，与 Python hashlib 在同一份台账数据上
   逐字一致。
 - **覆盖率：**本轮工具链的 `moon coverage analyze` 改报行口径。
-  核心库未覆盖 4 行，全部在 `preflight.mbt`，全部是防御性分支，
-  全部无法从公开接口触发：`digit_value` 的非数字分支（`is_valid_date`
-  已先验过数字）、`days_from_civil` 的负年份分支与 `civil_from_days`
-  的负天数分支（有效日期的年份 ≥ 1、天数 ≥ -719162，永不为负）、
-  `certify_pack` 的“P0 冲突（未知原因）”分支（blocked 意味着同一份
-  冲突列表里必有 P0）。CLI 入口 `cmd/main/main.mbt` 未覆盖 76 行
-  （moon test 不跑可执行包入口，工具链限制）。
+  核心库未覆盖行从 2 行补到剩 1 行（2026-11-16 白盒补齐，
+  MoonBit 测试 157 → 163 项）：补上的都在
+  `sai-chang-guan-jia-moonbit_wbtest.mbt`——`digit_value` 非数字分支
+  （白盒直调 `digit_value('a')` 得 -1）、`days_from_civil` 负年份分支
+  （`days_from_civil(0, 1, 1) = -719528`，向量用 Python datetime 对过）
+  与 `civil_from_days` 负天数分支
+  （`civil_from_days(-719528) = (0, 1, 1)`；另有公元前 5 年到公元 5 年
+  的往返测试）。纠正上一轮的计数：这两个日期分支与已走分支共用
+  同一行，行口径的工具本来就不报它们未覆盖，上一轮“4 行”的说法
+  是把分支数当成了行数；工具实际报的只有 `digit_value` 1 行 +
+  `certify_pack` 1 行。
+  剩下的 1 行是 `certify_pack` 的“P0 冲突（未知原因）”分支：
+  白盒也触发不了，是逻辑上不可达的防御代码——`pack.blocked`
+  由 `generate_pack` 对同一份 `conflicts` 数组算出
+  （`has_p0_conflict`），blocked 为真当且仅当该比赛的冲突列表里
+  有 P0；`certify_pack` 随后扫同一份列表，`found_p0` 必然为真。
+  白盒测试只 pin 住这个不变式（被 P0 挡住的包，原因一定是具名的
+  P0 冲突，绝不出现“（未知原因）”），不编造测试去“覆盖”它，
+  也不为覆盖率削弱防御代码。CLI 入口 `cmd/main/main.mbt` 未覆盖
+  78 行（上一轮手记写的 76 是笔误，工具实报 78；moon test 不跑
+  可执行包入口，工具链限制）。
   旧的 122/122 是块（block）口径，本轮无法直接沿用，README 已改用
   未覆盖行数表述，不编一个新分母。
+  Plan A（运行时 JSON 加载）：本轮仍按 §8.2 的既定决定不做——
+  现在台账 19 行、靠人工更新，生成器够用；等台账规模或更新频率
+  上去再评估。
 - **benchmark 与人工基线：**100 轮 4–8 毫秒；人工基线 57 格全对，
   本轮未单独计时（边做边逐格核对，不编秒数）；非盲测。
 - **verified_at：**10 行 2026-11-13、9 行 2026-11-15。
