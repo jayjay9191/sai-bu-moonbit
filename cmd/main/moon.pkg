@@ -1,5 +1,6 @@
 import {
   "jayjay9191/sai-chang-guan-jia-moonbit" @lib,
+  "moonbitlang/core/env",
 }
 
 pkgtype(kind: "executable")

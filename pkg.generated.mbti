@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/sai-chang-guan-jia-moonbit"
+package "jayjay9191/sai-chang-guan-jia-moonbit"
 
 // Values
 pub fn all_competitions() -> Array[Competition]
