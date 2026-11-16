@@ -1,4 +1,8 @@
-# 参赛管家 · MoonBit 版
+# 赛簿 · MoonBit 版
+
+一本管所有比赛的账。
+
+> 曾用名：参赛管家（2026-11-16 改名）。
 
 一个帮参赛者**同时管多个比赛**的命令行工具：19 个比赛的规则、截止、材料放进一个台账，
 一件作品投不同比赛时自动检测规则冲突、生成投稿包。
@@ -27,15 +31,15 @@
 （须新做）、造化 P1（须新做）；软件创新大赛无冲突（原创条款只看
 是否投过其他比赛）。
 
-诚实标注：这是作者自用——参赛管家与定价核验是同一作者的两个
+诚实标注：这是作者自用——赛簿与定价核验是同一作者的两个
 MoonBit 参赛作品，目前没有外部用户。定价核验的 MoonBit 报名表
 尚未填。
 
 ## 安装即用
 
 ```sh
-# 在自己的 MoonBit 项目里把参赛管家装成依赖（已发 Mooncakes v0.1.0）
-moon add jayjay9191/sai-chang-guan-jia-moonbit
+# 在自己的 MoonBit 项目里把赛簿装成依赖（已发 Mooncakes v0.1.0）
+moon add jayjay9191/sai-bu-moonbit
 ```
 
 想先看效果不用装：克隆仓库后，三条命令验证核心价值（作品名、
@@ -285,8 +289,8 @@ preflight 与 SHA-256 26 个；2026-11-16 加第 4 件作品，生成测试
 | `sha256.mbt` | SHA-256 纯 MoonBit 实现（FIPS 180-4，core 无 crypto 包；向量用 Python hashlib 对过） |
 | `preflight.mbt` | 全链路预检：日期换算（Hinnant 算法）/ 逐行核验（未核实标记 + 30 天过期）/ 逐包认证 / 清单规范序列化 + 哈希 |
 | `cmd/main/main.mbt` | CLI 入口：无参数跑整条流水线；子命令 list / conflicts / pack / collisions / benchmark / validate / preflight / help |
-| `sai-chang-guan-jia-moonbit_test.mbt` | 52 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试、规则 3 测试） |
-| `sai-chang-guan-jia-moonbit_generated_test.mbt` | 99 个生成测试：76 格逐格断言 + 19 行 + 4 件作品 |
+| `sai-bu-moonbit_test.mbt` | 52 个黑盒测试（含边界测试、validate 测试、P0 文案回归测试、规则 3 测试） |
+| `sai-bu-moonbit_generated_test.mbt` | 99 个生成测试：76 格逐格断言 + 19 行 + 4 件作品 |
 | `preflight_test.mbt` | 26 个黑盒测试：SHA-256 向量、日期换算、行核验边界、清单哈希、preflight 实测 |
 | `tests_py/test_scripts.py` | 36 个 Python 测试：生成器、同步脚本纯函数、测试生成器自测 |
 | `docs/design-notes-2026-11-15.md` | 设计手记：数据外置 / 同步脚本 bug / benchmark 与人工基线 / Auto-Lexmount 阅读（§6）/ 第 5 轮数字（§7）/ 架构对比（§8） |

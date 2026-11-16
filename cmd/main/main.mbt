@@ -56,7 +56,7 @@ fn user_args() -> Array[String] {
 /// 无参数时的整条流水线：比赛台账 -> 冲突检测 -> 截止撞期提醒 -> 投稿包生成。
 /// Run with `moon run cmd/main` from the project root.
 fn run_full_pipeline() -> Unit {
-  println("== 参赛管家 · MoonBit 版 v0.1.0 ==")
+  println("== 赛簿 · MoonBit 版 v0.1.0 ==")
   println(
     "多比赛并行管理 + 游戏投稿支持 + 冲突检测（原创 MoonBit 实现）",
   )

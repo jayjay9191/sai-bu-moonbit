@@ -253,7 +253,7 @@ pub fn all_competitions() -> Array[Competition] {
       requires_no_prior_entry: false,
       allows_existing_works: true,
       materials: ["智能体公开链接"],
-      note: "评审 12-07–12-15；用户已决定不为参赛管家再加投第 4 件",
+      note: "评审 12-07–12-15；用户已决定不为赛簿再加投第 4 件",
     },
     {
       name: "绿联首届黑客松",
@@ -321,7 +321,7 @@ pub fn all_competitions() -> Array[Competition] {
       materials: [
         "指定题目作品：AI赋能学习生产力——面向移动终端的场景创新",
       ],
-      note: "原创条款原文：“参赛作品必须为原创且未参加过其他国家级公开比赛的作品”“同一作品重复参加比赛，一经查实取消资格和成绩”；参赛管家本身已投 MoonBit，按此条款同样冲突",
+      note: "原创条款原文：“参赛作品必须为原创且未参加过其他国家级公开比赛的作品”“同一作品重复参加比赛，一经查实取消资格和成绩”；赛簿本身已投 MoonBit，按此条款同样冲突",
     },
     {
       name: "Rokid Spatial Joy 2026",

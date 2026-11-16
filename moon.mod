@@ -9,13 +9,13 @@
 //   "moonbitlang/x@0.4.6",
 // }
 
-name = "jayjay9191/sai-chang-guan-jia-moonbit"
+name = "jayjay9191/sai-bu-moonbit"
 
 version = "0.1.1"
 
 readme = "README.mbt.md"
 
-repository = "https://github.com/jayjay9191/sai-chang-guan-jia-moonbit"
+repository = "https://github.com/jayjay9191/sai-bu-moonbit"
 
 license = "Apache-2.0"
 
@@ -23,4 +23,4 @@ keywords = [ ]
 
 preferred_target = "native"
 
-description = "参赛管家：多比赛并行管理工具——比赛台账、冲突检测（首次发布/原创条款）、投稿包生成与全链路预检"
+description = "赛簿：多比赛并行管理工具——比赛台账、冲突检测（首次发布/原创条款）、投稿包生成与全链路预检"

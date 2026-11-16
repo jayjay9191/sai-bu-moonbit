@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生成逐格回归测试 sai-chang-guan-jia-moonbit_generated_test.mbt。
+"""生成逐格回归测试 sai-bu-moonbit_generated_test.mbt。
 
 期望值全部手写在这里（CELL_TABLE / ROW_TABLE / WORK_TABLE），
 来源是 docs/manual-baseline-2026-11-15.md（2026-11-15 人工手核底稿），
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 JSON_PATH = ROOT / "data" / "competitions.json"
-OUT_PATH = ROOT / "sai-chang-guan-jia-moonbit_generated_test.mbt"
+OUT_PATH = ROOT / "sai-bu-moonbit_generated_test.mbt"
 
 HEADER = """///|
 /// 由 scripts/generate_tests.py 生成，不要手改。
@@ -119,15 +119,15 @@ def emit_cell(work: str, comp: str) -> str:
     lines = [
         "///|",
         f'test "cell: {work} × {comp}" {{',
-        f'  match @sai-chang-guan-jia-moonbit.work_by_name({mbt_str(work)}) {{',
+        f'  match @sai-bu-moonbit.work_by_name({mbt_str(work)}) {{',
         "    Some(w) =>",
-        f'      match @sai-chang-guan-jia-moonbit.competition_by_name({mbt_str(comp)}) {{',
+        f'      match @sai-bu-moonbit.competition_by_name({mbt_str(comp)}) {{',
         "        Some(c) => {",
-        "          let conflicts = @sai-chang-guan-jia-moonbit.detect_conflicts(",
+        "          let conflicts = @sai-bu-moonbit.detect_conflicts(",
         "            w,",
-        "            @sai-chang-guan-jia-moonbit.all_competitions(),",
+        "            @sai-bu-moonbit.all_competitions(),",
         "          )",
-        "          let list = @sai-chang-guan-jia-moonbit.conflicts_for_competition(",
+        "          let list = @sai-bu-moonbit.conflicts_for_competition(",
         f"            conflicts, {mbt_str(comp)},",
         "          )",
         f"          assert_eq(list.length(), {len(levels)})",
@@ -135,7 +135,7 @@ def emit_cell(work: str, comp: str) -> str:
     for i, level in enumerate(levels):
         lines.append(f'          assert_eq(list[{i}].level, "{level}")')
     lines += [
-        "          let pack = @sai-chang-guan-jia-moonbit.generate_pack(w, c, conflicts)",
+        "          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)",
         f"          assert_eq(pack.blocked, {mbt_bool(blocked)})",
         "        }",
         "        None => assert_true(false)",
@@ -153,7 +153,7 @@ def emit_row(comp: str) -> str:
     return "\n".join([
         "///|",
         f'test "row: {comp}" {{',
-        f'  match @sai-chang-guan-jia-moonbit.competition_by_name({mbt_str(comp)}) {{',
+        f'  match @sai-bu-moonbit.competition_by_name({mbt_str(comp)}) {{',
         "    Some(c) => {",
         f'      assert_eq(c.deadline_date, "{date}")',
         f'      assert_eq(c.plan_status, "{plan}")',
@@ -179,14 +179,14 @@ def emit_work(work: str) -> str:
     lines = [
         "///|",
         f'test "work: {work}" {{',
-        f'  match @sai-chang-guan-jia-moonbit.work_by_name({mbt_str(work)}) {{',
+        f'  match @sai-bu-moonbit.work_by_name({mbt_str(work)}) {{',
         "    Some(w) => {",
         f'      assert_eq(w.first_public_date, "{first_public}")',
         f"      assert_eq(w.submitted_to.length(), {len(submitted)})",
     ]
     for name in submitted:
         lines.append(
-            "      assert_true(@sai-chang-guan-jia-moonbit.contains_string("
+            "      assert_true(@sai-bu-moonbit.contains_string("
             f"w.submitted_to, {mbt_str(name)}))"
         )
     lines += [

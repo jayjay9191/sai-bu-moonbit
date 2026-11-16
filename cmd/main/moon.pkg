@@ -1,5 +1,5 @@
 import {
-  "jayjay9191/sai-chang-guan-jia-moonbit" @lib,
+  "jayjay9191/sai-bu-moonbit" @lib,
   "moonbitlang/core/env",
 }
 

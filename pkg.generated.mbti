@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "jayjay9191/sai-chang-guan-jia-moonbit"
+package "jayjay9191/sai-bu-moonbit"
 
 // Values
 pub const STALE_DAYS : Int32 = 30

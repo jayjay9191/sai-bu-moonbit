@@ -1,5 +1,7 @@
 # 设计与实现手记（2026-11-15）
 
+> 2026-11-16 注：本项目由「参赛管家」改名为「赛簿」，本文档内旧名已统一替换；历史决策内容不变。
+
 仿照《坦克儿大冒险》作者手记的写法：只写真实做过的决策，
 每个决策带数字和代价，不讲空话。下面三件事都是本项目实际发生过的。
 
@@ -276,7 +278,7 @@ presentation.py 72、release_browser.py 171、reader_presentation.py 36），
 - **覆盖率：**本轮工具链的 `moon coverage analyze` 改报行口径。
   核心库未覆盖行从 2 行补到剩 1 行（2026-11-16 白盒补齐，
   MoonBit 测试 157 → 163 项）：补上的都在
-  `sai-chang-guan-jia-moonbit_wbtest.mbt`——`digit_value` 非数字分支
+  `sai-bu-moonbit_wbtest.mbt`——`digit_value` 非数字分支
   （白盒直调 `digit_value('a')` 得 -1）、`days_from_civil` 负年份分支
   （`days_from_civil(0, 1, 1) = -719528`，向量用 Python datetime 对过）
   与 `civil_from_days` 负天数分支
