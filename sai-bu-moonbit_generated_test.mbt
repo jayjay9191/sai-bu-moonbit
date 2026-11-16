@@ -1395,8 +1395,8 @@ test "cell: 诉求整理台 × Rokid Spatial Joy 2026" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × AI PLAY 72H 创作黑客松" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × AI PLAY 72H 创作黑客松" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("AI PLAY 72H 创作黑客松") {
         Some(c) => {
@@ -1418,8 +1418,8 @@ test "cell: AI 工具定价核验 × AI PLAY 72H 创作黑客松" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × BayHack 大湾区黑客松" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × BayHack 大湾区黑客松" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("BayHack 大湾区黑客松") {
         Some(c) => {
@@ -1441,8 +1441,8 @@ test "cell: AI 工具定价核验 × BayHack 大湾区黑客松" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 荣耀·英特尔 AI 智造创新赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 荣耀·英特尔 AI 智造创新赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1467,8 +1467,8 @@ test "cell: AI 工具定价核验 × 荣耀·英特尔 AI 智造创新赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 华为小红书 Skill 创新赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 华为小红书 Skill 创新赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name("华为小红书 Skill 创新赛") {
@@ -1491,8 +1491,8 @@ test "cell: AI 工具定价核验 × 华为小红书 Skill 创新赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × DoBe 全球 AI 创客大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × DoBe 全球 AI 创客大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("DoBe 全球 AI 创客大赛") {
         Some(c) => {
@@ -1514,8 +1514,8 @@ test "cell: AI 工具定价核验 × DoBe 全球 AI 创客大赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 兴智杯" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 兴智杯" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("兴智杯") {
         Some(c) => {
@@ -1537,8 +1537,8 @@ test "cell: AI 工具定价核验 × 兴智杯" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × Qoder 高校创造力大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × Qoder 高校创造力大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("Qoder 高校创造力大赛") {
         Some(c) => {
@@ -1560,8 +1560,8 @@ test "cell: AI 工具定价核验 × Qoder 高校创造力大赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 第二届 AIGC 青年大学生就业创业促进行动" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 第二届 AIGC 青年大学生就业创业促进行动" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1586,8 +1586,8 @@ test "cell: AI 工具定价核验 × 第二届 AIGC 青年大学生就业创业�
 }
 
 ///|
-test "cell: AI 工具定价核验 × 第十一届全国青年人工智能创新创业大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 第十一届全国青年人工智能创新创业大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1612,8 +1612,8 @@ test "cell: AI 工具定价核验 × 第十一届全国青年人工智能创新�
 }
 
 ///|
-test "cell: AI 工具定价核验 × 魔搭 AI+∞ 第三期「AI 造游戏」" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 魔搭 AI+∞ 第三期「AI 造游戏」" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1639,8 +1639,8 @@ test "cell: AI 工具定价核验 × 魔搭 AI+∞ 第三期「AI 造游戏」" 
 }
 
 ///|
-test "cell: AI 工具定价核验 × PAYATHON 2026" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × PAYATHON 2026" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("PAYATHON 2026") {
         Some(c) => {
@@ -1662,8 +1662,8 @@ test "cell: AI 工具定价核验 × PAYATHON 2026" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 知乎黑客松 S3" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 知乎黑客松 S3" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("知乎黑客松 S3") {
         Some(c) => {
@@ -1686,8 +1686,8 @@ test "cell: AI 工具定价核验 × 知乎黑客松 S3" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 松江·创世纪 AI 游戏大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 松江·创世纪 AI 游戏大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name("松江·创世纪 AI 游戏大赛") {
@@ -1710,8 +1710,8 @@ test "cell: AI 工具定价核验 × 松江·创世纪 AI 游戏大赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 支付宝智能体涌现奖" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 支付宝智能体涌现奖" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("支付宝智能体涌现奖") {
         Some(c) => {
@@ -1733,8 +1733,8 @@ test "cell: AI 工具定价核验 × 支付宝智能体涌现奖" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 绿联首届黑客松" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 绿联首届黑客松" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("绿联首届黑客松") {
         Some(c) => {
@@ -1756,8 +1756,8 @@ test "cell: AI 工具定价核验 × 绿联首届黑客松" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 中小企业 AI 应用产品大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 中小企业 AI 应用产品大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1782,8 +1782,8 @@ test "cell: AI 工具定价核验 × 中小企业 AI 应用产品大赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 造化首届体素游戏创作大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 造化首届体素游戏创作大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1809,8 +1809,8 @@ test "cell: AI 工具定价核验 × 造化首届体素游戏创作大赛" {
 }
 
 ///|
-test "cell: AI 工具定价核验 × 第二十届全国大学生软件创新大赛" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × 第二十届全国大学生软件创新大赛" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
         @sai-bu-moonbit.competition_by_name(
@@ -1835,8 +1835,8 @@ test "cell: AI 工具定价核验 × 第二十届全国大学生软件创新大�
 }
 
 ///|
-test "cell: AI 工具定价核验 × Rokid Spatial Joy 2026" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "cell: 验价尺 × Rokid Spatial Joy 2026" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("Rokid Spatial Joy 2026") {
         Some(c) => {
@@ -2297,8 +2297,8 @@ test "work: 诉求整理台" {
 }
 
 ///|
-test "work: AI 工具定价核验" {
-  match @sai-bu-moonbit.work_by_name("AI 工具定价核验") {
+test "work: 验价尺" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) => {
       assert_eq(w.first_public_date, "2026-11-16")
       assert_eq(w.submitted_to.length(), 0)

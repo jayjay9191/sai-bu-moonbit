@@ -375,7 +375,7 @@ pub fn all_works() -> Array[Work] {
       note: "已投涌现奖，审核中",
     },
     {
-      name: "AI 工具定价核验",
+      name: "验价尺",
       kind: WorkKind::Tool,
       oneliner: "1000 条 AI 工具官网定价 + 5 步证据链 + 14 项验证规则",
       first_public_date: "2026-11-16",
