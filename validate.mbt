@@ -71,6 +71,11 @@ pub fn validate_data(
         c.plan_status,
       )
     }
+    if c.required_work_kind != "" &&
+      c.required_work_kind != "game" &&
+      c.required_work_kind != "tool" {
+      issues.push("目标《" + c.name + "》作品类型限制无效")
+    }
     if c.materials.length() == 0 {
       issues.push("比赛《" + c.name + "》材料清单为空")
     }

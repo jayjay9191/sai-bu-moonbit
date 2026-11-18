@@ -78,6 +78,7 @@ pub(all) struct Competition {
   target_kind : String
   deadline : String
   deadline_date : String
+  required_work_kind : String
   publish_start : String
   publish_end : String
   verified_at : String

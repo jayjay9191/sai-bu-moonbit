@@ -201,6 +201,10 @@ pub fn certify_pack(
 ) -> PackVerdict {
   let pack = generate_pack(work, comp, conflicts)
   let reasons : Array[String] = []
+  let scope = scope_issue(work, comp)
+  if scope != "" {
+    reasons.push(scope)
+  }
   if pack.blocked {
     let list = conflicts_for_competition(conflicts, comp.name)
     let mut found_p0 = false
@@ -252,6 +256,8 @@ pub fn manifest_canonical(
       c.deadline +
       "|" +
       c.deadline_date +
+      "|" +
+      c.required_work_kind +
       "|" +
       c.publish_start +
       "|" +

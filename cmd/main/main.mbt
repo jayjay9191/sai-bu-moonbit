@@ -377,7 +377,7 @@ fn cmd_preflight() -> Unit {
     }
   }
   println(
-    "其余 \{other} 个不可提交：材料缺口、资格待核实或台账未通过核验（详情见逐包认证）",
+    "其余 \{other} 个不可提交：作品类型、材料缺口、资格待核实或台账未通过核验（详情见逐包认证）",
   )
   println("截止撞期：\{report.collisions.length()} 个日期")
   for i in 0..<report.collisions.length() {

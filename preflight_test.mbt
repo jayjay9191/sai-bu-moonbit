@@ -23,6 +23,7 @@ fn fixture_competition(
     status: "测试",
     plan_status: "在途",
     target_kind: "比赛",
+    required_work_kind: "",
     publish_start: "",
     publish_end: "",
     requires_first_publish: false,
@@ -400,4 +401,25 @@ test "certification refuses unknown release date even with all materials" {
   assert_true(
     @sai-bu-moonbit.certify_pack(released, comp, checked, row).certifiable,
   )
+}
+
+///|
+test "in-window tool with a complete pack cannot enter a game-only target" {
+  let comp = @sai-bu-moonbit.all_competitions().filter(c => {
+      c.requires_first_publish
+    })[0]
+  let verified = { ..comp, note: "", }
+  let tool = @sai-bu-moonbit.all_works().filter(w => w.name == "验价尺")[0]
+  let complete = { ..tool, materials_ready: comp.materials, }
+  let row = @sai-bu-moonbit.row_verdict(
+    verified,
+    @sai-bu-moonbit.date_to_days("2026-11-18"),
+  )
+  let conflicts = @sai-bu-moonbit.detect_conflicts(complete, [verified])
+  assert_eq(conflicts.length(), 0)
+  let pack = @sai-bu-moonbit.generate_pack(complete, verified, conflicts)
+  let verdict = @sai-bu-moonbit.certify_pack(complete, verified, conflicts, row)
+  assert_false(verdict.certifiable)
+  assert_true(pack.note.contains("仅接收游戏作品"))
+  assert_true(verdict.reasons[0].contains("仅接收游戏作品"))
 }

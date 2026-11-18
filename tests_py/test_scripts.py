@@ -55,7 +55,7 @@ class TestMbtEmit(unittest.TestCase):
             "allows_existing_works": False, "materials": ["材料 A"],
             "note": "备注",
         }
-        comp.update(publish_start="", publish_end="")
+        comp.update(required_work_kind="", publish_start="", publish_end="")
         first = generate_data.emit_competition(comp)
         second = generate_data.emit_competition(comp)
         self.assertEqual(first, second)

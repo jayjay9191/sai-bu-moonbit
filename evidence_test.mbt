@@ -747,6 +747,7 @@ test "shortest blocking chain two rules for synthetic double P0" {
     track: "测试",
     status: "未报名",
     plan_status: "关注",
+    required_work_kind: "",
     publish_start: "",
     publish_end: "",
     requires_first_publish: true,
