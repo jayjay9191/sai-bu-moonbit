@@ -162,7 +162,9 @@ fn print_usage() -> Unit {
   )
   println("list：打印投稿目标台账")
   println("conflicts <作品名>：查一件作品对全部目标的冲突")
-  println("pack <作品名> <目标名>：生成单个投稿包")
+  println(
+    "pack <作品名> <目标名>：生成单个投稿包并显示可否认证及原因",
+  )
   println("collisions：截止撞期提醒")
   println(
     "benchmark：实测扫描（目标数/规则数/冲突数/投稿包数/耗时）",
@@ -259,10 +261,7 @@ fn cmd_pack(args : Array[String]) -> Unit {
   match @lib.work_by_name(args[1]) {
     Some(w) =>
       match @lib.competition_by_name(args[2]) {
-        Some(comp) => {
-          let conflicts = @lib.detect_conflicts(w, @lib.all_competitions())
-          print_pack(@lib.generate_pack(w, comp, conflicts))
-        }
+        Some(comp) => print_pack_review(w, comp)
         None => {
           println("未找到目标：\{args[2]}")
           print_competition_names()
@@ -423,19 +422,7 @@ fn cmd_trace(args : Array[String]) -> Unit {
             println(chain_line)
             println("")
           }
-          let conflicts = @lib.detect_conflicts(w, @lib.all_competitions())
-          let row = @lib.row_verdict(comp, @lib.today_days(@env.now()))
-          let verdict = @lib.certify_pack(w, comp, conflicts, row)
-          println("== 投稿包认证 ==")
-          print_pack(@lib.generate_pack(w, comp, conflicts))
-          if verdict.certifiable {
-            println("认证结论：可提交")
-          } else {
-            println("认证结论：不可提交")
-            for i in 0..<verdict.reasons.length() {
-              println("  - \{verdict.reasons[i]}")
-            }
-          }
+          print_pack_review(w, comp)
           println(
             "说明：追踪的每一步都带规则原文引用与事实证据；结论由 MoonBit 当场算出。完整案例见 docs/worked-example-moda-dawn.md。",
           )
@@ -448,6 +435,23 @@ fn cmd_trace(args : Array[String]) -> Unit {
     None => {
       println("未找到作品：\{args[1]}")
       print_work_names()
+    }
+  }
+}
+
+///|
+fn print_pack_review(w : @lib.Work, comp : @lib.Competition) -> Unit {
+  let conflicts = @lib.detect_conflicts(w, [comp])
+  let row = @lib.row_verdict(comp, @lib.today_days(@env.now()))
+  let verdict = @lib.certify_pack(w, comp, conflicts, row)
+  println("== 投稿包认证 ==")
+  print_pack(@lib.generate_pack(w, comp, conflicts))
+  if verdict.certifiable {
+    println("认证结论：可提交")
+  } else {
+    println("认证结论：不可提交")
+    for reason in verdict.reasons {
+      println("  - " + reason)
     }
   }
 }
