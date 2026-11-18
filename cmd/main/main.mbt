@@ -33,6 +33,7 @@ fn main {
     "validate" => cmd_validate()
     "preflight" => cmd_preflight()
     "trace" => cmd_trace(args)
+    "itch-zip" => cmd_itch_zip(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -172,6 +173,9 @@ fn print_usage() -> Unit {
   )
   println(
     "trace <作品名> <目标名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
+  )
+  println(
+    "itch-zip：从 ZIP 元数据校验 itch.io HTML5 包体，入口用 scripts/inspect_itch_zip.py",
   )
   println("help：显示本帮助")
 }
@@ -519,4 +523,38 @@ fn cmd_benchmark() -> Unit {
   println(
     "\{rounds} 轮总耗时：\{elapsed_ms} 毫秒，平均每轮：\{elapsed_ms * 1000 / 100} 微秒",
   )
+}
+
+///|
+fn cmd_itch_zip(args : Array[String]) -> Unit {
+  if args.length() != 6 || (args[5] != "0" && args[5] != "1") {
+    println(
+      "用法：itch-zip 文件数 解包字节数 最大文件字节数 最长路径字符数 根目录入口(0/1)",
+    )
+    @env.exit(2)
+  }
+  let issues = @lib.itch_zip_issues(
+    @string.parse_int64(args[1]),
+    @string.parse_int64(args[2]),
+    @string.parse_int64(args[3]),
+    @string.parse_int64(args[4]),
+    args[5] == "1",
+  ) catch {
+    _ => {
+      println("ZIP 指标须为整数")
+      @env.exit(2)
+    }
+  }
+  println("规则来源：https://itch.io/docs/creators/html5")
+  if issues.length() == 0 {
+    println(
+      "包体认证通过：HTML5 入口及四项 ZIP 默认上限均通过",
+    )
+  } else {
+    for issue in issues {
+      println("  - " + issue)
+    }
+    println("包体认证失败")
+    @env.exit(2)
+  }
 }

@@ -1,6 +1,7 @@
 import {
   "jayjay9191/sai-bu-moonbit" @lib,
   "moonbitlang/core/env",
+  "moonbitlang/core/string",
 }
 
 pkgtype(kind: "executable")
