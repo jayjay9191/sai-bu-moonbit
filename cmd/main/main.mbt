@@ -11,6 +11,8 @@
 ///   validate                      校验台账数据（名字/日期/材料/标志位），有问题返回码 1
 ///   preflight                     全链路预检：validate → 逐行核验 → 冲突检测 →
 ///                                 投稿包认证 → 撞期提醒，输出清单 SHA-256
+///   trace <作品名> <比赛名>       引用校验追踪：规则适用条件 → 来源证据 → 结论，
+///                                 再加该对作品 × 比赛的投稿包认证
 ///   help                          显示本帮助
 /// 用法：moon run cmd/main [子命令 ...]
 /// 作品名、比赛名含空格时请加引号，例如：
@@ -29,6 +31,7 @@ fn main {
     "benchmark" => cmd_benchmark()
     "validate" => cmd_validate()
     "preflight" => cmd_preflight()
+    "trace" => cmd_trace(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -150,6 +153,9 @@ fn print_usage() -> Unit {
   println("validate：校验台账数据，有问题返回码 1")
   println(
     "preflight：全链路预检（validate → 逐行核验 → 冲突检测 → 投稿包认证 → 撞期提醒），输出清单 SHA-256",
+  )
+  println(
+    "trace <作品名> <比赛名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
   )
   println("help：显示本帮助")
 }
@@ -354,6 +360,57 @@ fn cmd_preflight() -> Unit {
   println(
     "说明：preflight 是纯本地单次运行，不联网、不重试；清单哈希由全部台账数据算出，数据一变哈希就变。",
   )
+}
+
+///|
+/// 引用校验追踪：打印一件作品对一个比赛的全部规则追踪（规则适用条件 →
+/// 来源证据 → 结论），再加该对组合的投稿包认证。
+/// 追踪的判定与 detect_conflicts 用同一条件（标志位 + 台账字段），
+/// 这里只补上规则原文引用与事实证据，不另写一套判定。
+fn cmd_trace(args : Array[String]) -> Unit {
+  if args.length() < 3 {
+    println("用法：trace <作品名> <比赛名>")
+    print_work_names()
+    print_competition_names()
+    return
+  }
+  match @lib.work_by_name(args[1]) {
+    Some(w) =>
+      match @lib.competition_by_name(args[2]) {
+        Some(comp) => {
+          println("== 引用校验追踪：\{w.name} → \{comp.name} ==")
+          let traces = @lib.trace_all_rules(w, comp)
+          for i in 0..<traces.length() {
+            println(@lib.render_trace(traces[i]))
+            println("")
+          }
+          let conflicts = @lib.detect_conflicts(w, @lib.all_competitions())
+          let row = @lib.row_verdict(comp, @lib.today_days(@env.now()))
+          let verdict = @lib.certify_pack(w, comp, conflicts, row)
+          println("== 投稿包认证 ==")
+          print_pack(@lib.generate_pack(w, comp, conflicts))
+          if verdict.certifiable {
+            println("认证结论：可提交")
+          } else {
+            println("认证结论：不可提交")
+            for i in 0..<verdict.reasons.length() {
+              println("  - \{verdict.reasons[i]}")
+            }
+          }
+          println(
+            "说明：追踪的每一步都带规则原文引用与事实证据；结论由 MoonBit 当场算出。完整案例见 docs/worked-example-moda-dawn.md。",
+          )
+        }
+        None => {
+          println("未找到比赛：\{args[2]}")
+          print_competition_names()
+        }
+      }
+    None => {
+      println("未找到作品：\{args[1]}")
+      print_work_names()
+    }
+  }
 }
 
 ///|

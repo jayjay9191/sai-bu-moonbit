@@ -38,7 +38,11 @@ pub fn manifest_canonical(Array[Competition], Array[Work]) -> String
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
 
+pub fn render_trace(DecisionTrace) -> String
+
 pub fn row_verdict(Competition, Int32) -> RowVerdict
+
+pub fn rule_citation_for(String, String) -> RuleCitation
 
 pub fn sha256_hex(String) -> String
 
@@ -46,9 +50,19 @@ pub fn today_days(UInt64) -> Int32
 
 pub fn today_string(UInt64) -> String
 
+pub fn trace_all_rules(Work, Competition) -> Array[DecisionTrace]
+
+pub fn trace_first_publish(Work, Competition) -> DecisionTrace
+
+pub fn trace_new_work(Work, Competition) -> DecisionTrace
+
+pub fn trace_no_prior_entry(Work, Competition) -> DecisionTrace
+
 pub fn validate_data(Array[Competition], Array[Work]) -> Array[String]
 
 pub fn work_by_name(String) -> Work?
+
+pub fn work_evidence_for(String) -> WorkEvidence
 
 // Errors
 
@@ -77,6 +91,22 @@ pub struct Conflict {
   message : String
 }
 
+pub struct DecisionTrace {
+  work : String
+  competition : String
+  rule : RuleCitation
+  violated : Bool
+  steps : Array[String]
+  conclusion : String
+  level : String
+}
+
+pub struct FactEvidence {
+  fact : String
+  evidence : String
+  source : String
+}
+
 pub struct PackVerdict {
   work : String
   competition : String
@@ -102,6 +132,14 @@ pub struct RowVerdict {
   reason : String
 }
 
+pub struct RuleCitation {
+  rule : String
+  rule_text : String
+  source : String
+  source_note : String
+  verified_at : String
+}
+
 pub struct SubmissionPack {
   work : String
   competition : String
@@ -122,6 +160,11 @@ pub(all) struct Work {
   submitted_to : Array[String]
   materials_ready : Array[String]
   note : String
+}
+
+pub struct WorkEvidence {
+  first_public : FactEvidence?
+  submitted : Array[FactEvidence]
 }
 
 pub enum WorkKind {
