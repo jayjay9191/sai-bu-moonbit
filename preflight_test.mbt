@@ -297,7 +297,7 @@ test "preflight on real data at 2026-11-15" {
   assert_eq(verified_rows, 14)
   assert_eq(report.packs.length(), 84)
   assert_eq(report.certifiable_count, 2)
-  assert_eq(report.blocked_count, 6)
+  assert_eq(report.blocked_count, 3)
   assert_eq(report.collisions.length(), 3)
   assert_eq(report.manifest_hash.length(), 64)
 }
@@ -422,4 +422,32 @@ test "in-window tool with a complete pack cannot enter a game-only target" {
   assert_false(verdict.certifiable)
   assert_true(pack.note.contains("仅接收游戏作品"))
   assert_true(verdict.reasons[0].contains("仅接收游戏作品"))
+}
+
+///|
+test "prior entry requires scope evidence before certifying a complete pack" {
+  let comp = {
+    ..fixture_competition(
+      "测试原创条款赛", "2099-12-01", "2099-12-01", "2026-11-15", "¥0", "",
+    ),
+    requires_no_prior_entry: true,
+    materials: [],
+  }
+  for
+    (entry, expected) in [
+      ("未知赛", "P1"),
+      ("第十九届全国大学生软件创新大赛", "P0"),
+      ("itch.io 游戏上架", "通过"),
+      (comp.name, "通过"),
+    ] {
+    let work = fixture_work("测试作品", "", [entry], [])
+    let conflicts = @sai-bu-moonbit.detect_conflicts(work, [comp])
+    let trace = @sai-bu-moonbit.trace_no_prior_entry(work, comp)
+    assert_eq(trace.level, expected)
+    assert_eq(conflicts.length(), if expected == "通过" { 0 } else { 1 })
+    let row = @sai-bu-moonbit.row_verdict(comp, 20772)
+    let pack = @sai-bu-moonbit.certify_pack(work, comp, conflicts, row)
+    assert_eq(pack.certifiable, expected == "通过")
+    assert_eq(pack.blocked, expected == "P0")
+  }
 }

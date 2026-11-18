@@ -206,7 +206,7 @@ test "collision helpers on empty registry" {
 test "xiaodianjie triggers moda P0 via submitted_to" {
   // 小店日结从未公开（first_public_date 为空），但已投过涌现奖；
   // 规则 1 的第二条分支（已投过其他比赛）仍应触发魔搭 P0。
-  // 另有软件创新大赛规则 3（原创条款）同样触发 P0，
+  // 另有软件创新大赛规则 3（原创条款）触发 P1 待核实，
   // 再加两平台上架目标的规则 4（上架资质缺口 P1），共 4 个冲突。
   match @sai-bu-moonbit.work_by_name("小店日结") {
     Some(w) => {
@@ -315,10 +315,10 @@ test "benchmark sweep counts" {
     }
   }
   assert_eq(total_conflicts, 18)
-  assert_eq(p0, 6)
-  assert_eq(p1, 12)
+  assert_eq(p0, 3)
+  assert_eq(p1, 15)
   assert_eq(total_packs, 84)
-  assert_eq(blocked_packs, 6)
+  assert_eq(blocked_packs, 3)
   assert_eq(@sai-bu-moonbit.collision_dates(comps).length(), 3)
 }
 
@@ -500,7 +500,7 @@ test "validate flags unnamed and duplicate works" {
 test "p0 message has no empty parens for xiaodianjie" {
   // 回归测试：2648796 修过的 bug——小店日结从未公开，
   // P0 文案曾显示“已公开（）”。保证不再复发。
-  // 现在共 4 个冲突：魔搭 P0、软件创新大赛 P0，
+  // 现在共 4 个冲突：魔搭 P0、软件创新大赛 P1，
   // 再加两平台上架目标的上架资质缺口 P1。
   match @sai-bu-moonbit.work_by_name("小店日结") {
     Some(w) => {
@@ -649,7 +649,7 @@ test "validate flags contradictory no-prior-entry flag" {
 ///|
 test "no-prior-entry rule fires on submitted_to only" {
   // 规则 3（原创条款）只看 submitted_to，不看 first_public_date：
-  // 小店日结从未公开但已投涌现奖，应报 P0；
+  // 小店日结从未公开但已投涌现奖，应报 P1；
   // 一件只公开、没投过任何比赛的作品，不应报。
   let comp = test_competition(
     "测试原创条款赛",
@@ -666,10 +666,8 @@ test "no-prior-entry rule fires on submitted_to only" {
     Some(w) => {
       let conflicts = @sai-bu-moonbit.detect_conflicts(w, [comp])
       assert_eq(conflicts.length(), 1)
-      assert_eq(conflicts[0].level, "P0")
-      assert_true(
-        conflicts[0].message.contains("未参加过其他国家级公开比赛"),
-      )
+      assert_eq(conflicts[0].level, "P1")
+      assert_true(conflicts[0].message.contains("原创条款待核实"))
     }
     None => assert_true(false)
   }
@@ -689,12 +687,11 @@ test "no-prior-entry rule fires on submitted_to only" {
 }
 
 ///|
-test "software innovation P0 for submitted works only" {
+test "software innovation pending for submitted works only" {
   // 软件创新大赛原创条款（规则 3）：只看 submitted_to，不看
-  // first_public_date。已投过其他比赛的三件作品应报 P0；AI 工具
+  // first_public_date。已投过其他比赛的三件作品应报 P1；AI 工具
   // 定价核验只公开、未投过任何比赛，应为 0 个冲突——它是规则 3
-  // 不读公开日期的直接证据。赛簿本身已投 MoonBit，按此条款
-  // 同样冲突（它不在作品表里，见该比赛的 note）。
+  // 不读公开日期的直接证据。
   let comps = @sai-bu-moonbit.all_competitions()
   let works = @sai-bu-moonbit.all_works()
   for wi in 0..<works.length() {
@@ -704,10 +701,8 @@ test "software innovation P0 for submitted works only" {
     )
     if works[wi].submitted_to.length() > 0 {
       assert_eq(list.length(), 1)
-      assert_eq(list[0].level, "P0")
-      assert_true(
-        list[0].message.contains("未参加过其他国家级公开比赛"),
-      )
+      assert_eq(list[0].level, "P1")
+      assert_true(list[0].message.contains("原创条款待核实"))
     } else {
       assert_eq(list.length(), 0)
     }
@@ -822,7 +817,7 @@ test "pack dawn to zaohua gaps one not blocked" {
 }
 
 ///|
-test "pack dawn to software innovation is blocked" {
+test "pack dawn to software innovation needs scope verification" {
   match @sai-bu-moonbit.work_by_name("第零次黎明") {
     Some(w) =>
       match
@@ -835,7 +830,7 @@ test "pack dawn to software innovation is blocked" {
             @sai-bu-moonbit.all_competitions(),
           )
           let pack = @sai-bu-moonbit.generate_pack(w, comp, conflicts)
-          assert_true(pack.blocked)
+          assert_true(!pack.blocked)
           assert_eq(pack.gaps.length(), 1)
         }
         None => assert_true(false)
@@ -845,8 +840,8 @@ test "pack dawn to software innovation is blocked" {
 }
 
 ///|
-test "pack tools to software innovation are blocked" {
-  // 两件工具都已投涌现奖，软件创新大赛原创条款 P0，投稿包挡住。
+test "pack tools to software innovation have pending prior entry scope" {
+  // 两件工具都已投涌现奖，软件创新大赛原创条款待核实，未形成 P0。
   for name in ["小店日结", "诉求整理台"] {
     match @sai-bu-moonbit.work_by_name(name) {
       Some(w) =>
@@ -860,7 +855,7 @@ test "pack tools to software innovation are blocked" {
               @sai-bu-moonbit.all_competitions(),
             )
             let pack = @sai-bu-moonbit.generate_pack(w, comp, conflicts)
-            assert_true(pack.blocked)
+            assert_true(!pack.blocked)
           }
           None => assert_true(false)
         }

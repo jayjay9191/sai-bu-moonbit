@@ -82,8 +82,8 @@ test "trace first publish P0 via submitted only for xiaodianjie" {
 }
 
 ///|
-test "trace no prior entry P0 for dawn to software innovation" {
-  // 软件创新大赛原创条款（规则 3）：黎明已投 Qoder / AI PLAY，应报 P0；
+test "trace no prior entry pending for dawn to software innovation" {
+  // 软件创新大赛原创条款（规则 3）：黎明已投 Qoder / AI PLAY，级别待核实；
   // 追踪必须写明本规则只读 submitted_to，不读首次公开日期。
   match @sai-bu-moonbit.work_by_name("第零次黎明") {
     Some(w) =>
@@ -94,7 +94,7 @@ test "trace no prior entry P0 for dawn to software innovation" {
         Some(comp) => {
           let t = @sai-bu-moonbit.trace_no_prior_entry(w, comp)
           assert_true(t.violated)
-          assert_eq(t.level, "P0")
+          assert_eq(t.level, "P1")
           let text = @sai-bu-moonbit.render_trace(t)
           assert_true(text.contains("只读 submitted_to"))
           assert_true(text.contains("未参加过其他国家级公开比赛"))
@@ -634,8 +634,8 @@ test "shortest blocking chain for dawn to moda is first publish" {
 }
 
 ///|
-test "shortest blocking chain for dawn to software innovation is no prior entry" {
-  // 黎明 → 软件创新大赛：唯一 P0 是规则 3（原创条款），链只有它一条。
+test "shortest blocking chain for dawn to software innovation is empty for pending scope" {
+  // 黎明 → 软件创新大赛：赛事级别待核实，不形成 P0 阻断链。
   match @sai-bu-moonbit.work_by_name("第零次黎明") {
     Some(w) =>
       match
@@ -645,12 +645,7 @@ test "shortest blocking chain for dawn to software innovation is no prior entry"
         Some(comp) => {
           let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
           let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
-          assert_eq(chain.length(), 1)
-          assert_eq(chain[0], "未参加过其他比赛")
-          assert_eq(
-            @sai-bu-moonbit.render_blocking_chain(chain),
-            "最短阻断链：未参加过其他比赛 → 不可提交（P0）",
-          )
+          assert_eq(chain.length(), 0)
         }
         None => assert_true(false)
       }
@@ -733,7 +728,7 @@ test "shortest blocking chain two rules for synthetic double P0" {
     kind: base.kind,
     oneliner: "测试用作品",
     first_public_date: "2026-11-01",
-    submitted_to: ["Qoder"],
+    submitted_to: ["第十九届全国大学生软件创新大赛"],
     materials_ready: [],
     note: "",
   }

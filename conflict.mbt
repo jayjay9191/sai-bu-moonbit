@@ -80,12 +80,57 @@ fn first_publish_decision(work : Work, comp : Competition) -> (String, String) {
 }
 
 ///|
+/// 只按已核实的赛事层级裁定。其他比赛名保留为待核实。
+fn prior_entry_scope(name : String) -> (String, String) {
+  match name {
+    "第十九届全国大学生软件创新大赛" =>
+      ("范围内", "https://aisoft.lnpu.edu.cn/info/1028/12632.htm")
+    "第二十届全国大学生软件创新大赛" =>
+      ("范围内", "https://ss.dlut.edu.cn/info/1371/35562.htm")
+    "itch.io 游戏上架" | "TapTap 游戏上架" =>
+      ("范围外", "台账类型为平台上架")
+    _ => ("待核实", "缺少国家级公开比赛的范围证据")
+  }
+}
+
+///|
+fn no_prior_entry_decision(work : Work, comp : Competition) -> (String, String) {
+  let confirmed : Array[String] = []
+  let pending : Array[String] = []
+  for name in work.submitted_to {
+    if name != comp.name {
+      match prior_entry_scope(name).0 {
+        "范围内" => confirmed.push(name)
+        "待核实" => pending.push(name)
+        _ => ()
+      }
+    }
+  }
+  if confirmed.length() > 0 {
+    (
+      "P0",
+      "原创条款冲突：已登记参加其他国家级公开比赛 " +
+      join_strings(confirmed, "、"),
+    )
+  } else if pending.length() > 0 {
+    (
+      "P1",
+      "原创条款待核实：请补充赛事级别和公开范围证据（" +
+      join_strings(pending, "、") +
+      "）",
+    )
+  } else {
+    (
+      "通过", "未投过其他比赛，或已登记记录均不属于本条范围",
+    )
+  }
+}
+
+///|
 /// 逐个目标检查一件作品的规则冲突。
 /// 规则 1：窗口外首次公开或另投比赛为 P0，缺日期或窗口为 P1。
 /// 规则 2（P1）：比赛要求“必须新做”，但作品已有公开版本。
-/// 规则 3（P0）：比赛要求“未参加过其他国家级公开比赛”（原创条款，
-///   如软件创新大赛），但作品已投过其他比赛。注意：只看 submitted_to，
-///   不看 first_public_date——只公开、没投过别的比赛不违反这一条。
+/// 规则 3：其他国家级公开赛事有证据则 P0，缺范围证据则 P1。
 /// 规则 4（P1）：平台上架目标要求完成上架资质清单（materials 即清单，
 ///   如 TapTap 四项资质、itch.io 的 ZIP 包与 AI 披露），但作品有未就
 ///   绪项。只对 target_kind == "平台上架" 的目标生效；缺口逐项列出，
@@ -118,15 +163,11 @@ pub fn detect_conflicts(
         "），不能直接交",
       })
     }
-    if comp.requires_no_prior_entry && work.submitted_to.length() > 0 {
-      result.push({
-        level: "P0",
-        competition: comp.name,
-        work: work.name,
-        message: "原创条款冲突：已投 " +
-        join_strings(work.submitted_to, "、") +
-        "，违反“参赛作品必须是原创且未参加过其他国家级公开比赛”",
-      })
+    if comp.requires_no_prior_entry {
+      let (level, message) = no_prior_entry_decision(work, comp)
+      if level != "通过" {
+        result.push({ level, competition: comp.name, work: work.name, message, })
+      }
     }
     if comp.target_kind == "平台上架" {
       let gaps : Array[String] = []

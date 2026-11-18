@@ -224,6 +224,12 @@ pub fn certify_pack(
       reasons.push(reason)
     }
   }
+  if comp.requires_no_prior_entry {
+    let (level, reason) = no_prior_entry_decision(work, comp)
+    if level == "P1" {
+      reasons.push(reason)
+    }
+  }
   if pack.gaps.length() > 0 {
     reasons.push("材料缺口 " + pack.gaps.length().to_string() + " 项")
   }

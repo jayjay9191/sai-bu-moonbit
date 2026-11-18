@@ -387,52 +387,39 @@ pub fn trace_no_prior_entry(work : Work, comp : Competition) -> DecisionTrace {
     steps.push(
       "注意：本规则只读 submitted_to，不读首次公开日期——只公开、没投过比赛不违反。",
     )
-    if work.submitted_to.length() == 0 {
+    let entries = work.submitted_to.filter(name => name != comp.name)
+    if entries.length() == 0 {
       let pub_note = if work.first_public_date == "" {
         "作品未公开。"
       } else {
-        "作品虽已公开（首次公开于 " +
-        work.first_public_date +
-        "），但本规则不读公开日期，不触发。"
+        "作品已公开，但本规则不读公开日期。"
       }
       steps.push(
-        "事实：作品未投过其他比赛（submitted_to 为空）。" +
-        pub_note,
+        "事实：未投过其他比赛（台账记录）。" + pub_note,
       )
-      steps.push("推导：已投记录为空，原创条款满足。")
-      steps.push("结论：通过——未参加过其他比赛。")
-      {
-        work: work.name,
-        competition: comp.name,
-        rule: citation,
-        violated: false,
-        steps,
-        conclusion: "通过：未参加过其他比赛",
-        level: "通过",
-      }
-    } else {
-      let mut line = "事实：作品已投 " +
-        join_strings(work.submitted_to, "、") +
-        "。"
-      for i in 0..<work.submitted_to.length() {
-        line = line + evidence_for_submitted(ev, work.submitted_to[i])
-      }
-      steps.push(line)
+    }
+    for name in entries {
+      let (scope, source) = prior_entry_scope(name)
       steps.push(
-        "推导：已投 " +
-        join_strings(work.submitted_to, "、") +
-        "，违反“参赛作品必须是原创且未参加过其他国家级公开比赛”。",
+        "已登记 " +
+        name +
+        " · " +
+        scope +
+        " · " +
+        source +
+        evidence_for_submitted(ev, name),
       )
-      steps.push("结论：P0 冲突——不得投稿该比赛。")
-      {
-        work: work.name,
-        competition: comp.name,
-        rule: citation,
-        violated: true,
-        steps,
-        conclusion: "P0 冲突：不得投稿",
-        level: "P0",
-      }
+    }
+    let (level, reason) = no_prior_entry_decision(work, comp)
+    steps.push("结论：" + reason)
+    {
+      work: work.name,
+      competition: comp.name,
+      rule: citation,
+      violated: level != "通过",
+      steps,
+      conclusion: level + "：" + reason,
+      level,
     }
   }
 }

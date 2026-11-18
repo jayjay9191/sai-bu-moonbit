@@ -437,9 +437,9 @@ test "cell: 第零次黎明 × 第二十届全国大学生软件创新大赛" {
             conflicts, "第二十届全国大学生软件创新大赛",
           )
           assert_eq(list.length(), 1)
-          assert_eq(list[0].level, "P0")
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
-          assert_eq(pack.blocked, true)
+          assert_eq(pack.blocked, false)
         }
         None => assert_true(false)
       }
@@ -947,9 +947,9 @@ test "cell: 小店日结 × 第二十届全国大学生软件创新大赛" {
             conflicts, "第二十届全国大学生软件创新大赛",
           )
           assert_eq(list.length(), 1)
-          assert_eq(list[0].level, "P0")
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
-          assert_eq(pack.blocked, true)
+          assert_eq(pack.blocked, false)
         }
         None => assert_true(false)
       }
@@ -1457,9 +1457,9 @@ test "cell: 诉求整理台 × 第二十届全国大学生软件创新大赛" {
             conflicts, "第二十届全国大学生软件创新大赛",
           )
           assert_eq(list.length(), 1)
-          assert_eq(list[0].level, "P0")
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
-          assert_eq(pack.blocked, true)
+          assert_eq(pack.blocked, false)
         }
         None => assert_true(false)
       }

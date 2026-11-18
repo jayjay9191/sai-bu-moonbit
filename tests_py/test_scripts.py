@@ -290,7 +290,7 @@ class TestCellTestGenerator(unittest.TestCase):
                  if levels == ["P0"])
         p1 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P1"])
-        self.assertEqual((p0, p1), (6, 12))
+        self.assertEqual((p0, p1), (3, 15))
 
     def test_row_table_covers_all_competitions(self):
         self.assertEqual(len(generate_tests.ROW_EXPECT), 21)
