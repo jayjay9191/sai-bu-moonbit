@@ -617,6 +617,38 @@ pub fn trace_all_rules(work : Work, comp : Competition) -> Array[DecisionTrace] 
 }
 
 ///|
+/// 最短阻断链：从 trace_all_rules 的结果里取 level == "P0" 的规则名，
+/// 按规则顺序（首次发布 → 须新做 → 原创条款 → 上架资质）排列。
+/// 判定与 detect_conflicts 用同一套——这里直接复用 trace 的结果
+/// （trace 与引擎的一致性由“追踪与引擎 84 对全量一致”测试保证，
+/// 链与引擎 P0 数的一致性另有全量测试），不另写一套判定。
+/// 返回 P0 规则名列表；空 = 无 P0 阻断（P1 不阻断，见案例四、案例五）。
+/// 借鉴 FrontierLab 的 shrinking：把“推理”缩到最短、做成可见的能力。
+pub fn shortest_blocking_chain(traces : Array[DecisionTrace]) -> Array[String] {
+  let result : Array[String] = []
+  for i in 0..<traces.length() {
+    if traces[i].level == "P0" {
+      result.push(traces[i].rule.rule)
+    }
+  }
+  result
+}
+
+///|
+/// 把最短阻断链渲染成一行：P0 规则名 + 结论。
+/// 无 P0 时返回空字符串，调用方不打印这一行。
+/// 两条规则同时阻断时用 " + " 连接，如“首次发布 + 未参加过其他比赛”。
+pub fn render_blocking_chain(chain : Array[String]) -> String {
+  if chain.length() == 0 {
+    ""
+  } else {
+    "最短阻断链：" +
+    join_strings(chain, " + ") +
+    " → 不可提交（P0）"
+  }
+}
+
+///|
 /// 把一份追踪渲染成可读文本：标题 + 规则原文与来源 + 逐步记录 + 结论。
 pub fn render_trace(t : DecisionTrace) -> String {
   let header = if t.rule.rule == "" {

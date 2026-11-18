@@ -12,6 +12,7 @@
 ///   preflight                     全链路预检：validate → 逐行核验 → 冲突检测 →
 ///                                 投稿包认证 → 撞期提醒，输出清单 SHA-256
 ///   trace <作品名> <目标名>       引用校验追踪：规则适用条件 → 来源证据 → 结论，
+///                                 有 P0 时再加一行最短阻断链，
 ///                                 再加该对作品 × 目标的投稿包认证
 ///   help                          显示本帮助
 /// 用法：moon run cmd/main [子命令 ...]
@@ -390,7 +391,8 @@ fn cmd_preflight() -> Unit {
 
 ///|
 /// 引用校验追踪：打印一件作品对一个目标的全部规则追踪（规则适用条件 →
-/// 来源证据 → 结论），再加该对组合的投稿包认证。
+/// 来源证据 → 结论），有 P0 时再加一行最短阻断链（是哪 1–2 条规则
+/// 直接导致不可提交），再加该对组合的投稿包认证。
 /// 追踪的判定与 detect_conflicts 用同一条件（标志位 + 台账字段），
 /// 这里只补上规则原文引用与事实证据，不另写一套判定。
 fn cmd_trace(args : Array[String]) -> Unit {
@@ -408,6 +410,13 @@ fn cmd_trace(args : Array[String]) -> Unit {
           let traces = @lib.trace_all_rules(w, comp)
           for i in 0..<traces.length() {
             println(@lib.render_trace(traces[i]))
+            println("")
+          }
+          let chain_line = @lib.render_blocking_chain(
+            @lib.shortest_blocking_chain(traces),
+          )
+          if chain_line != "" {
+            println(chain_line)
             println("")
           }
           let conflicts = @lib.detect_conflicts(w, @lib.all_competitions())

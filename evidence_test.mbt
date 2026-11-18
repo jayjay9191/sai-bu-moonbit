@@ -602,3 +602,188 @@ test "trace all rules dawn to taptap has one P1" {
     None => assert_true(false)
   }
 }
+
+///|
+test "shortest blocking chain for dawn to moda is first publish" {
+  // 黎明 → 魔搭：唯一 P0 是规则 1（首次发布），最短阻断链只有它一条；
+  // 渲染行指明是哪条规则直接导致不可提交。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name(
+          "魔搭 AI+∞ 第三期「AI 造游戏」",
+        ) {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
+          assert_eq(chain.length(), 1)
+          assert_eq(chain[0], "首次发布")
+          assert_eq(
+            @sai-bu-moonbit.render_blocking_chain(chain),
+            "最短阻断链：首次发布 → 不可提交（P0）",
+          )
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "shortest blocking chain for dawn to software innovation is no prior entry" {
+  // 黎明 → 软件创新大赛：唯一 P0 是规则 3（原创条款），链只有它一条。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name(
+          "第二十届全国大学生软件创新大赛",
+        ) {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
+          assert_eq(chain.length(), 1)
+          assert_eq(chain[0], "未参加过其他比赛")
+          assert_eq(
+            @sai-bu-moonbit.render_blocking_chain(chain),
+            "最短阻断链：未参加过其他比赛 → 不可提交（P0）",
+          )
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "shortest blocking chain empty when rule passes" {
+  // 验价尺 → 软件创新大赛：规则 3 通过，无 P0 阻断，链为空、渲染为空串。
+  match @sai-bu-moonbit.work_by_name("验价尺") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name(
+          "第二十届全国大学生软件创新大赛",
+        ) {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
+          assert_eq(chain.length(), 0)
+          assert_eq(@sai-bu-moonbit.render_blocking_chain(chain), "")
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "shortest blocking chain empty when no rule applies" {
+  // 黎明 → 松江：无适用规则，无 P0 阻断。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name("松江·创世纪 AI 游戏大赛") {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
+          assert_eq(chain.length(), 0)
+          assert_eq(@sai-bu-moonbit.render_blocking_chain(chain), "")
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "shortest blocking chain empty for P1 only" {
+  // P1 不是阻断：黎明 → 知乎 S3（须新做）与黎明 → TapTap（上架资质）
+  // 都只有 P1，链为空——最短阻断链只收 P0。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) => {
+      match @sai-bu-moonbit.competition_by_name("知乎黑客松 S3") {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          assert_eq(@sai-bu-moonbit.shortest_blocking_chain(traces).length(), 0)
+        }
+        None => assert_true(false)
+      }
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          assert_eq(@sai-bu-moonbit.shortest_blocking_chain(traces).length(), 0)
+        }
+        None => assert_true(false)
+      }
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "shortest blocking chain two rules for synthetic double P0" {
+  // 合成比赛同时开规则 1 与规则 3，作品两条都触发：链应有两条，
+  // 按规则顺序排列，渲染行用 " + " 连接。
+  let base = @sai-bu-moonbit.all_works()[0]
+  let work : @sai-bu-moonbit.Work = {
+    name: "合成作品",
+    kind: base.kind,
+    oneliner: "测试用作品",
+    first_public_date: "2026-11-01",
+    submitted_to: ["Qoder"],
+    materials_ready: [],
+    note: "",
+  }
+  let comp : @sai-bu-moonbit.Competition = {
+    name: "合成双 P0 比赛",
+    target_kind: "比赛",
+    deadline: "2026-12-31",
+    deadline_date: "2026-12-31",
+    verified_at: "2026-11-18",
+    prize: "无",
+    track: "测试",
+    status: "未报名",
+    plan_status: "关注",
+    requires_first_publish: true,
+    requires_new_work: false,
+    requires_no_prior_entry: true,
+    allows_existing_works: false,
+    materials: [],
+    note: "",
+  }
+  let traces = @sai-bu-moonbit.trace_all_rules(work, comp)
+  let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
+  assert_eq(chain.length(), 2)
+  assert_eq(chain[0], "首次发布")
+  assert_eq(chain[1], "未参加过其他比赛")
+  assert_eq(
+    @sai-bu-moonbit.render_blocking_chain(chain),
+    "最短阻断链：首次发布 + 未参加过其他比赛 → 不可提交（P0）",
+  )
+}
+
+///|
+test "shortest blocking chain matches engine P0 count on all pairs" {
+  // 最短阻断链与引擎用同一判定：每对作品 × 目标，链的长度必须等于
+  // detect_conflicts 报的 P0 冲突数；否则链与判定两张皮。
+  let comps = @sai-bu-moonbit.all_competitions()
+  let works = @sai-bu-moonbit.all_works()
+  for wi in 0..<works.length() {
+    let w = works[wi]
+    let conflicts = @sai-bu-moonbit.detect_conflicts(w, comps)
+    for ci in 0..<comps.length() {
+      let traces = @sai-bu-moonbit.trace_all_rules(w, comps[ci])
+      let chain = @sai-bu-moonbit.shortest_blocking_chain(traces)
+      let pair = @sai-bu-moonbit.conflicts_for_competition(
+        conflicts,
+        comps[ci].name,
+      )
+      let mut p0_conflicts = 0
+      for i in 0..<pair.length() {
+        if pair[i].level == "P0" {
+          p0_conflicts = p0_conflicts + 1
+        }
+      }
+      assert_eq(chain.length(), p0_conflicts)
+    }
+  }
+}

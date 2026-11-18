@@ -38,6 +38,8 @@ pub fn manifest_canonical(Array[Competition], Array[Work]) -> String
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
 
+pub fn render_blocking_chain(Array[String]) -> String
+
 pub fn render_trace(DecisionTrace) -> String
 
 pub fn row_verdict(Competition, Int32) -> RowVerdict
@@ -45,6 +47,8 @@ pub fn row_verdict(Competition, Int32) -> RowVerdict
 pub fn rule_citation_for(String, String) -> RuleCitation
 
 pub fn sha256_hex(String) -> String
+
+pub fn shortest_blocking_chain(Array[DecisionTrace]) -> Array[String]
 
 pub fn today_days(UInt64) -> Int32
 
