@@ -85,7 +85,7 @@ pub fn detect_conflicts(
         work: work.name,
         message: "原创条款冲突：已投 " +
         join_strings(work.submitted_to, "、") +
-        "，违反“参赛作品必须为原创且未参加过其他国家级公开比赛”",
+        "，违反“参赛作品必须是原创且未参加过其他国家级公开比赛”",
       })
     }
   }

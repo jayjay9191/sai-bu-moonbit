@@ -309,7 +309,7 @@ pub fn all_competitions() -> Array[Competition] {
       name: "第二十届全国大学生软件创新大赛",
       deadline: "2027-01-15 18:00（报名）",
       deadline_date: "2027-01-15",
-      verified_at: "2026-11-15",
+      verified_at: "2026-11-18",
       prize: "全国一等奖 ¥14,000×20、二等奖 ¥6,000×30",
       track: "指定题目 · AI赋能学习生产力（移动终端）· 区域赛线上，全国决赛东莞线下",
       status: "关注中，未报名",
@@ -321,7 +321,7 @@ pub fn all_competitions() -> Array[Competition] {
       materials: [
         "指定题目作品：AI赋能学习生产力——面向移动终端的场景创新",
       ],
-      note: "原创条款原文：“参赛作品必须为原创且未参加过其他国家级公开比赛的作品”“同一作品重复参加比赛，一经查实取消资格和成绩”；赛簿本身已投 MoonBit，按此条款同样冲突",
+      note: "原创条款原文：“参赛作品必须是原创且未参加过其他国家级公开比赛的作品”“同一作品重复参加比赛，一经查实，将取消本次比赛资格和成绩”；赛簿本身已投 MoonBit，按此条款同样冲突；规则来源：大赛官网 https://www.swcontest.com.cn/；大连理工大学软件学院参赛通知 https://ss.dlut.edu.cn/info/1371/35562.htm（引用第二十届规则原文，2026-11-18 核对）",
     },
     {
       name: "Rokid Spatial Joy 2026",

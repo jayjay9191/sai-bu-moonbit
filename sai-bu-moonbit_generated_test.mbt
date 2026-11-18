@@ -2219,7 +2219,7 @@ test "row: 第二十届全国大学生软件创新大赛" {
     Some(c) => {
       assert_eq(c.deadline_date, "2027-01-15")
       assert_eq(c.plan_status, "关注")
-      assert_eq(c.verified_at, "2026-11-15")
+      assert_eq(c.verified_at, "2026-11-18")
       assert_eq(c.requires_first_publish, false)
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, true)

@@ -93,7 +93,7 @@ ROW_EXPECT = {
     "绿联首届黑客松": ("2026-12-07", "在途", "2026-11-16", False, False, False, False),
     "中小企业 AI 应用产品大赛": ("2026-12-10", "关注", "2026-11-15", False, False, False, False),
     "造化首届体素游戏创作大赛": ("2026-12-15", "关注", "2026-11-15", False, True, False, False),
-    "第二十届全国大学生软件创新大赛": ("2027-01-15", "关注", "2026-11-15", False, False, True, False),
+    "第二十届全国大学生软件创新大赛": ("2027-01-15", "关注", "2026-11-18", False, False, True, False),
     "Rokid Spatial Joy 2026": ("2027-01-28", "在途", "2026-11-13", False, False, False, False),
 }
 

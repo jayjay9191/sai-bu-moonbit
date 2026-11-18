@@ -83,10 +83,10 @@ pub fn rule_citation_for(rule : String, competition : String) -> RuleCitation {
     competition == "第二十届全国大学生软件创新大赛" {
     {
       rule,
-      rule_text: "参赛作品必须为原创且未参加过其他国家级公开比赛的作品；同一作品重复参加比赛，一经查实取消资格和成绩",
+      rule_text: "参赛作品必须是原创且未参加过其他国家级公开比赛的作品；同一作品重复参加比赛，一经查实，将取消本次比赛资格和成绩",
       source: "第二十届全国大学生软件创新大赛原创条款原文",
-      source_note: "条款原文已收录于台账 note",
-      verified_at: "2026-11-15",
+      source_note: "大赛官网 https://www.swcontest.com.cn/；大连理工大学软件学院参赛通知 https://ss.dlut.edu.cn/info/1371/35562.htm（引用第二十届规则原文）",
+      verified_at: "2026-11-18",
     }
   } else {
     {
@@ -373,7 +373,7 @@ pub fn trace_no_prior_entry(work : Work, comp : Competition) -> DecisionTrace {
     let ev = work_evidence_for(work.name)
     let steps : Array[String] = []
     steps.push(
-      "适用条件：比赛要求“参赛作品必须为原创且未参加过其他国家级公开比赛”（标志位 requires_no_prior_entry = true）。",
+      "适用条件：比赛要求“参赛作品必须是原创且未参加过其他国家级公开比赛”（标志位 requires_no_prior_entry = true）。",
     )
     steps.push("规则原文：" + citation.rule_text)
     steps.push(
@@ -422,7 +422,7 @@ pub fn trace_no_prior_entry(work : Work, comp : Competition) -> DecisionTrace {
       steps.push(
         "推导：已投 " +
         join_strings(work.submitted_to, "、") +
-        "，违反“参赛作品必须为原创且未参加过其他国家级公开比赛”。",
+        "，违反“参赛作品必须是原创且未参加过其他国家级公开比赛”。",
       )
       steps.push("结论：P0 冲突——不得投稿该比赛。")
       {

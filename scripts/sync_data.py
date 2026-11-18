@@ -67,8 +67,11 @@
   华为：华为云开发者大赛平台页面，需登录报名；
   知乎 S3：赛事挂在魔搭活动列表里，细则登录墙后；
   Rokid：官网链接未找到，无法检查。
-未覆盖：第二十届全国大学生软件创新大赛（1 个；尚未排进任何一批——
-它的官方规则页还没定位到）。
+- 软件创新大赛（2026-11-18 新增，只核实、不自动写）：大连理工大学
+  软件学院参赛通知页引用第二十届规则原文，核实原创条款、报名截止
+  2027-01-15 与一等奖 ¥14,000；官网 https://www.swcontest.com.cn/
+  在本机抓取时未通（以通知页为准，通知页内明确写出官网地址）。
+未覆盖：无（19 个比赛全部有检查覆盖；MoonBit 只报告）。
 """
 
 import argparse
@@ -848,6 +851,43 @@ def check_rokid(report: Report, data: dict):
                    "多处数字冲突，核对前不要以任一版本为准")
 
 
+def check_swcontest(report: Report, data: dict):
+    """第二十届全国大学生软件创新大赛：大连理工大学软件学院参赛通知
+    引用第二十届规则原文。核实原创条款、报名截止与一等奖；只核实、
+    不自动写数据（来源链接与 verified_at 由人工在 JSON 里补）。
+    官网 https://www.swcontest.com.cn/ 在本机抓取时未通，以通知页
+    为准（通知页内明确写出官网地址）。"""
+    report.add("第二十届全国大学生软件创新大赛 "
+               "https://ss.dlut.edu.cn/info/1371/35562.htm")
+    comp = find_comp(data, "第二十届全国大学生软件创新大赛")
+    if comp is None:
+        report.unknown("台账里没有软件创新大赛，跳过")
+        return
+    try:
+        page = fetch("https://ss.dlut.edu.cn/info/1371/35562.htm")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    text = re.sub(r"\s+", "", visible_text(page))
+    ok_rule = "参赛作品必须是原创且未参加过其他国家级公开比赛的作品" in text
+    ok_deadline = re.search(r"2027年01月15日18:00", text) is not None
+    ok_prize = re.search(r"一等奖：?20项，颁发证书，奖金为RMB14000元/项", text) is not None
+    if ok_rule:
+        report.ok("原创条款原文与台账一致")
+    else:
+        report.unknown("通知页里找不到原创条款原文")
+    if ok_deadline:
+        report.ok("报名截止 2027-01-15 18:00，与台账一致")
+    else:
+        report.unknown("通知页里找不到报名截止 2027-01-15")
+    if ok_prize:
+        report.ok("一等奖 ¥14,000×20，与台账一致")
+    else:
+        report.unknown("通知页里找不到一等奖 ¥14,000")
+    if ok_rule and ok_deadline and ok_prize:
+        report.mark_verified(comp["name"], "原创条款/报名截止/奖金已确认")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="同步比赛数据（只更新能核实的字段）")
     parser.add_argument("--dry-run", action="store_true", help="只打印报告，不改文件")
@@ -877,8 +917,8 @@ def main() -> int:
     check_huawei(report, data)
     check_zhihu(report, data)
     check_rokid(report, data)
-    report.add("未覆盖：第二十届全国大学生软件创新大赛（1 个；"
-               "尚未排进任何一批——它的官方规则页还没定位到），保留旧值。")
+    check_swcontest(report, data)
+    report.add("未覆盖：无——19 个比赛全部有检查覆盖。")
     today = today_cst()
     if args.dry_run:
         # dry-run 只算“哪些行会被更新”，不改内存里的数据。

@@ -354,3 +354,102 @@ test "trace agrees with detect_conflicts on all pairs" {
     }
   }
 }
+
+///|
+test "trace first publish passes for clean work to moda" {
+  // 既没公开、也没投过任何比赛的作品：首次发布规则两个分支均未命中，
+  // 追踪应报通过（满足首次发布要求），不是 P0。
+  let base = @sai-bu-moonbit.all_works()[0]
+  let clean : @sai-bu-moonbit.Work = {
+    name: "干净的新作品",
+    kind: base.kind,
+    oneliner: "测试用作品",
+    first_public_date: "",
+    submitted_to: [],
+    materials_ready: [],
+    note: "",
+  }
+  match
+    @sai-bu-moonbit.competition_by_name(
+      "魔搭 AI+∞ 第三期「AI 造游戏」",
+    ) {
+    Some(comp) => {
+      let t = @sai-bu-moonbit.trace_first_publish(clean, comp)
+      assert_true(!t.violated)
+      assert_eq(t.level, "通过")
+      assert_eq(t.conclusion, "通过：满足首次发布要求")
+      assert_true(
+        @sai-bu-moonbit.render_trace(t).contains("两个分支均未命中"),
+      )
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace new work not applicable for dawn to songjiang" {
+  // 松江明确已有成品可参赛，不要求必须新做，规则不适用。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name("松江·创世纪 AI 游戏大赛") {
+        Some(comp) => {
+          let t = @sai-bu-moonbit.trace_new_work(w, comp)
+          assert_true(!t.violated)
+          assert_eq(t.level, "通过")
+          assert_eq(t.conclusion, "通过：规则不适用")
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace no prior entry not applicable for dawn to songjiang" {
+  // 松江无原创条款要求，规则不适用。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name("松江·创世纪 AI 游戏大赛") {
+        Some(comp) => {
+          let t = @sai-bu-moonbit.trace_no_prior_entry(w, comp)
+          assert_true(!t.violated)
+          assert_eq(t.level, "通过")
+          assert_eq(t.conclusion, "通过：规则不适用")
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace no prior entry passes for unpublished clean work" {
+  // 既没公开、也没投过比赛的作品对软件创新大赛：规则 3 通过，
+  // 且追踪要写明“作品未公开。”（pub_note 的另一分支）。
+  let base = @sai-bu-moonbit.all_works()[0]
+  let clean : @sai-bu-moonbit.Work = {
+    name: "干净的新作品",
+    kind: base.kind,
+    oneliner: "测试用作品",
+    first_public_date: "",
+    submitted_to: [],
+    materials_ready: [],
+    note: "",
+  }
+  match
+    @sai-bu-moonbit.competition_by_name(
+      "第二十届全国大学生软件创新大赛",
+    ) {
+    Some(comp) => {
+      let t = @sai-bu-moonbit.trace_no_prior_entry(clean, comp)
+      assert_true(!t.violated)
+      assert_eq(t.level, "通过")
+      assert_true(
+        @sai-bu-moonbit.render_trace(t).contains("作品未公开。"),
+      )
+    }
+    None => assert_true(false)
+  }
+}

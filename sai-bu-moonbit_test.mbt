@@ -531,13 +531,15 @@ test "is_valid_date rejects non-digit in date" {
 ///|
 test "verified_at is valid for all competitions" {
   // 台账每行都有最后核实日期：8 行是 2026-11-13 全量核实轮次，
-  // 6 行是 2026-11-15（7 个新关注比赛减去 CAAI 青年赛），
+  // 5 行是 2026-11-15（7 个新关注比赛减去 CAAI 青年赛、软件创新大赛），
   // 5 行是 2026-11-16（同步脚本第三批自动更新：绿联、PAYATHON、
-  // 松江、涌现奖、CAAI 青年赛核实通过）。
+  // 松江、涌现奖、CAAI 青年赛核实通过），1 行是 2026-11-18
+  // （软件创新大赛：大工通知核对原创条款）。
   let comps = @sai-bu-moonbit.all_competitions()
   let mut count_1113 = 0
   let mut count_1115 = 0
   let mut count_1116 = 0
+  let mut count_1118 = 0
   for i in 0..<comps.length() {
     let v = comps[i].verified_at
     assert_true(@sai-bu-moonbit.is_valid_date(v))
@@ -547,11 +549,14 @@ test "verified_at is valid for all competitions" {
       count_1115 = count_1115 + 1
     } else if v == "2026-11-16" {
       count_1116 = count_1116 + 1
+    } else if v == "2026-11-18" {
+      count_1118 = count_1118 + 1
     }
   }
   assert_eq(count_1113, 8)
-  assert_eq(count_1115, 6)
+  assert_eq(count_1115, 5)
   assert_eq(count_1116, 5)
+  assert_eq(count_1118, 1)
 }
 
 ///|

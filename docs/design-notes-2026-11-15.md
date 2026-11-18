@@ -463,3 +463,40 @@ presentation.py 72、release_browser.py 171、reader_presentation.py 36），
   preflight 76 个包可提交 2 个、P0 挡住 7 个（未变）。
   申报书同步更新：测试 197/36/233、提交数 40、Mooncakes v0.1.1
   已发 + v0.1.2 待发布；参考说明（Auto-Lexmount 方法论参考）保留。
+
+## 13. 2026-11-18 覆盖率修复 + 软件创新大赛同步补齐
+
+- **目录改名**：本地目录 `sai-chang-guan-jia-moonbit` → `sai-bu-moonbit`
+  （与模块名一致），只改目录名，仓库内容与 remote 不变。
+  改名前 `moon coverage analyze` 报错（找不到旧路径下的
+  `sai-chang-guan-jia-moonbit.mbt`，原因是 `_build` 缓存记着旧绝对路径），
+  改名后 `moon clean` 一次，工具恢复可用。
+- **覆盖率（`moon coverage analyze` 行口径，2026-11-18 实测）**：
+  未覆盖 94 行（3 个文件）→ 89 行（2 个文件）。
+  `evidence.mbt` 5 行 → 0 行：补 4 个黑盒测试（首次发布通过分支、
+  两条规则不适用分支、未公开作品分支），MoonBit 测试 197 → 201。
+  `preflight.mbt` 仍剩 1 行：`certify_pack` 的“P0 冲突（未知原因）”
+  防御分支，逻辑上不可达（§7 已论证），白盒测试 pin 住不变式，
+  不编造测试、不削弱防御代码。
+  `cmd/main/main.mbt` 88 行未覆盖（此前 README 写的“约 133 行”是估算，
+  以本次实报为准）：全部是 CLI 入口分发与打印函数，moon test 不跑
+  可执行包入口，靠人工实测背书，不硬凑测试。
+- **软件创新大赛同步补齐（18/19 → 19/19）**：大连理工大学软件学院
+  参赛通知（https://ss.dlut.edu.cn/info/1371/35562.htm）引用第二十届
+  规则原文，核实原创条款、报名截止 2027-01-15 与一等奖 ¥14,000，
+  均与台账一致；来源补进台账 note（官网
+  https://www.swcontest.com.cn/ + 该通知链接），`verified_at`
+  2026-11-18。官网本机抓取未通，以通知页为准（通知页内明确写出
+  官网地址）。`scripts/sync_data.py` 新增 `check_swcontest`
+  （只核实、不自动写），dry-run 验证三项全一致。
+  订正一处引文：通知原文是“参赛作品必须是原创……”与“将取消本次
+  比赛资格和成绩”，台账与 `evidence.mbt` 之前写的“必须为原创”与
+  “一经查实取消资格和成绩”与原文有一字之差，已按原文逐字订正
+  （JSON note、`evidence.mbt` 引用、`conflict.mbt` 冲突文案、
+  README 示例输出、worked example 案例二粘贴输出同步改）。
+- **数字**：测试 237 项（MoonBit 201 + Python 36），全部通过；
+  preflight 76 个包可提交 2 个、P0 挡住 7 个（未变），台账核验
+  10 行已核实（AI PLAY 提案截止 2026-11-17 已过，行状态翻为未核实，
+  属预期内）；清单 SHA-256 `b1e3b06e…`（Python hashlib 独立验算一致）。
+  申报书同步更新：测试 201/36/237、提交数 41、同步覆盖 19/19；
+  参考说明（Auto-Lexmount 方法论参考）保留。
