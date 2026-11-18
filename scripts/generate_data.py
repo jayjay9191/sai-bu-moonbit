@@ -30,6 +30,8 @@ COMP_FIELDS = [
     "target_kind",  # "比赛" 或 "平台上架"：台账不只管比赛，也管作品投稿目标
     "deadline",
     "deadline_date",
+    "publish_start",
+    "publish_end",
     "verified_at",
     "prize",
     "track",

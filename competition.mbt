@@ -11,6 +11,8 @@ pub(all) struct Competition {
   target_kind : String // "比赛" 或 "平台上架"：台账不只管比赛，也管作品投稿目标
   deadline : String // 人类可读的截止，如 "2026-12-01 12:00（报名）/ 18:00（提交）"；平台上架目标为 "常年开放，无截止"
   deadline_date : String // 机器可比的日期 "YYYY-MM-DD"，用于撞期检测；平台上架目标为空（无截止，不参与撞期）
+  publish_start : String // 首次公开窗口起日（含）；空表示未知
+  publish_end : String // 首次公开窗口止日（含）；空表示未知
   verified_at : String // 该行截止/奖金最后一次对照官方来源核实的日期 "YYYY-MM-DD"
   prize : String
   track : String

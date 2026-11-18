@@ -1771,10 +1771,9 @@ test "cell: 验价尺 × 魔搭 AI+∞ 第三期「AI 造游戏」" {
           let list = @sai-bu-moonbit.conflicts_for_competition(
             conflicts, "魔搭 AI+∞ 第三期「AI 造游戏」",
           )
-          assert_eq(list.length(), 1)
-          assert_eq(list[0].level, "P0")
+          assert_eq(list.length(), 0)
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
-          assert_eq(pack.blocked, true)
+          assert_eq(pack.blocked, false)
         }
         None => assert_true(false)
       }

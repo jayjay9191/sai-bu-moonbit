@@ -55,6 +55,7 @@ class TestMbtEmit(unittest.TestCase):
             "allows_existing_works": False, "materials": ["材料 A"],
             "note": "备注",
         }
+        comp.update(publish_start="", publish_end="")
         first = generate_data.emit_competition(comp)
         second = generate_data.emit_competition(comp)
         self.assertEqual(first, second)
@@ -283,13 +284,13 @@ class TestSyncHelpers(unittest.TestCase):
 
 
 class TestCellTestGenerator(unittest.TestCase):
-    def test_cell_table_covers_eleven_conflict_cells(self):
+    def test_cell_table_counts_conflicts_and_window_pass(self):
         self.assertEqual(len(generate_tests.CELL_EXPECT), 19)
         p0 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P0"])
         p1 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P1"])
-        self.assertEqual((p0, p1), (7, 12))
+        self.assertEqual((p0, p1), (6, 12))
 
     def test_row_table_covers_all_competitions(self):
         self.assertEqual(len(generate_tests.ROW_EXPECT), 21)

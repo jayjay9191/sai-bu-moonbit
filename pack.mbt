@@ -38,8 +38,11 @@ pub fn generate_pack(
     "⛔ 存在 P0 冲突，提交前必须先解决（见冲突检测）"
   } else if gaps.length() > 0 {
     "材料缺口 \{gaps.length()} 项，先补齐再交"
+  } else if comp.requires_first_publish &&
+    first_publish_decision(work, comp).0 == "P1" {
+    "材料齐全，首次发布资格待核实"
   } else {
-    "材料齐全，可以提交"
+    "材料齐全，仍需通过预检"
   }
   {
     work: work.name,

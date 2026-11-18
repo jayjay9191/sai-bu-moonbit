@@ -24,7 +24,9 @@ test "trace first publish P0 for dawn to moda" {
           assert_eq(t.conclusion, "P0 冲突：不得投稿")
           let text = @sai-bu-moonbit.render_trace(t)
           assert_true(text.contains("不得使用已参加其他比赛"))
-          assert_true(text.contains("魔搭官网《参赛须知》第 1 条"))
+          assert_true(
+            text.contains("AIBetas 对魔搭《参赛须知》第 1 条"),
+          )
           assert_true(text.contains("1390261"))
           assert_true(text.contains("Combos 分享页"))
           assert_true(text.contains("AI PLAY"))
@@ -69,7 +71,7 @@ test "trace first publish P0 via submitted only for xiaodianjie" {
           assert_true(t.violated)
           assert_eq(t.level, "P0")
           let text = @sai-bu-moonbit.render_trace(t)
-          assert_true(text.contains("未公开"))
+          assert_true(text.contains("未登记首次公开日期"))
           assert_true(text.contains("涌现奖"))
           assert_true(text.contains("2026-11-13 提交"))
         }
@@ -356,7 +358,7 @@ test "trace agrees with detect_conflicts on all pairs" {
 }
 
 ///|
-test "trace first publish passes for clean work to moda" {
+test "trace first publish defers unpublished work to moda" {
   // 既没公开、也没投过任何比赛的作品：首次发布规则两个分支均未命中，
   // 追踪应报通过（满足首次发布要求），不是 P0。
   let base = @sai-bu-moonbit.all_works()[0]
@@ -376,10 +378,12 @@ test "trace first publish passes for clean work to moda" {
     Some(comp) => {
       let t = @sai-bu-moonbit.trace_first_publish(clean, comp)
       assert_true(!t.violated)
-      assert_eq(t.level, "通过")
-      assert_eq(t.conclusion, "通过：满足首次发布要求")
+      assert_eq(t.level, "P1")
+      assert_eq(t.conclusion, "P1：首次发布资格待核实")
       assert_true(
-        @sai-bu-moonbit.render_trace(t).contains("两个分支均未命中"),
+        @sai-bu-moonbit.render_trace(t).contains(
+          "尚未登记首次公开日期",
+        ),
       )
     }
     None => assert_true(false)
@@ -743,6 +747,8 @@ test "shortest blocking chain two rules for synthetic double P0" {
     track: "测试",
     status: "未报名",
     plan_status: "关注",
+    publish_start: "",
+    publish_end: "",
     requires_first_publish: true,
     requires_new_work: false,
     requires_no_prior_entry: true,
@@ -786,4 +792,36 @@ test "shortest blocking chain matches engine P0 count on all pairs" {
       assert_eq(chain.length(), p0_conflicts)
     }
   }
+}
+
+///|
+test "first publish compares the calendar window and separates prior entry" {
+  let comp = @sai-bu-moonbit.all_competitions().filter(c => {
+      c.requires_first_publish
+    })[0]
+  let base = @sai-bu-moonbit.all_works()[0]
+  for
+    (date, expected) in [
+      ("2026-11-01", "P0"),
+      ("2026-11-02 之前", "P0"),
+      ("2026-11-02", "通过"),
+      ("2026-11-16", "通过"),
+      ("2026-12-02", "P0"),
+      ("2026-11-31", "P1"),
+    ] {
+    let work = { ..base, first_public_date: date, submitted_to: [], }
+    let trace = @sai-bu-moonbit.trace_first_publish(work, comp)
+    let conflicts = @sai-bu-moonbit.detect_conflicts(work, [comp])
+    assert_eq(trace.level, expected)
+    assert_eq(conflicts.length(), if expected == "通过" { 0 } else { 1 })
+  }
+  let previous = {
+    ..base,
+    first_public_date: "2026-11-16",
+    submitted_to: ["其他比赛"],
+  }
+  let conflicts = @sai-bu-moonbit.detect_conflicts(previous, [comp])
+  assert_eq(conflicts[0].level, "P0")
+  assert_true(conflicts[0].message.contains("其他比赛"))
+  assert_false(conflicts[0].message.contains("活动开始前"))
 }

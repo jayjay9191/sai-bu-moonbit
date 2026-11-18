@@ -46,6 +46,14 @@ pub fn validate_data(
         "（应为 YYYY-MM-DD）",
       )
     }
+    if (c.publish_start != "" || c.publish_end != "") &&
+      (
+        !is_valid_date(c.publish_start) ||
+        !is_valid_date(c.publish_end) ||
+        c.publish_start > c.publish_end
+      ) {
+      issues.push("比赛《" + c.name + "》首次公开窗口无效")
+    }
     if !is_valid_date(c.verified_at) {
       issues.push(
         "比赛《" +
@@ -104,7 +112,7 @@ pub fn validate_data(
 
 ///|
 /// 日期格式 YYYY-MM-DD：长度 10，第 5、8 位为 '-'，其余为数字，
-/// 月 01–12，日 01–31（不校验每月实际天数，如 02-31 不拦截）。
+/// 校验实际月长及闰年。
 pub fn is_valid_date(s : String) -> Bool {
   if s.length() != 10 {
     return false
@@ -118,10 +126,33 @@ pub fn is_valid_date(s : String) -> Bool {
       return false
     }
   }
-  let month_ok = (chars[5] == '0' && chars[6] >= '1' && chars[6] <= '9') ||
-    (chars[5] == '1' && chars[6] >= '0' && chars[6] <= '2')
-  let day_ok = (chars[8] == '0' && chars[9] >= '1' && chars[9] <= '9') ||
-    ((chars[8] == '1' || chars[8] == '2') && chars[9] >= '0' && chars[9] <= '9') ||
-    (chars[8] == '3' && chars[9] >= '0' && chars[9] <= '1')
-  month_ok && day_ok
+  let year = digit_value(chars[0]) * 1000 +
+    digit_value(chars[1]) * 100 +
+    digit_value(chars[2]) * 10 +
+    digit_value(chars[3])
+  let month = digit_value(chars[5]) * 10 + digit_value(chars[6])
+  let day = digit_value(chars[8]) * 10 + digit_value(chars[9])
+  if year == 0 || month < 1 || month > 12 || day < 1 {
+    return false
+  }
+  let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+  let lengths = [
+    31,
+    if leap {
+      29
+    } else {
+      28
+    },
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ]
+  day <= lengths[month - 1]
 }

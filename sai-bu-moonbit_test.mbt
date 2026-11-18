@@ -314,11 +314,11 @@ test "benchmark sweep counts" {
       }
     }
   }
-  assert_eq(total_conflicts, 19)
-  assert_eq(p0, 7)
+  assert_eq(total_conflicts, 18)
+  assert_eq(p0, 6)
   assert_eq(p1, 12)
   assert_eq(total_packs, 84)
-  assert_eq(blocked_packs, 7)
+  assert_eq(blocked_packs, 6)
   assert_eq(@sai-bu-moonbit.collision_dates(comps).length(), 3)
 }
 
@@ -367,6 +367,8 @@ fn test_competition(
     status: "测试",
     plan_status,
     target_kind: "比赛",
+    publish_start: "",
+    publish_end: "",
     requires_first_publish,
     requires_new_work,
     requires_no_prior_entry,
@@ -731,9 +733,7 @@ test "zaohua requires new work P1 for dawn" {
 }
 
 ///|
-test "synthetic clean work has only platform P1s" {
-  // 既没公开、也没投过任何比赛的作品：三条比赛规则都不应触发；
-  // 但材料清单为空，两平台上架目标的上架资质缺口（规则 4）各报 1 个 P1。
+test "unpublished work reports first publish pending alongside platform gaps" {
   let base = @sai-bu-moonbit.all_works()[0]
   let clean : @sai-bu-moonbit.Work = {
     name: "干净的新作品",
@@ -748,20 +748,15 @@ test "synthetic clean work has only platform P1s" {
     clean,
     @sai-bu-moonbit.all_competitions(),
   )
-  assert_eq(conflicts.length(), 2)
-  for i in 0..<conflicts.length() {
-    assert_eq(conflicts[i].level, "P1")
-    assert_true(conflicts[i].message.contains("上架资质缺口"))
-  }
-  assert_true(
-    (
-      conflicts[0].competition == "TapTap 游戏上架" &&
-      conflicts[1].competition == "itch.io 游戏上架"
-    ) ||
-    (
-      conflicts[0].competition == "itch.io 游戏上架" &&
-      conflicts[1].competition == "TapTap 游戏上架"
-    ),
+  assert_eq(conflicts.length(), 3)
+  assert_true(conflicts.iter().all(c => c.level == "P1"))
+  assert_eq(
+    conflicts.filter(c => c.message.contains("上架资质缺口")).length(),
+    2,
+  )
+  assert_eq(
+    conflicts.filter(c => c.message.contains("首次发布待核实")).length(),
+    1,
   )
 }
 
@@ -922,8 +917,8 @@ test "pack title starts with work name in brackets" {
 }
 
 ///|
-test "gapless pack note says ready to submit" {
-  // 小店日结→涌现奖：材料齐全、无 P0，note 应为“材料齐全，可以提交”。
+test "gapless pack note directs to preflight" {
+  // 小店日结→涌现奖：材料齐全、无 P0，note 应为“材料齐全，仍需通过预检”。
   match @sai-bu-moonbit.work_by_name("小店日结") {
     Some(w) =>
       match @sai-bu-moonbit.competition_by_name("支付宝智能体涌现奖") {
@@ -935,7 +930,7 @@ test "gapless pack note says ready to submit" {
           let pack = @sai-bu-moonbit.generate_pack(w, comp, conflicts)
           assert_true(!pack.blocked)
           assert_eq(pack.gaps.length(), 0)
-          assert_eq(pack.note, "材料齐全，可以提交")
+          assert_eq(pack.note, "材料齐全，仍需通过预检")
         }
         None => assert_true(false)
       }
@@ -1055,11 +1050,11 @@ test "collision dates skip empty deadline dates" {
 }
 
 ///|
-test "is_valid_date feb 29 passes by design" {
-  // is_valid_date 只校验格式（月 01–12、日 01–31），不校验每月实际天数；
-  // 2026-02-29 通过是已知的设计取舍，写在 validate.mbt 的注释里。
-  assert_true(@sai-bu-moonbit.is_valid_date("2026-02-29"))
-  assert_true(@sai-bu-moonbit.is_valid_date("2026-02-31"))
+test "is_valid_date enforces Gregorian month lengths" {
+  assert_false(@sai-bu-moonbit.is_valid_date("2026-02-29"))
+  assert_false(@sai-bu-moonbit.is_valid_date("2026-02-31"))
+  assert_false(@sai-bu-moonbit.is_valid_date("1900-02-29"))
+  assert_true(@sai-bu-moonbit.is_valid_date("2000-02-29"))
 }
 
 ///|
@@ -1083,6 +1078,8 @@ test "validate flags bad target_kind" {
     status: "测试",
     plan_status: "在途",
     target_kind: "未知",
+    publish_start: "",
+    publish_end: "",
     requires_first_publish: false,
     requires_new_work: false,
     requires_no_prior_entry: false,

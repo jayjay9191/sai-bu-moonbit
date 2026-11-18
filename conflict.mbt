@@ -34,9 +34,54 @@ pub fn contains_string(items : Array[String], target : String) -> Bool {
 }
 
 ///|
+/// 明确冲突优先于待核实项。日期窗口按日比较，首尾均包含。
+fn first_publish_decision(work : Work, comp : Competition) -> (String, String) {
+  let conflicts : Array[String] = []
+  let date = work.first_public_date
+  let start = comp.publish_start
+  let end = comp.publish_end
+  let mut pending = ""
+  if !is_valid_date(start) || !is_valid_date(end) || start > end {
+    pending = "首次发布待核实：活动公开窗口未收录或无效"
+  } else if date == "" {
+    pending = "首次发布待核实：尚未登记首次公开日期"
+  } else if is_valid_date(date) {
+    if date < start {
+      conflicts.push("活动开始前已公开（" + date + "）")
+    } else if date > end {
+      conflicts.push("首次公开晚于活动截止日（" + date + "）")
+    }
+  } else {
+    let parts = date.split(" ").collect()
+    if parts.length() == 2 &&
+      parts[1] == "之前" &&
+      is_valid_date(parts[0].to_owned()) &&
+      parts[0].to_owned() <= start {
+      conflicts.push("活动开始前已公开（" + date + "）")
+    } else {
+      pending = "首次发布待核实：日期不足以确定是否在活动期间（" +
+        date +
+        "）"
+    }
+  }
+  let other_entries = work.submitted_to.filter(name => name != comp.name)
+  if other_entries.length() > 0 {
+    conflicts.push("已投 " + join_strings(other_entries, "、"))
+  }
+  if conflicts.length() > 0 {
+    ("P0", "首次发布冲突：" + join_strings(conflicts, "，"))
+  } else if pending != "" {
+    ("P1", pending)
+  } else {
+    (
+      "通过", "首次公开日期在活动窗口内，未登记其他比赛投稿",
+    )
+  }
+}
+
+///|
 /// 逐个目标检查一件作品的规则冲突。
-/// 规则 1（P0）：比赛要求“活动期间首次公开发布”，但作品在活动开始前
-///   已公开，或已投过其他比赛。
+/// 规则 1：窗口外首次公开或另投比赛为 P0，缺日期或窗口为 P1。
 /// 规则 2（P1）：比赛要求“必须新做”，但作品已有公开版本。
 /// 规则 3（P0）：比赛要求“未参加过其他国家级公开比赛”（原创条款，
 ///   如软件创新大赛），但作品已投过其他比赛。注意：只看 submitted_to，
@@ -52,25 +97,16 @@ pub fn detect_conflicts(
   let result : Array[Conflict] = []
   for i in 0..<competitions.length() {
     let comp = competitions[i]
-    if comp.requires_first_publish &&
-      (work.first_public_date != "" || work.submitted_to.length() > 0) {
-      let reasons : Array[String] = []
-      if work.first_public_date != "" {
-        reasons.push(
-          "活动开始前已公开（" + work.first_public_date + "）",
-        )
+    if comp.requires_first_publish {
+      let (level, reason) = first_publish_decision(work, comp)
+      if level != "通过" {
+        result.push({
+          level,
+          competition: comp.name,
+          work: work.name,
+          message: reason,
+        })
       }
-      if work.submitted_to.length() > 0 {
-        reasons.push("已投 " + join_strings(work.submitted_to, "、"))
-      }
-      result.push({
-        level: "P0",
-        competition: comp.name,
-        work: work.name,
-        message: "首次发布冲突：" +
-        join_strings(reasons, "，") +
-        "，违反“活动期间首次公开发布、不得使用已参加其他比赛的作品”",
-      })
     }
     if comp.requires_new_work && work.first_public_date != "" {
       result.push({

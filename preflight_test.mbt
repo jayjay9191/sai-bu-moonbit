@@ -23,6 +23,8 @@ fn fixture_competition(
     status: "测试",
     plan_status: "在途",
     target_kind: "比赛",
+    publish_start: "",
+    publish_end: "",
     requires_first_publish: false,
     requires_new_work: false,
     requires_no_prior_entry: false,
@@ -294,7 +296,7 @@ test "preflight on real data at 2026-11-15" {
   assert_eq(verified_rows, 14)
   assert_eq(report.packs.length(), 84)
   assert_eq(report.certifiable_count, 2)
-  assert_eq(report.blocked_count, 7)
+  assert_eq(report.blocked_count, 6)
   assert_eq(report.collisions.length(), 3)
   assert_eq(report.manifest_hash.length(), 64)
 }
@@ -366,4 +368,36 @@ test "certify xiaodian and suqiu to emerge are submittable" {
     }
     None => assert_true(false)
   }
+}
+
+///|
+test "certification refuses unknown release date even with all materials" {
+  let base = @sai-bu-moonbit.all_competitions().filter(c => {
+      c.requires_first_publish
+    })[0]
+  let comp = { ..base, name: "独立测试赛", note: "", }
+  let work = fixture_work("新作品", "", [], comp.materials)
+  let row = @sai-bu-moonbit.row_verdict(
+    comp,
+    @sai-bu-moonbit.date_to_days("2026-11-18"),
+  )
+  let conflicts = @sai-bu-moonbit.detect_conflicts(work, [comp])
+  let pending = @sai-bu-moonbit.certify_pack(work, comp, conflicts, row)
+  assert_false(pending.certifiable)
+  assert_false(pending.blocked)
+  assert_true(pending.reasons[0].contains("尚未登记首次公开日期"))
+  let bad = { ..comp, publish_start: "2026-12-02", }
+  let issues = @sai-bu-moonbit.validate_data([bad], [work])
+  assert_eq(issues.length(), 1)
+  assert_true(issues[0].contains("首次公开窗口无效"))
+  let released = {
+    ..work,
+    first_public_date: "2026-11-18",
+    submitted_to: [comp.name],
+  }
+  let checked = @sai-bu-moonbit.detect_conflicts(released, [comp])
+  assert_eq(checked.length(), 0)
+  assert_true(
+    @sai-bu-moonbit.certify_pack(released, comp, checked, row).certifiable,
+  )
 }

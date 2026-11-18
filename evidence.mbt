@@ -75,8 +75,8 @@ pub fn rule_citation_for(rule : String, competition : String) -> RuleCitation {
     {
       rule,
       rule_text: "参赛作品必须为活动期间首次公开发布的原创作品，不得使用已参加其他比赛或由其他比赛产生的作品、成果参赛",
-      source: "魔搭官网《参赛须知》第 1 条",
-      source_note: "AIBetas 转述官方页；官网原文因登录墙未直接读到",
+      source: "AIBetas 对魔搭《参赛须知》第 1 条及赛程的转载",
+      source_note: "官网原文因登录墙未直接读到；转载 https://www.aibetas.com/aigc_events/ai-infinity-game-developer-competition-3",
       verified_at: "2026-11-13",
     }
   } else if rule == "须新做" && competition == "知乎黑客松 S3" {
@@ -195,8 +195,7 @@ fn evidence_for_submitted(ev : WorkEvidence, name : String) -> String {
 }
 
 ///|
-/// 规则 1（首次发布）追踪：两个分支都要写证据——
-/// 活动开始前已公开，或已投过其他比赛；任一命中即 P0。
+/// 规则 1（首次发布）追踪：打印窗口、公开和投稿事实，再调用共享判定。
 pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
   let citation = rule_citation_for("首次发布", comp.name)
   if !comp.requires_first_publish {
@@ -229,9 +228,7 @@ pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
       "）。",
     )
     if work.first_public_date == "" {
-      steps.push(
-        "事实 1：作品未公开（first_public_date 为空）——公开分支不触发。",
-      )
+      steps.push("事实 1：台账未登记首次公开日期。")
     } else {
       let e = match ev.first_public {
         Some(f) => "证据：" + f.evidence + "（" + f.source + "）"
@@ -254,43 +251,28 @@ pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
       }
       steps.push(line)
     }
-    let triggered : Array[String] = []
-    if work.first_public_date != "" {
-      triggered.push("活动开始前已公开")
-    }
-    if work.submitted_to.length() > 0 {
-      triggered.push("已投 " + join_strings(work.submitted_to, "、"))
-    }
-    if triggered.length() > 0 {
-      steps.push(
-        "推导：命中 " +
-        join_strings(triggered, "；") +
-        "，违反“活动期间首次公开发布、不得使用已参加其他比赛的作品”。",
-      )
-      steps.push("结论：P0 冲突——不得投稿该比赛。")
-      {
-        work: work.name,
-        competition: comp.name,
-        rule: citation,
-        violated: true,
-        steps,
-        conclusion: "P0 冲突：不得投稿",
-        level: "P0",
-      }
+    let window = if comp.publish_start == "" || comp.publish_end == "" {
+      "未完整收录"
     } else {
-      steps.push(
-        "推导：两个分支均未命中——未公开且未投过其他比赛。",
-      )
-      steps.push("结论：通过——满足首次发布要求。")
-      {
-        work: work.name,
-        competition: comp.name,
-        rule: citation,
-        violated: false,
-        steps,
-        conclusion: "通过：满足首次发布要求",
-        level: "通过",
-      }
+      comp.publish_start + " 至 " + comp.publish_end
+    }
+    steps.push("公开窗口（日粒度）：" + window + "。")
+    let (level, reason) = first_publish_decision(work, comp)
+    steps.push("推导：" + reason + "。")
+    let conclusion = match level {
+      "P0" => "P0 冲突：不得投稿"
+      "P1" => "P1：首次发布资格待核实"
+      _ => "通过：满足首次发布要求"
+    }
+    steps.push("结论：" + conclusion + "。")
+    {
+      work: work.name,
+      competition: comp.name,
+      rule: citation,
+      violated: level == "P0",
+      steps,
+      conclusion,
+      level,
     }
   }
 }

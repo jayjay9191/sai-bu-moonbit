@@ -191,7 +191,7 @@ pub fn row_verdict(c : Competition, today : Int32) -> RowVerdict {
 }
 
 ///|
-/// 单个投稿包认证：无 P0、材料无缺口、该行已核实且未过期，三者全满足
+/// 单个投稿包认证：无 P0、首次发布资格已核实、材料无缺口、台账已核实且未过期，条件全满足
 /// 才算可提交；否则逐项写清拒绝原因。
 pub fn certify_pack(
   work : Work,
@@ -212,6 +212,12 @@ pub fn certify_pack(
     }
     if !found_p0 {
       reasons.push("P0 冲突（未知原因）")
+    }
+  }
+  if comp.requires_first_publish {
+    let (level, reason) = first_publish_decision(work, comp)
+    if level == "P1" {
+      reasons.push(reason)
     }
   }
   if pack.gaps.length() > 0 {
@@ -246,6 +252,10 @@ pub fn manifest_canonical(
       c.deadline +
       "|" +
       c.deadline_date +
+      "|" +
+      c.publish_start +
+      "|" +
+      c.publish_end +
       "|" +
       c.verified_at +
       "|" +
