@@ -22,6 +22,7 @@ fn fixture_competition(
     track: "测试",
     status: "测试",
     plan_status: "在途",
+    target_kind: "比赛",
     requires_first_publish: false,
     requires_new_work: false,
     requires_no_prior_entry: false,
@@ -278,15 +279,17 @@ test "preflight on real data at 2026-11-15" {
   )
   assert_eq(report.today, "2026-11-15")
   assert_eq(report.validate_issues.length(), 0)
-  assert_eq(report.rows.length(), 19)
+  assert_eq(report.rows.length(), 21)
   let mut verified_rows = 0
   for i in 0..<report.rows.length() {
     if report.rows[i].verified {
       verified_rows = verified_rows + 1
     }
   }
-  assert_eq(verified_rows, 11)
-  assert_eq(report.packs.length(), 76)
+  // 11 个旧已核实行 + 2 个新平台目标行（TapTap 11-16、itch.io 11-18
+  // 核实，过期检查只看“距今是否超过 30 天”，未来日期不算过期）。
+  assert_eq(verified_rows, 13)
+  assert_eq(report.packs.length(), 84)
   assert_eq(report.certifiable_count, 2)
   assert_eq(report.blocked_count, 7)
   assert_eq(report.collisions.length(), 3)

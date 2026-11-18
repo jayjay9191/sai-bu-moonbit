@@ -78,6 +78,7 @@ test "certify_pack blocked pack always names the P0 conflict" {
     track: "测试",
     status: "测试",
     plan_status: "在途",
+    target_kind: "比赛",
     requires_first_publish: true,
     requires_new_work: false,
     requires_no_prior_entry: false,

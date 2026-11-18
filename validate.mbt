@@ -1,11 +1,13 @@
 ///|
 /// 数据校验：检查台账数据本身是否自洽，返回问题列表（空列表表示通过）。
 /// 校验项：
-/// - 每个比赛有名字；比赛名字不重复
-/// - deadline_date 符合 YYYY-MM-DD（月 01–12，日 01–31）
+/// - 每个目标有名字；目标名字不重复
+/// - target_kind 只能是“比赛”或“平台上架”
+/// - deadline_date 符合 YYYY-MM-DD（月 01–12，日 01–31）；平台上架目标
+///   无截止，deadline_date 为空是合法的（不参与撞期检测）
 /// - verified_at 符合 YYYY-MM-DD（同上；表示该行最后核实日期）
 /// - plan_status 只能是“在途”或“关注”
-/// - 每个比赛的材料清单非空
+/// - 每个目标的材料清单非空
 /// - 每件作品有名字；作品名字不重复
 /// - 标志位不自相矛盾：allows_existing_works 与 requires_first_publish
 ///   同时为真；allows_existing_works 与 requires_new_work 同时为真；
@@ -27,7 +29,15 @@ pub fn validate_data(
     } else {
       seen_comp_names.push(c.name)
     }
-    if !is_valid_date(c.deadline_date) {
+    if c.target_kind != "比赛" && c.target_kind != "平台上架" {
+      issues.push(
+        "目标《" +
+        c.name +
+        "》target_kind 只能是“比赛”或“平台上架”，现在是：" +
+        c.target_kind,
+      )
+    }
+    if c.target_kind != "平台上架" && !is_valid_date(c.deadline_date) {
       issues.push(
         "比赛《" +
         c.name +

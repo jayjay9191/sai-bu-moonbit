@@ -3,18 +3,26 @@
 /// Run `moon test` to execute and `moon test --update` to refresh snapshots.
 
 ///|
-test "registry has nineteen competitions" {
-  assert_eq(@sai-bu-moonbit.all_competitions().length(), 19)
+test "registry has twenty-one targets" {
+  assert_eq(@sai-bu-moonbit.all_competitions().length(), 21)
 }
 
 ///|
 test "registry entries have name and date" {
+  // 比赛目标必须有截止日期；平台上架目标无截止，deadline_date 为空是合法的。
   let comps = @sai-bu-moonbit.all_competitions()
   for i in 0..<comps.length() {
     assert_true(comps[i].name != "")
-    assert_true(comps[i].deadline_date != "")
+    assert_true(
+      comps[i].target_kind == "比赛" || comps[i].target_kind == "平台上架",
+    )
     assert_true(comps[i].deadline != "")
     assert_true(comps[i].prize != "")
+    if comps[i].target_kind == "比赛" {
+      assert_true(comps[i].deadline_date != "")
+    } else {
+      assert_eq(comps[i].deadline_date, "")
+    }
   }
 }
 
@@ -198,14 +206,15 @@ test "collision helpers on empty registry" {
 test "xiaodianjie triggers moda P0 via submitted_to" {
   // 小店日结从未公开（first_public_date 为空），但已投过涌现奖；
   // 规则 1 的第二条分支（已投过其他比赛）仍应触发魔搭 P0。
-  // 另有软件创新大赛规则 3（原创条款）同样触发 P0，共 2 个冲突。
+  // 另有软件创新大赛规则 3（原创条款）同样触发 P0，
+  // 再加两平台上架目标的规则 4（上架资质缺口 P1），共 4 个冲突。
   match @sai-bu-moonbit.work_by_name("小店日结") {
     Some(w) => {
       let conflicts = @sai-bu-moonbit.detect_conflicts(
         w,
         @sai-bu-moonbit.all_competitions(),
       )
-      assert_eq(conflicts.length(), 2)
+      assert_eq(conflicts.length(), 4)
       assert_eq(conflicts[0].level, "P0")
       assert_eq(
         conflicts[0].competition,
@@ -277,7 +286,7 @@ test "pack xiaodianjie to moda is blocked" {
 ///|
 test "benchmark sweep counts" {
   // 全量扫描的计数与 benchmark 子命令打印的数字一致：
-  // 4 作品 × 19 比赛，冲突 11 个（P0 7 个，P1 4 个），投稿包 76 个，
+  // 4 作品 × 21 目标，冲突 19 个（P0 7 个，P1 12 个），投稿包 84 个，
   // 其中 P0 挡住 7 个，撞期 3 个日期。
   let comps = @sai-bu-moonbit.all_competitions()
   let works = @sai-bu-moonbit.all_works()
@@ -305,10 +314,10 @@ test "benchmark sweep counts" {
       }
     }
   }
-  assert_eq(total_conflicts, 11)
+  assert_eq(total_conflicts, 19)
   assert_eq(p0, 7)
-  assert_eq(p1, 4)
-  assert_eq(total_packs, 76)
+  assert_eq(p1, 12)
+  assert_eq(total_packs, 84)
   assert_eq(blocked_packs, 7)
   assert_eq(@sai-bu-moonbit.collision_dates(comps).length(), 3)
 }
@@ -357,6 +366,7 @@ fn test_competition(
     track: "测试",
     status: "测试",
     plan_status,
+    target_kind: "比赛",
     requires_first_publish,
     requires_new_work,
     requires_no_prior_entry,
@@ -487,15 +497,19 @@ test "validate flags unnamed and duplicate works" {
 test "p0 message has no empty parens for xiaodianjie" {
   // 回归测试：2648796 修过的 bug——小店日结从未公开，
   // P0 文案曾显示“已公开（）”。保证不再复发。
+  // 现在共 4 个冲突：魔搭 P0、软件创新大赛 P0，
+  // 再加两平台上架目标的上架资质缺口 P1。
   match @sai-bu-moonbit.work_by_name("小店日结") {
     Some(w) => {
       let conflicts = @sai-bu-moonbit.detect_conflicts(
         w,
         @sai-bu-moonbit.all_competitions(),
       )
-      assert_eq(conflicts.length(), 2)
+      assert_eq(conflicts.length(), 4)
       assert_true(!conflicts[0].message.contains("（）"))
       assert_true(conflicts[0].message.contains("已投 涌现奖"))
+      assert_true(conflicts[2].message.contains("上架资质缺口"))
+      assert_true(conflicts[3].message.contains("上架资质缺口"))
     }
     None => assert_true(false)
   }
@@ -529,12 +543,13 @@ test "is_valid_date rejects non-digit in date" {
 }
 
 ///|
-test "verified_at is valid for all competitions" {
+test "verified_at is valid for all targets" {
   // 台账每行都有最后核实日期：8 行是 2026-11-13 全量核实轮次，
   // 5 行是 2026-11-15（7 个新关注比赛减去 CAAI 青年赛、软件创新大赛），
-  // 5 行是 2026-11-16（同步脚本第三批自动更新：绿联、PAYATHON、
-  // 松江、涌现奖、CAAI 青年赛核实通过），1 行是 2026-11-18
-  // （软件创新大赛：大工通知核对原创条款）。
+  // 6 行是 2026-11-16（同步脚本第三批自动更新：绿联、PAYATHON、
+  // 松江、涌现奖、CAAI 青年赛核实通过，另加 TapTap 上架资质核实），
+  // 2 行是 2026-11-18（软件创新大赛：大工通知核对原创条款；
+  // itch.io：官方文档逐字核实）。
   let comps = @sai-bu-moonbit.all_competitions()
   let mut count_1113 = 0
   let mut count_1115 = 0
@@ -555,8 +570,8 @@ test "verified_at is valid for all competitions" {
   }
   assert_eq(count_1113, 8)
   assert_eq(count_1115, 5)
-  assert_eq(count_1116, 5)
-  assert_eq(count_1118, 1)
+  assert_eq(count_1116, 6)
+  assert_eq(count_1118, 2)
 }
 
 ///|
@@ -578,7 +593,7 @@ test "validate flags bad verified_at" {
 
 ///|
 test "plan status counts" {
-  // 12 行在途（原计划），7 行关注（本轮新增）。
+  // 12 行在途（原计划），9 行关注（本轮新增 2 个平台上架目标）。
   let comps = @sai-bu-moonbit.all_competitions()
   let mut in_plan = 0
   let mut watching = 0
@@ -590,7 +605,7 @@ test "plan status counts" {
     }
   }
   assert_eq(in_plan, 12)
-  assert_eq(watching, 7)
+  assert_eq(watching, 9)
 }
 
 ///|
@@ -715,8 +730,9 @@ test "zaohua requires new work P1 for dawn" {
 }
 
 ///|
-test "synthetic clean work has zero conflicts" {
-  // 既没公开、也没投过任何比赛的作品：三条规则都不应触发。
+test "synthetic clean work has only platform P1s" {
+  // 既没公开、也没投过任何比赛的作品：三条比赛规则都不应触发；
+  // 但材料清单为空，两平台上架目标的上架资质缺口（规则 4）各报 1 个 P1。
   let base = @sai-bu-moonbit.all_works()[0]
   let clean : @sai-bu-moonbit.Work = {
     name: "干净的新作品",
@@ -731,13 +747,28 @@ test "synthetic clean work has zero conflicts" {
     clean,
     @sai-bu-moonbit.all_competitions(),
   )
-  assert_eq(conflicts.length(), 0)
+  assert_eq(conflicts.length(), 2)
+  for i in 0..<conflicts.length() {
+    assert_eq(conflicts[i].level, "P1")
+    assert_true(conflicts[i].message.contains("上架资质缺口"))
+  }
+  assert_true(
+    (
+      conflicts[0].competition == "TapTap 游戏上架" &&
+      conflicts[1].competition == "itch.io 游戏上架"
+    ) ||
+    (
+      conflicts[0].competition == "itch.io 游戏上架" &&
+      conflicts[1].competition == "TapTap 游戏上架"
+    ),
+  )
 }
 
 ///|
-test "public-only work hits three rules" {
+test "public-only work hits five rules" {
   // 只公开、没投过任何比赛的作品：魔搭 P0（规则 1 公开分支），
   // 知乎 P1 + 造化 P1（规则 2）；规则 3 不触发（只看 submitted_to）。
+  // 另有两平台上架目标的规则 4（材料清单为空，上架资质全缺）各报 1 个 P1。
   let base = @sai-bu-moonbit.all_works()[0]
   let pub_only : @sai-bu-moonbit.Work = {
     name: "只公开未投过",
@@ -752,7 +783,7 @@ test "public-only work hits three rules" {
     pub_only,
     @sai-bu-moonbit.all_competitions(),
   )
-  assert_eq(conflicts.length(), 3)
+  assert_eq(conflicts.length(), 5)
   assert_eq(
     conflicts[0].competition,
     "魔搭 AI+∞ 第三期「AI 造游戏」",
@@ -762,6 +793,10 @@ test "public-only work hits three rules" {
   assert_eq(conflicts[1].level, "P1")
   assert_eq(conflicts[2].competition, "造化首届体素游戏创作大赛")
   assert_eq(conflicts[2].level, "P1")
+  assert_eq(conflicts[3].competition, "TapTap 游戏上架")
+  assert_eq(conflicts[3].level, "P1")
+  assert_eq(conflicts[4].competition, "itch.io 游戏上架")
+  assert_eq(conflicts[4].level, "P1")
 }
 
 ///|
@@ -990,13 +1025,32 @@ test "collision helpers on custom fixtures" {
 
 ///|
 test "collision dates exclude single dates" {
-  // 真实台账 19 个截止对应 15 个不同日期，其中 3 个撞期，其余 12 个日期各只有 1 个比赛。
+  // 真实台账 19 个比赛截止对应 15 个不同日期，其中 3 个撞期，其余 12 个日期各只有 1 个比赛；
+  // 2 个平台上架目标无截止（deadline_date 为空），不参与撞期，也不会把空日期算成撞期。
   let dates = @sai-bu-moonbit.collision_dates(
     @sai-bu-moonbit.all_competitions(),
   )
+  assert_eq(dates.length(), 3)
+  assert_true(!@sai-bu-moonbit.contains_string(dates, ""))
   assert_true(!@sai-bu-moonbit.contains_string(dates, "2026-11-17"))
   assert_true(!@sai-bu-moonbit.contains_string(dates, "2026-12-15"))
   assert_true(!@sai-bu-moonbit.contains_string(dates, "2027-01-15"))
+}
+
+///|
+test "collision dates skip empty deadline dates" {
+  // 两个平台上架目标的 deadline_date 都是 ""，不能互相撞期。
+  match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+    Some(taptap) =>
+      match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+        Some(itch) => {
+          let dates = @sai-bu-moonbit.collision_dates([taptap, itch])
+          assert_eq(dates.length(), 0)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
 }
 
 ///|
@@ -1013,6 +1067,31 @@ test "is_valid_date year boundaries" {
   assert_true(@sai-bu-moonbit.is_valid_date("2027-01-01"))
   assert_true(!@sai-bu-moonbit.is_valid_date("2026-12-31 "))
   assert_true(!@sai-bu-moonbit.is_valid_date(" 2026-12-31"))
+}
+
+///|
+test "validate flags bad target_kind" {
+  // target_kind 只能是“比赛”或“平台上架”，其他值检出 1 个问题。
+  let bad : @sai-bu-moonbit.Competition = {
+    name: "测试目标",
+    deadline: "2026-12-01",
+    deadline_date: "2026-12-01",
+    verified_at: "2026-11-13",
+    prize: "¥0",
+    track: "测试",
+    status: "测试",
+    plan_status: "在途",
+    target_kind: "未知",
+    requires_first_publish: false,
+    requires_new_work: false,
+    requires_no_prior_entry: false,
+    allows_existing_works: false,
+    materials: ["材料 A"],
+    note: "",
+  }
+  let issues = @sai-bu-moonbit.validate_data([bad], @sai-bu-moonbit.all_works())
+  assert_eq(issues.length(), 1)
+  assert_true(issues[0].contains("target_kind"))
 }
 
 ///|

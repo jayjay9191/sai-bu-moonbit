@@ -257,6 +257,8 @@ pub fn manifest_canonical(
       "|" +
       c.plan_status +
       "|" +
+      c.target_kind +
+      "|" +
       bool01(c.requires_first_publish) +
       bool01(c.requires_new_work) +
       bool01(c.requires_no_prior_entry) +

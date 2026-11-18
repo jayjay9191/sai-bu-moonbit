@@ -58,6 +58,8 @@ pub fn trace_new_work(Work, Competition) -> DecisionTrace
 
 pub fn trace_no_prior_entry(Work, Competition) -> DecisionTrace
 
+pub fn trace_qualifications(Work, Competition) -> DecisionTrace
+
 pub fn validate_data(Array[Competition], Array[Work]) -> Array[String]
 
 pub fn work_by_name(String) -> Work?
@@ -69,6 +71,7 @@ pub fn work_evidence_for(String) -> WorkEvidence
 // Types and methods
 pub(all) struct Competition {
   name : String
+  target_kind : String
   deadline : String
   deadline_date : String
   verified_at : String

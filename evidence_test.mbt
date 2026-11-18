@@ -453,3 +453,152 @@ test "trace no prior entry passes for unpublished clean work" {
     None => assert_true(false)
   }
 }
+
+///|
+test "rule citation for taptap qualifications" {
+  // TapTap 上架资质引用：四项资质 + H5 包 + 简体中文材料 + 人工审核，
+  // 2026-11-16 核实，来源写明是官方上架流程。
+  let c = @sai-bu-moonbit.rule_citation_for(
+    "上架资质", "TapTap 游戏上架",
+  )
+  assert_true(c.rule_text.contains("实名认证"))
+  assert_true(c.rule_text.contains("AI 接入声明"))
+  assert_true(c.rule_text.contains("适龄分级"))
+  assert_true(c.rule_text.contains("隐私合规"))
+  assert_true(c.rule_text.contains("index.html"))
+  assert_eq(c.verified_at, "2026-11-16")
+}
+
+///|
+test "rule citation for itch qualifications" {
+  // itch.io 上架资质引用：ZIP 包 + 限制 + 相对路径 + AI 披露 +
+  // Mobile Friendly，2026-11-18 逐字核实官方文档。
+  let c = @sai-bu-moonbit.rule_citation_for(
+    "上架资质", "itch.io 游戏上架",
+  )
+  assert_true(c.rule_text.contains("index.html"))
+  assert_true(c.rule_text.contains("≤1000 文件"))
+  assert_true(c.rule_text.contains("相对路径"))
+  assert_true(c.rule_text.contains("AI Disclosure"))
+  assert_true(c.rule_text.contains("Mobile Friendly"))
+  assert_true(c.source.contains("itch.io"))
+  assert_eq(c.verified_at, "2026-11-18")
+}
+
+///|
+test "trace qualifications P1 for dawn to taptap" {
+  // 《第零次黎明》→ TapTap：四项资质全缺 + H5 包缺 + 触屏缺，
+  // 共 6 项缺口，报 P1；触屏缺口要带 2026-11-16 的核实证据
+  // （PC 端 WASD+鼠标操作、无触屏适配）。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(comp) => {
+          let t = @sai-bu-moonbit.trace_qualifications(w, comp)
+          assert_true(t.violated)
+          assert_eq(t.level, "P1")
+          assert_eq(t.conclusion, "P1：须补齐上架资质后才能上架")
+          let text = @sai-bu-moonbit.render_trace(t)
+          assert_true(text.contains("实名认证"))
+          assert_true(text.contains("AI 接入声明"))
+          assert_true(text.contains("适龄分级"))
+          assert_true(text.contains("隐私合规"))
+          assert_true(text.contains("触屏适配"))
+          assert_true(text.contains("WASD"))
+          assert_true(text.contains("2026-11-16"))
+          assert_true(text.contains("缺 6 项"))
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace qualifications P1 for dawn to itch" {
+  // 《第零次黎明》→ itch.io：6 项资质全缺，报 P1；
+  // 追踪要逐字写出 ZIP 限制与 AI Disclosure 要求。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+        Some(comp) => {
+          let t = @sai-bu-moonbit.trace_qualifications(w, comp)
+          assert_true(t.violated)
+          assert_eq(t.level, "P1")
+          assert_eq(t.conclusion, "P1：须补齐上架资质后才能上架")
+          let text = @sai-bu-moonbit.render_trace(t)
+          assert_true(text.contains("index.html"))
+          assert_true(text.contains("AI Disclosure"))
+          assert_true(text.contains("Mobile Friendly"))
+          assert_true(text.contains("相对路径"))
+          assert_true(text.contains("缺 6 项"))
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace qualifications not applicable for dawn to songjiang" {
+  // 松江是比赛目标，不是平台上架目标，上架资质规则不适用。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match
+        @sai-bu-moonbit.competition_by_name("松江·创世纪 AI 游戏大赛") {
+        Some(comp) => {
+          let t = @sai-bu-moonbit.trace_qualifications(w, comp)
+          assert_true(!t.violated)
+          assert_eq(t.level, "通过")
+          assert_eq(t.conclusion, "通过：规则不适用")
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace qualifications passes for fully ready work" {
+  // 材料清单齐全的作品：6 项资质全部就绪，追踪通过。
+  // 材料清单直接取目标的清单本身，不硬编码 6 个字符串。
+  match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+    Some(comp) => {
+      let base = @sai-bu-moonbit.all_works()[0]
+      let ready : @sai-bu-moonbit.Work = {
+        name: "资质齐全的作品",
+        kind: base.kind,
+        oneliner: "测试用作品",
+        first_public_date: "",
+        submitted_to: [],
+        materials_ready: comp.materials,
+        note: "",
+      }
+      let t = @sai-bu-moonbit.trace_qualifications(ready, comp)
+      assert_true(!t.violated)
+      assert_eq(t.level, "通过")
+      assert_eq(t.conclusion, "通过：上架资质齐全")
+      assert_true(@sai-bu-moonbit.render_trace(t).contains("全部就绪"))
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace all rules dawn to taptap has one P1" {
+  // TapTap 未开三个比赛标志位：trace_all_rules 只出 1 份追踪，
+  // 就是上架资质（规则 4），与 detect_conflicts 的 1 个 P1 一致。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          assert_eq(traces.length(), 1)
+          assert_eq(traces[0].level, "P1")
+          assert_true(traces[0].violated)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}

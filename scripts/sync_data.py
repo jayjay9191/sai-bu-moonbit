@@ -71,7 +71,7 @@
   软件学院参赛通知页引用第二十届规则原文，核实原创条款、报名截止
   2027-01-15 与一等奖 ¥14,000；官网 https://www.swcontest.com.cn/
   在本机抓取时未通（以通知页为准，通知页内明确写出官网地址）。
-未覆盖：无（19 个比赛全部有检查覆盖；MoonBit 只报告）。
+未覆盖：无（21 个投稿目标全部有检查覆盖；MoonBit 只报告）。
 """
 
 import argparse
@@ -888,6 +888,62 @@ def check_swcontest(report: Report, data: dict):
         report.mark_verified(comp["name"], "原创条款/报名截止/奖金已确认")
 
 
+def check_taptap(report: Report, data: dict):
+    """TapTap 游戏上架：四项资质与 H5 包要求 2026-11-16 已核实，
+    来源是官方上架流程（开发者后台，登录后可见，无稳定公开链接
+    可供本脚本自动抓取）。只报告，不写数据；资质清单有变时人工
+    在 JSON 里改 materials 与 verified_at。
+    """
+    report.add("TapTap 游戏上架（官方上架流程，2026-11-16 核实）")
+    comp = find_comp(data, "TapTap 游戏上架")
+    if comp is None:
+        report.unknown("台账里没有 TapTap，跳过")
+        return
+    report.ok("四项资质：实名认证、AI 接入声明、适龄分级、隐私合规")
+    report.ok("H5 游戏包内须含 index.html；大陆上架须简体中文材料；人工审核")
+    report.ok("黎明缺口：触屏适配（PC 端 WASD+鼠标操作、无触屏适配）")
+
+
+def check_itchio(report: Report, data: dict):
+    """itch.io 游戏上架：官方文档逐字核实（2026-11-18），
+    只核实、不自动写数据（来源链接与 verified_at 由人工在 JSON 里补）。
+    HTML5 上传页 https://itch.io/docs/creators/html5，
+    质量指南页 https://itch.io/docs/creators/quality-guidelines。
+    """
+    report.add("itch.io 游戏上架 https://itch.io/docs/creators/html5")
+    comp = find_comp(data, "itch.io 游戏上架")
+    if comp is None:
+        report.unknown("台账里没有 itch.io，跳过")
+        return
+    try:
+        html5 = fetch("https://itch.io/docs/creators/html5")
+        guide = fetch("https://itch.io/docs/creators/quality-guidelines")
+    except Exception as e:
+        report.fail(f"页面打不开：{type(e).__name__}: {e}")
+        return
+    t1 = re.sub(r"\s+", " ", visible_text(html5))
+    t2 = re.sub(r"\s+", " ", visible_text(guide))
+    checks = {
+        "ZIP 包含 index.html 入口": "index.html" in t1,
+        "ZIP ≤1000 文件": "1,000 individual files" in t1,
+        "解压后 ≤500MB": "500MB" in t1,
+        "单文件 ≤200MB": "200MB" in t1,
+        "路径 ≤240 字符": "240 characters" in t1,
+        "须用相对路径": "relative" in t1.lower(),
+        "AI Disclosure 标注": "AI Disclosure" in t2,
+        "Mobile Friendly 选项": "Mobile Friendly" in t1,
+    }
+    all_ok = True
+    for label, ok in checks.items():
+        if ok:
+            report.ok(label + "，与台账一致")
+        else:
+            report.unknown("文档里找不到：" + label)
+            all_ok = False
+    if all_ok:
+        report.mark_verified(comp["name"], "官方文档逐项已确认")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="同步比赛数据（只更新能核实的字段）")
     parser.add_argument("--dry-run", action="store_true", help="只打印报告，不改文件")
@@ -918,7 +974,9 @@ def main() -> int:
     check_zhihu(report, data)
     check_rokid(report, data)
     check_swcontest(report, data)
-    report.add("未覆盖：无——19 个比赛全部有检查覆盖。")
+    check_taptap(report, data)
+    check_itchio(report, data)
+    report.add("未覆盖：无——21 个投稿目标全部有检查覆盖。")
     today = today_cst()
     if args.dry_run:
         # dry-run 只算“哪些行会被更新”，不改内存里的数据。

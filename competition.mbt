@@ -1,14 +1,16 @@
 ///|
 /// 比赛台账的结构定义与按名查找。
-/// 数据不在这里：12 个比赛 + 3 件作品的真实数据在 data/competitions.json，
+/// 数据不在这里：21 个投稿目标（19 个比赛 + 2 个平台上架）+ 4 件作品
+/// 的真实数据在 data/competitions.json，
 /// 由 scripts/generate_data.py 生成 competition_data.mbt。
 /// 改数据只改 JSON，改完跑：python3 scripts/generate_data.py
 
 ///|
 pub(all) struct Competition {
   name : String
-  deadline : String // 人类可读的截止，如 "2026-12-01 12:00（报名）/ 18:00（提交）"
-  deadline_date : String // 机器可比的日期 "YYYY-MM-DD"，用于撞期检测
+  target_kind : String // "比赛" 或 "平台上架"：台账不只管比赛，也管作品投稿目标
+  deadline : String // 人类可读的截止，如 "2026-12-01 12:00（报名）/ 18:00（提交）"；平台上架目标为 "常年开放，无截止"
+  deadline_date : String // 机器可比的日期 "YYYY-MM-DD"，用于撞期检测；平台上架目标为空（无截止，不参与撞期）
   verified_at : String // 该行截止/奖金最后一次对照官方来源核实的日期 "YYYY-MM-DD"
   prize : String
   track : String

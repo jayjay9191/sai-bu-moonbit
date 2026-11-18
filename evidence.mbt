@@ -50,10 +50,27 @@ pub struct DecisionTrace {
 ///|
 /// 按（规则名，比赛名）查规则原文引用。
 /// 目前收录全部 4 个带规则标志位的比赛：魔搭（首次发布）、知乎 S3
-/// （须新做）、造化（须新做）、软件创新大赛（原创条款）。
+/// （须新做）、造化（须新做）、软件创新大赛（原创条款）；
+/// 另收录 2 个平台上架目标的上架资质：TapTap、itch.io。
 /// 查不到的返回空原文引用，trace 会写明“未收录”，不编数据。
 pub fn rule_citation_for(rule : String, competition : String) -> RuleCitation {
-  if rule == "首次发布" &&
+  if rule == "上架资质" && competition == "TapTap 游戏上架" {
+    {
+      rule,
+      rule_text: "每款游戏须完成四项资质：实名认证、AI 接入声明、适龄分级、隐私合规；H5 游戏包内须含 index.html；大陆上架须简体中文材料；人工审核",
+      source: "TapTap 开发者上架要求",
+      source_note: "2026-11-16 核实：支持 H5 游戏；四项资质、人工审核与简体中文材料要求来自官方上架流程",
+      verified_at: "2026-11-16",
+    }
+  } else if rule == "上架资质" && competition == "itch.io 游戏上架" {
+    {
+      rule,
+      rule_text: "HTML5 游戏须以含 index.html 的 ZIP 包上传（或单个 HTML 文件）；ZIP 限制：≤1000 文件、解压后 ≤500MB、单文件 ≤200MB、路径 ≤240 字符；须用相对路径引用资源；含生成式 AI 内容的作品须在 AI Disclosure 栏准确标注；移动端适配用 Mobile Friendly 选项",
+      source: "itch.io 官方文档《Uploading HTML5 games》与《Content creator quality guidelines》",
+      source_note: "2026-11-18 逐字核实：https://itch.io/docs/creators/html5 与 https://itch.io/docs/creators/quality-guidelines",
+      verified_at: "2026-11-18",
+    }
+  } else if rule == "首次发布" &&
     competition == "魔搭 AI+∞ 第三期「AI 造游戏」" {
     {
       rule,
@@ -439,10 +456,135 @@ pub fn trace_no_prior_entry(work : Work, comp : Competition) -> DecisionTrace {
 }
 
 ///|
-/// 一件作品对一个比赛的全部规则追踪：三个标志位里开着的规则各出一份
-/// 追踪；三个都没开，出一份“无适用规则”的通过追踪。
-/// 判定本身复用 detect_conflicts 的同一条件（标志位 + 台账字段），
-/// 这里只补上规则原文引用与事实证据，不另写一套判定。
+/// 上架资质逐项的补充证据：只收录台账或核实记录里已有的事实。
+/// 《第零次黎明》的触屏缺口有 2026-11-16 的核实记录（PC 端
+/// WASD+鼠标操作、无触屏适配）；其他项没有单独证据，返回空，
+/// 追踪只写作品材料清单的比对结果，不编证据。
+fn qualification_evidence_for(work_name : String, item : String) -> String {
+  if work_name == "第零次黎明" &&
+    (
+      item == "触屏适配（移动端操作）" ||
+      item == "移动端适配（Mobile Friendly）"
+    ) {
+    "2026-11-16 核实：PC 端 WASD+鼠标操作、无触屏适配"
+  } else {
+    ""
+  }
+}
+
+///|
+/// 规则 4（上架资质）追踪：只对 target_kind == "平台上架" 的目标生效。
+/// 逐项比对目标的 materials 清单与作品的 materials_ready：缺口逐项列出，
+/// 每项带证据；结论 P1（须补齐后才能上架），不阻断投稿包认证——
+/// 缺口本身已让认证拒绝（材料缺口 N 项）。
+/// 与前三条规则同一套三步链（规则适用条件 → 来源证据 → 结论），
+/// 判定条件与 detect_conflicts 的规则 4 是同一套（materials 清单比对），
+/// 不另写一套判定。
+pub fn trace_qualifications(work : Work, comp : Competition) -> DecisionTrace {
+  let citation = rule_citation_for("上架资质", comp.name)
+  if comp.target_kind != "平台上架" {
+    {
+      work: work.name,
+      competition: comp.name,
+      rule: citation,
+      violated: false,
+      steps: [
+        "适用条件：该目标不是平台上架目标（target_kind = \"" +
+        comp.target_kind +
+        "\"），上架资质规则不适用。",
+        "结论：通过——无需检查上架资质。",
+      ],
+      conclusion: "通过：规则不适用",
+      level: "通过",
+    }
+  } else {
+    let steps : Array[String] = []
+    steps.push(
+      "适用条件：平台上架目标，要求完成 " +
+      comp.materials.length().to_string() +
+      " 项上架资质（target_kind = \"平台上架\"）。",
+    )
+    steps.push("规则原文：" + citation.rule_text)
+    steps.push(
+      "来源：" +
+      citation.source +
+      "（" +
+      citation.source_note +
+      "；核实于 " +
+      citation.verified_at +
+      "）。",
+    )
+    let gaps : Array[String] = []
+    for i in 0..<comp.materials.length() {
+      let item = comp.materials[i]
+      let num = (i + 1).to_string() + "/" + comp.materials.length().to_string()
+      if contains_string(work.materials_ready, item) {
+        steps.push(
+          "资质 " +
+          num +
+          "：" +
+          item +
+          "——已就绪（作品材料清单里有该项）。",
+        )
+      } else {
+        gaps.push(item)
+        let extra = qualification_evidence_for(work.name, item)
+        let evidence = if extra != "" {
+          "证据：" + extra + "。"
+        } else {
+          "作品已就绪材料：" +
+          join_strings(work.materials_ready, "、") +
+          "，本项不在其中。"
+        }
+        steps.push(
+          "资质 " + num + "：" + item + "——缺口。" + evidence,
+        )
+      }
+    }
+    if gaps.length() > 0 {
+      steps.push(
+        "推导：缺 " +
+        gaps.length().to_string() +
+        " 项上架资质（" +
+        join_strings(gaps, "、") +
+        "），未达到上架要求。",
+      )
+      steps.push("结论：P1——须补齐上架资质后才能上架。")
+      {
+        work: work.name,
+        competition: comp.name,
+        rule: citation,
+        violated: true,
+        steps,
+        conclusion: "P1：须补齐上架资质后才能上架",
+        level: "P1",
+      }
+    } else {
+      steps.push(
+        "推导：" +
+        comp.materials.length().to_string() +
+        " 项上架资质全部就绪。",
+      )
+      steps.push("结论：通过——上架资质齐全。")
+      {
+        work: work.name,
+        competition: comp.name,
+        rule: citation,
+        violated: false,
+        steps,
+        conclusion: "通过：上架资质齐全",
+        level: "通过",
+      }
+    }
+  }
+}
+
+///|
+/// 一件作品对一个目标的全部规则追踪：三个标志位里开着的规则各出一份
+/// 追踪；平台上架目标再出一份上架资质追踪（规则 4）；都没开，出一份
+/// “无适用规则”的通过追踪。
+/// 判定本身复用 detect_conflicts 的同一条件（标志位 + 台账字段 +
+/// 上架资质清单比对），这里只补上规则原文引用与事实证据，不另写一套判定。
 pub fn trace_all_rules(work : Work, comp : Competition) -> Array[DecisionTrace] {
   let result : Array[DecisionTrace] = []
   if comp.requires_first_publish {
@@ -454,6 +596,9 @@ pub fn trace_all_rules(work : Work, comp : Competition) -> Array[DecisionTrace] 
   if comp.requires_no_prior_entry {
     result.push(trace_no_prior_entry(work, comp))
   }
+  if comp.target_kind == "平台上架" {
+    result.push(trace_qualifications(work, comp))
+  }
   if result.length() == 0 {
     result.push({
       work: work.name,
@@ -461,7 +606,7 @@ pub fn trace_all_rules(work : Work, comp : Competition) -> Array[DecisionTrace] 
       rule: rule_citation_for("", comp.name),
       violated: false,
       steps: [
-        "适用条件：该比赛无首次发布 / 须新做 / 原创条款要求（三个标志位均为 false），无规则需要判定。",
+        "适用条件：该目标无首次发布 / 须新做 / 原创条款 / 上架资质要求（三个标志位均为 false，且不是平台上架目标），无规则需要判定。",
         "结论：通过——规则层面无阻挡。",
       ],
       conclusion: "通过：无适用规则",

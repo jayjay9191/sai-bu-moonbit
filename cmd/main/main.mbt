@@ -3,19 +3,19 @@
 /// 无参数：跑整条流水线（台账 → 冲突检测 → 撞期提醒 → 投稿包），
 /// 输出与 v0.1.0 保持一致。
 /// 带子命令：只做该子命令的事。
-///   list                          打印比赛台账
-///   conflicts <作品名>            查一件作品对全部比赛的冲突
-///   pack <作品名> <比赛名>        生成单个投稿包
+///   list                          打印投稿目标台账
+///   conflicts <作品名>            查一件作品对全部目标的冲突
+///   pack <作品名> <目标名>        生成单个投稿包
 ///   collisions                    截止撞期提醒
-///   benchmark                     实测扫描（比赛数/规则数/冲突数/投稿包数/耗时）
+///   benchmark                     实测扫描（目标数/规则数/冲突数/投稿包数/耗时）
 ///   validate                      校验台账数据（名字/日期/材料/标志位），有问题返回码 1
 ///   preflight                     全链路预检：validate → 逐行核验 → 冲突检测 →
 ///                                 投稿包认证 → 撞期提醒，输出清单 SHA-256
-///   trace <作品名> <比赛名>       引用校验追踪：规则适用条件 → 来源证据 → 结论，
-///                                 再加该对作品 × 比赛的投稿包认证
+///   trace <作品名> <目标名>       引用校验追踪：规则适用条件 → 来源证据 → 结论，
+///                                 再加该对作品 × 目标的投稿包认证
 ///   help                          显示本帮助
 /// 用法：moon run cmd/main [子命令 ...]
-/// 作品名、比赛名含空格时请加引号，例如：
+/// 作品名、目标名含空格时请加引号，例如：
 ///   moon run cmd/main pack 第零次黎明 "魔搭 AI+∞ 第三期「AI 造游戏」"
 fn main {
   let args = user_args()
@@ -56,17 +56,26 @@ fn user_args() -> Array[String] {
 }
 
 ///|
-/// 无参数时的整条流水线：比赛台账 -> 冲突检测 -> 截止撞期提醒 -> 投稿包生成。
+/// 无参数时的整条流水线：投稿目标台账 -> 冲突检测 -> 截止撞期提醒 -> 投稿包生成。
 /// Run with `moon run cmd/main` from the project root.
 fn run_full_pipeline() -> Unit {
   println("== 赛簿 · MoonBit 版 v0.1.0 ==")
   println(
-    "多比赛并行管理 + 游戏投稿支持 + 冲突检测（原创 MoonBit 实现）",
+    "多目标并行管理 + 游戏投稿支持 + 冲突检测（原创 MoonBit 实现）",
   )
   println("")
   let comps = @lib.all_competitions()
+  let mut comp_count = 0
+  let mut plat_count = 0
+  for i in 0..<comps.length() {
+    if comps[i].target_kind == "平台上架" {
+      plat_count = plat_count + 1
+    } else {
+      comp_count = comp_count + 1
+    }
+  }
   println(
-    "-- 比赛台账（19 个：12 个在途 + 7 个关注，按截止排序）--",
+    "-- 投稿目标台账（\{comps.length()} 个：\{comp_count} 个比赛 + \{plat_count} 个平台上架，按截止排序）--",
   )
   for i in 0..<comps.length() {
     let c = comps[i]
@@ -112,8 +121,14 @@ fn run_full_pipeline() -> Unit {
         None => println("未找到比赛")
       }
       println("")
+      println("-- 投稿包：黎明 → TapTap --")
+      match @lib.competition_by_name("TapTap 游戏上架") {
+        Some(taptap) => print_pack(@lib.generate_pack(dawn, taptap, conflicts))
+        None => println("未找到目标")
+      }
+      println("")
       println(
-        "数据说明：比赛数据来自已核实的《最近要参加的比赛汇总》；魔搭“首次发布”条款来自 AIBetas 转述官方页，官网原文因登录墙未直接读到，12-01 提交前务必在官网或官方群问清。",
+        "数据说明：目标数据来自已核实的《最近要参加的比赛汇总》与平台官方上架要求；魔搭“首次发布”条款来自 AIBetas 转述官方页，官网原文因登录墙未直接读到，12-01 提交前务必在官网或官方群问清。",
       )
     }
     None => println("未找到作品《第零次黎明》")
@@ -122,7 +137,7 @@ fn run_full_pipeline() -> Unit {
 
 ///|
 fn print_pack(pack : @lib.SubmissionPack) -> Unit {
-  println("作品：\{pack.work} → 比赛：\{pack.competition}")
+  println("作品：\{pack.work} → 目标：\{pack.competition}")
   println("标题：\{pack.title}")
   println("一句话介绍：\{pack.oneliner}")
   println(
@@ -143,19 +158,19 @@ fn print_usage() -> Unit {
   println(
     "无参数：跑整条流水线（台账 → 冲突检测 → 撞期提醒 → 投稿包）",
   )
-  println("list：打印比赛台账")
-  println("conflicts <作品名>：查一件作品对全部比赛的冲突")
-  println("pack <作品名> <比赛名>：生成单个投稿包")
+  println("list：打印投稿目标台账")
+  println("conflicts <作品名>：查一件作品对全部目标的冲突")
+  println("pack <作品名> <目标名>：生成单个投稿包")
   println("collisions：截止撞期提醒")
   println(
-    "benchmark：实测扫描（比赛数/规则数/冲突数/投稿包数/耗时）",
+    "benchmark：实测扫描（目标数/规则数/冲突数/投稿包数/耗时）",
   )
   println("validate：校验台账数据，有问题返回码 1")
   println(
     "preflight：全链路预检（validate → 逐行核验 → 冲突检测 → 投稿包认证 → 撞期提醒），输出清单 SHA-256",
   )
   println(
-    "trace <作品名> <比赛名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
+    "trace <作品名> <目标名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
   )
   println("help：显示本帮助")
 }
@@ -172,7 +187,7 @@ fn print_work_names() -> Unit {
 ///|
 fn print_competition_names() -> Unit {
   let comps = @lib.all_competitions()
-  println("比赛列表：")
+  println("投稿目标列表：")
   for i in 0..<comps.length() {
     println("  - \{comps[i].name}")
   }
@@ -181,8 +196,17 @@ fn print_competition_names() -> Unit {
 ///|
 fn cmd_list() -> Unit {
   let comps = @lib.all_competitions()
+  let mut comp_count = 0
+  let mut plat_count = 0
+  for i in 0..<comps.length() {
+    if comps[i].target_kind == "平台上架" {
+      plat_count = plat_count + 1
+    } else {
+      comp_count = comp_count + 1
+    }
+  }
   println(
-    "-- 比赛台账（19 个：12 个在途 + 7 个关注，按截止排序）--",
+    "-- 投稿目标台账（\{comps.length()} 个：\{comp_count} 个比赛 + \{plat_count} 个平台上架，按截止排序）--",
   )
   for i in 0..<comps.length() {
     let c = comps[i]
@@ -222,7 +246,7 @@ fn cmd_conflicts(args : Array[String]) -> Unit {
 ///|
 fn cmd_pack(args : Array[String]) -> Unit {
   if args.length() < 3 {
-    println("用法：pack <作品名> <比赛名>")
+    println("用法：pack <作品名> <目标名>")
     print_work_names()
     print_competition_names()
     return
@@ -235,7 +259,7 @@ fn cmd_pack(args : Array[String]) -> Unit {
           print_pack(@lib.generate_pack(w, comp, conflicts))
         }
         None => {
-          println("未找到比赛：\{args[2]}")
+          println("未找到目标：\{args[2]}")
           print_competition_names()
         }
       }
@@ -265,7 +289,9 @@ fn cmd_validate() -> Unit {
   let works = @lib.all_works()
   let issues = @lib.validate_data(comps, works)
   println("== 数据校验 ==")
-  println("比赛：\{comps.length()} 个，作品：\{works.length()} 件")
+  println(
+    "投稿目标：\{comps.length()} 个，作品：\{works.length()} 件",
+  )
   if issues.length() == 0 {
     println("通过：0 个问题")
   } else {
@@ -363,13 +389,13 @@ fn cmd_preflight() -> Unit {
 }
 
 ///|
-/// 引用校验追踪：打印一件作品对一个比赛的全部规则追踪（规则适用条件 →
+/// 引用校验追踪：打印一件作品对一个目标的全部规则追踪（规则适用条件 →
 /// 来源证据 → 结论），再加该对组合的投稿包认证。
 /// 追踪的判定与 detect_conflicts 用同一条件（标志位 + 台账字段），
 /// 这里只补上规则原文引用与事实证据，不另写一套判定。
 fn cmd_trace(args : Array[String]) -> Unit {
   if args.length() < 3 {
-    println("用法：trace <作品名> <比赛名>")
+    println("用法：trace <作品名> <目标名>")
     print_work_names()
     print_competition_names()
     return
@@ -402,7 +428,7 @@ fn cmd_trace(args : Array[String]) -> Unit {
           )
         }
         None => {
-          println("未找到比赛：\{args[2]}")
+          println("未找到目标：\{args[2]}")
           print_competition_names()
         }
       }
@@ -414,7 +440,7 @@ fn cmd_trace(args : Array[String]) -> Unit {
 }
 
 ///|
-/// 实测扫描：先跑一轮全量扫描数真实结果（全部作品 × 全部比赛的
+/// 实测扫描：先跑一轮全量扫描数真实结果（全部作品 × 全部目标的
 /// 冲突检测与投稿包生成），再把同样的全量扫描重复 100 轮计时。
 /// 所有数字都是当场跑出来的。
 fn cmd_benchmark() -> Unit {
@@ -430,8 +456,15 @@ fn cmd_benchmark() -> Unit {
     let w = works[wi]
     let conflicts = @lib.detect_conflicts(w, comps)
     total_conflicts = total_conflicts + conflicts.length()
-    // 每件作品 × 每场比赛评估 3 条规则：首次发布 / 须新做 / 未参加过其他比赛
-    rule_checks = rule_checks + comps.length() * 3
+    // 每件作品 × 每个目标评估规则：比赛 3 条（首次发布 / 须新做 /
+    // 未参加过其他比赛），平台上架目标 1 条（上架资质清单）
+    for ci in 0..<comps.length() {
+      if comps[ci].target_kind == "平台上架" {
+        rule_checks = rule_checks + 1
+      } else {
+        rule_checks = rule_checks + 3
+      }
+    }
     for i in 0..<conflicts.length() {
       if conflicts[i].level == "P0" {
         p0_conflicts = p0_conflicts + 1
@@ -462,10 +495,10 @@ fn cmd_benchmark() -> Unit {
   }
   let elapsed_ms = @env.now() - start
   println("== 实测 benchmark（全量扫描 × \{rounds} 轮）==")
-  println("比赛数：\{comps.length()}")
+  println("投稿目标数：\{comps.length()}")
   println("作品数：\{works.length()}")
   println(
-    "规则评估：\{rule_checks} 次/轮（每作品 × 每比赛 3 条规则）",
+    "规则评估：\{rule_checks} 次/轮（每作品 × 每比赛 3 条规则 + 每平台上架目标 1 条上架资质检查）",
   )
   println(
     "发现冲突：\{total_conflicts} 个（P0 \{p0_conflicts} 个，P1 \{p1_conflicts} 个）",

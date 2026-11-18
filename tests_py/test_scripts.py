@@ -49,7 +49,8 @@ class TestMbtEmit(unittest.TestCase):
             "name": "测试比赛", "deadline": "2026-12-01",
             "deadline_date": "2026-12-01", "verified_at": "2026-11-15",
             "prize": "¥0", "track": "测试", "status": "测试",
-            "plan_status": "关注", "requires_first_publish": True,
+            "plan_status": "关注", "target_kind": "比赛",
+            "requires_first_publish": True,
             "requires_new_work": False, "requires_no_prior_entry": False,
             "allows_existing_works": False, "materials": ["材料 A"],
             "note": "备注",
@@ -58,6 +59,7 @@ class TestMbtEmit(unittest.TestCase):
         second = generate_data.emit_competition(comp)
         self.assertEqual(first, second)
         self.assertIn('plan_status: "关注",', first)
+        self.assertIn('target_kind: "比赛",', first)
         self.assertIn("requires_first_publish: true,", first)
         self.assertIn("requires_no_prior_entry: false,", first)
 
@@ -77,7 +79,7 @@ class TestMbtEmit(unittest.TestCase):
         self.assertIn("kind: WorkKind::Tool,", generate_data.emit_work(base))
 
     def test_generate_file_matches_json(self):
-        """生成器连续跑两次字节一致（确定性），且含 19 个比赛名。
+        """生成器连续跑两次字节一致（确定性），且含 21 个目标名。
         注意：不要断言“跑完与提交的文件字节一致”——提交的文件还经过
         moon fmt 格式化（CI 里是 generate + fmt 后再 diff），生成器
         本身只保证确定性输出。"""
@@ -96,7 +98,7 @@ class TestMbtEmit(unittest.TestCase):
             out_path.write_bytes(saved)
         text = out_path.read_text(encoding="utf-8")
         data = json.loads((ROOT / "data" / "competitions.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(data["competitions"]), 19)
+        self.assertEqual(len(data["competitions"]), 21)
         self.assertEqual(len(data["works"]), 4)
         for comp in data["competitions"]:
             self.assertIn(comp["name"], text)
@@ -282,18 +284,18 @@ class TestSyncHelpers(unittest.TestCase):
 
 class TestCellTestGenerator(unittest.TestCase):
     def test_cell_table_covers_eleven_conflict_cells(self):
-        self.assertEqual(len(generate_tests.CELL_EXPECT), 11)
+        self.assertEqual(len(generate_tests.CELL_EXPECT), 19)
         p0 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P0"])
         p1 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P1"])
-        self.assertEqual((p0, p1), (7, 4))
+        self.assertEqual((p0, p1), (7, 12))
 
     def test_row_table_covers_all_competitions(self):
-        self.assertEqual(len(generate_tests.ROW_EXPECT), 19)
+        self.assertEqual(len(generate_tests.ROW_EXPECT), 21)
         watching = [c for c, v in generate_tests.ROW_EXPECT.items()
                     if v[1] == "关注"]
-        self.assertEqual(len(watching), 7)
+        self.assertEqual(len(watching), 9)
 
     def test_emit_cell_contains_expected_level(self):
         out = generate_tests.emit_cell("第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")

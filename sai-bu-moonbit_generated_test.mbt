@@ -1,8 +1,8 @@
 ///|
 /// 由 scripts/generate_tests.py 生成，不要手改。
 /// 期望值来自 docs/manual-baseline-2026-11-15.md（人工手核底稿），
-/// 76 格逐格断言：每格的冲突等级 + 投稿包 blocked 状态；
-/// 另有 19 行逐行断言（截止/计划状态/核验日期/标志位）
+/// 84 格逐格断言：每格的冲突等级 + 投稿包 blocked 状态；
+/// 另有 21 行逐行断言（目标类型/截止/计划状态/核验日期/标志位）
 /// 与 4 件作品断言（首次公开/已投比赛）。
 /// 改期望先改底稿，再跑：python3 scripts/generate_tests.py
 
@@ -461,6 +461,54 @@ test "cell: 第零次黎明 × Rokid Spatial Joy 2026" {
             conflicts, "Rokid Spatial Joy 2026",
           )
           assert_eq(list.length(), 0)
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: 第零次黎明 × TapTap 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "TapTap 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: 第零次黎明 × itch.io 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "itch.io 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
           assert_eq(pack.blocked, false)
         }
@@ -933,6 +981,54 @@ test "cell: 小店日结 × Rokid Spatial Joy 2026" {
 }
 
 ///|
+test "cell: 小店日结 × TapTap 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("小店日结") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "TapTap 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: 小店日结 × itch.io 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("小店日结") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "itch.io 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
 test "cell: 诉求整理台 × AI PLAY 72H 创作黑客松" {
   match @sai-bu-moonbit.work_by_name("诉求整理台") {
     Some(w) =>
@@ -1385,6 +1481,54 @@ test "cell: 诉求整理台 × Rokid Spatial Joy 2026" {
             conflicts, "Rokid Spatial Joy 2026",
           )
           assert_eq(list.length(), 0)
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: 诉求整理台 × TapTap 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("诉求整理台") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "TapTap 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: 诉求整理台 × itch.io 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("诉求整理台") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "itch.io 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
           assert_eq(pack.blocked, false)
         }
@@ -1858,6 +2002,54 @@ test "cell: 验价尺 × Rokid Spatial Joy 2026" {
 }
 
 ///|
+test "cell: 验价尺 × TapTap 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "TapTap 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "cell: 验价尺 × itch.io 游戏上架" {
+  match @sai-bu-moonbit.work_by_name("验价尺") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+        Some(c) => {
+          let conflicts = @sai-bu-moonbit.detect_conflicts(
+            w,
+            @sai-bu-moonbit.all_competitions(),
+          )
+          let list = @sai-bu-moonbit.conflicts_for_competition(
+            conflicts, "itch.io 游戏上架",
+          )
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
+          let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
+          assert_eq(pack.blocked, false)
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
 test "row: AI PLAY 72H 创作黑客松" {
   match @sai-bu-moonbit.competition_by_name("AI PLAY 72H 创作黑客松") {
     Some(c) => {
@@ -1868,6 +2060,7 @@ test "row: AI PLAY 72H 创作黑客松" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -1888,6 +2081,7 @@ test "row: BayHack 大湾区黑客松" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -1909,6 +2103,7 @@ test "row: 荣耀·英特尔 AI 智造创新赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -1929,6 +2124,7 @@ test "row: 华为小红书 Skill 创新赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -1949,6 +2145,7 @@ test "row: DoBe 全球 AI 创客大赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -1969,6 +2166,7 @@ test "row: 兴智杯" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -1989,6 +2187,7 @@ test "row: Qoder 高校创造力大赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2012,6 +2211,7 @@ test "row: 第二届 AIGC 青年大学生就业创业促进行动" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2035,6 +2235,7 @@ test "row: 第十一届全国青年人工智能创新创业大赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2058,6 +2259,7 @@ test "row: 魔搭 AI+∞ 第三期「AI 造游戏」" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2078,6 +2280,7 @@ test "row: PAYATHON 2026" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2098,6 +2301,7 @@ test "row: 知乎黑客松 S3" {
       assert_eq(c.requires_new_work, true)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2119,6 +2323,7 @@ test "row: 松江·创世纪 AI 游戏大赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2139,6 +2344,7 @@ test "row: 支付宝智能体涌现奖" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2159,6 +2365,7 @@ test "row: 绿联首届黑客松" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2180,6 +2387,7 @@ test "row: 中小企业 AI 应用产品大赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2201,6 +2409,7 @@ test "row: 造化首届体素游戏创作大赛" {
       assert_eq(c.requires_new_work, true)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2224,6 +2433,7 @@ test "row: 第二十届全国大学生软件创新大赛" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, true)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")
@@ -2244,6 +2454,49 @@ test "row: Rokid Spatial Joy 2026" {
       assert_eq(c.requires_new_work, false)
       assert_eq(c.requires_no_prior_entry, false)
       assert_eq(c.allows_existing_works, false)
+      assert_eq(c.target_kind, "比赛")
+      assert_true(c.name != "")
+      assert_true(c.deadline != "")
+      assert_true(c.prize != "")
+      assert_true(c.materials.length() > 0)
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "row: TapTap 游戏上架" {
+  match @sai-bu-moonbit.competition_by_name("TapTap 游戏上架") {
+    Some(c) => {
+      assert_eq(c.deadline_date, "")
+      assert_eq(c.plan_status, "关注")
+      assert_eq(c.verified_at, "2026-11-16")
+      assert_eq(c.requires_first_publish, false)
+      assert_eq(c.requires_new_work, false)
+      assert_eq(c.requires_no_prior_entry, false)
+      assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "平台上架")
+      assert_true(c.name != "")
+      assert_true(c.deadline != "")
+      assert_true(c.prize != "")
+      assert_true(c.materials.length() > 0)
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "row: itch.io 游戏上架" {
+  match @sai-bu-moonbit.competition_by_name("itch.io 游戏上架") {
+    Some(c) => {
+      assert_eq(c.deadline_date, "")
+      assert_eq(c.plan_status, "关注")
+      assert_eq(c.verified_at, "2026-11-18")
+      assert_eq(c.requires_first_publish, false)
+      assert_eq(c.requires_new_work, false)
+      assert_eq(c.requires_no_prior_entry, false)
+      assert_eq(c.allows_existing_works, true)
+      assert_eq(c.target_kind, "平台上架")
       assert_true(c.name != "")
       assert_true(c.deadline != "")
       assert_true(c.prize != "")

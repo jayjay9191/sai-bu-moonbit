@@ -1,7 +1,7 @@
 ///|
 /// 冲突检测引擎：这是赛簿相对 Auto-Lexmount 的核心创新之一。
 /// Auto-Lexmount 只做单比赛的流水线，不检查作品跨比赛的规则冲突；
-/// 这里一次扫全部 19 个比赛，规则撞了就报警。
+/// 这里一次扫全部 21 个投稿目标（19 个比赛 + 2 个平台上架），规则撞了就报警。
 
 ///|
 pub struct Conflict {
@@ -34,13 +34,17 @@ pub fn contains_string(items : Array[String], target : String) -> Bool {
 }
 
 ///|
-/// 逐个比赛检查一件作品的规则冲突。
+/// 逐个目标检查一件作品的规则冲突。
 /// 规则 1（P0）：比赛要求“活动期间首次公开发布”，但作品在活动开始前
 ///   已公开，或已投过其他比赛。
 /// 规则 2（P1）：比赛要求“必须新做”，但作品已有公开版本。
 /// 规则 3（P0）：比赛要求“未参加过其他国家级公开比赛”（原创条款，
 ///   如软件创新大赛），但作品已投过其他比赛。注意：只看 submitted_to，
 ///   不看 first_public_date——只公开、没投过别的比赛不违反这一条。
+/// 规则 4（P1）：平台上架目标要求完成上架资质清单（materials 即清单，
+///   如 TapTap 四项资质、itch.io 的 ZIP 包与 AI 披露），但作品有未就
+///   绪项。只对 target_kind == "平台上架" 的目标生效；缺口逐项列出，
+///   不阻断投稿包认证（缺口本身已让认证拒绝）。
 pub fn detect_conflicts(
   work : Work,
   competitions : Array[Competition],
@@ -88,17 +92,39 @@ pub fn detect_conflicts(
         "，违反“参赛作品必须是原创且未参加过其他国家级公开比赛”",
       })
     }
+    if comp.target_kind == "平台上架" {
+      let gaps : Array[String] = []
+      for j in 0..<comp.materials.length() {
+        if !contains_string(work.materials_ready, comp.materials[j]) {
+          gaps.push(comp.materials[j])
+        }
+      }
+      if gaps.length() > 0 {
+        result.push({
+          level: "P1",
+          competition: comp.name,
+          work: work.name,
+          message: "上架资质缺口：缺 " +
+          join_strings(gaps, "、") +
+          "，须补齐后才能上架",
+        })
+      }
+    }
   }
   result
 }
 
 ///|
 /// 同一天有 2 个及以上截止的日期（按 deadline_date 分组）。
+/// 平台上架目标无截止（deadline_date 为空），不参与撞期。
 pub fn collision_dates(competitions : Array[Competition]) -> Array[String] {
   let result : Array[String] = []
   let seen : Array[String] = []
   for i in 0..<competitions.length() {
     let date = competitions[i].deadline_date
+    if date == "" {
+      continue
+    }
     if contains_string(seen, date) {
       continue
     }

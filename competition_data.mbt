@@ -10,6 +10,7 @@ pub fn all_competitions() -> Array[Competition] {
   [
     {
       name: "AI PLAY 72H 创作黑客松",
+      target_kind: "比赛",
       deadline: "2026-11-17 23:59（提案）",
       deadline_date: "2026-11-17",
       verified_at: "2026-11-13",
@@ -29,6 +30,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "BayHack 大湾区黑客松",
+      target_kind: "比赛",
       deadline: "2026-11-18 00:00（报名）",
       deadline_date: "2026-11-18",
       verified_at: "2026-11-13",
@@ -47,6 +49,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "荣耀·英特尔 AI 智造创新赛",
+      target_kind: "比赛",
       deadline: "2026-11-22（只写日期，未写几点）",
       deadline_date: "2026-11-22",
       verified_at: "2026-11-13",
@@ -66,6 +69,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "华为小红书 Skill 创新赛",
+      target_kind: "比赛",
       deadline: "2026-11-24（缓冲）",
       deadline_date: "2026-11-24",
       verified_at: "2026-11-13",
@@ -84,6 +88,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "DoBe 全球 AI 创客大赛",
+      target_kind: "比赛",
       deadline: "2026-11-27（报名）",
       deadline_date: "2026-11-27",
       verified_at: "2026-11-15",
@@ -100,6 +105,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "兴智杯",
+      target_kind: "比赛",
       deadline: "2026-11-28（未核实：另有 11-05 的说法）",
       deadline_date: "2026-11-28",
       verified_at: "2026-11-15",
@@ -116,6 +122,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "Qoder 高校创造力大赛",
+      target_kind: "比赛",
       deadline: "2026-11-30 18:00",
       deadline_date: "2026-11-30",
       verified_at: "2026-11-13",
@@ -135,6 +142,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "第二届 AIGC 青年大学生就业创业促进行动",
+      target_kind: "比赛",
       deadline: "2026-11-30（报名+作品）",
       deadline_date: "2026-11-30",
       verified_at: "2026-11-15",
@@ -153,6 +161,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "第十一届全国青年人工智能创新创业大赛",
+      target_kind: "比赛",
       deadline: "2026-11-30 24:00（报名）",
       deadline_date: "2026-11-30",
       verified_at: "2026-11-16",
@@ -169,6 +178,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "魔搭 AI+∞ 第三期「AI 造游戏」",
+      target_kind: "比赛",
       deadline: "2026-12-01 12:00（报名）/ 18:00（提交）",
       deadline_date: "2026-12-01",
       verified_at: "2026-11-13",
@@ -188,6 +198,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "PAYATHON 2026",
+      target_kind: "比赛",
       deadline: "2026-12-01 23:59（报名）/ 2026-12-09 23:59（作品）",
       deadline_date: "2026-12-01",
       verified_at: "2026-11-16",
@@ -207,6 +218,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "知乎黑客松 S3",
+      target_kind: "比赛",
       deadline: "2026-12-04 15:59（报名）",
       deadline_date: "2026-12-04",
       verified_at: "2026-11-13",
@@ -225,6 +237,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "松江·创世纪 AI 游戏大赛",
+      target_kind: "比赛",
       deadline: "2026-12-06 23:59",
       deadline_date: "2026-12-06",
       verified_at: "2026-11-16",
@@ -241,6 +254,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "支付宝智能体涌现奖",
+      target_kind: "比赛",
       deadline: "2026-12-06 零点",
       deadline_date: "2026-12-06",
       verified_at: "2026-11-16",
@@ -257,6 +271,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "绿联首届黑客松",
+      target_kind: "比赛",
       deadline: "2026-12-07（初稿）",
       deadline_date: "2026-12-07",
       verified_at: "2026-11-16",
@@ -275,6 +290,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "中小企业 AI 应用产品大赛",
+      target_kind: "比赛",
       deadline: "2026-12-10 24:00（报名）",
       deadline_date: "2026-12-10",
       verified_at: "2026-11-15",
@@ -291,6 +307,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "造化首届体素游戏创作大赛",
+      target_kind: "比赛",
       deadline: "2026-12-15 23:59（投稿）",
       deadline_date: "2026-12-15",
       verified_at: "2026-11-15",
@@ -307,6 +324,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "第二十届全国大学生软件创新大赛",
+      target_kind: "比赛",
       deadline: "2027-01-15 18:00（报名）",
       deadline_date: "2027-01-15",
       verified_at: "2026-11-18",
@@ -325,6 +343,7 @@ pub fn all_competitions() -> Array[Competition] {
     },
     {
       name: "Rokid Spatial Joy 2026",
+      target_kind: "比赛",
       deadline: "2027-01-28（待核对：另有 01-22 的说法）",
       deadline_date: "2027-01-28",
       verified_at: "2026-11-13",
@@ -338,6 +357,47 @@ pub fn all_competitions() -> Array[Competition] {
       allows_existing_works: false,
       materials: ["作品策划案", "AIUI 智能体（Rokid AIUI Studio）"],
       note: "⚠️ 截止、奖金分项、决赛日期多处数字冲突，官网链接未找到，核对前不要以任一版本为准",
+    },
+    {
+      name: "TapTap 游戏上架",
+      target_kind: "平台上架",
+      deadline: "常年开放，无截止",
+      deadline_date: "",
+      verified_at: "2026-11-16",
+      prize: "无奖金；上架发行",
+      track: "H5 游戏上架 · 手游渠道",
+      status: "未开始（移动端适配待做）",
+      plan_status: "关注",
+      requires_first_publish: false,
+      requires_new_work: false,
+      requires_no_prior_entry: false,
+      allows_existing_works: true,
+      materials: [
+        "实名认证", "AI 接入声明", "适龄分级", "隐私合规", "含 index.html 的 H5 游戏包",
+        "触屏适配（移动端操作）",
+      ],
+      note: "2026-11-16 核实：支持 H5 游戏（包内须含 index.html）；每款游戏四项资质——实名认证、AI 接入声明、适龄分级、隐私合规；人工审核；大陆上架须简体中文材料。《第零次黎明》目前为 PC 端 WASD+鼠标操作、无触屏适配，须先做移动端适配。",
+    },
+    {
+      name: "itch.io 游戏上架",
+      target_kind: "平台上架",
+      deadline: "常年开放，无截止",
+      deadline_date: "",
+      verified_at: "2026-11-18",
+      prize: "无奖金；自主定价/接受捐赠（HTML5 游戏仅接受捐赠）",
+      track: "HTML5 游戏上架 · 独立游戏平台",
+      status: "未开始",
+      plan_status: "关注",
+      requires_first_publish: false,
+      requires_new_work: false,
+      requires_no_prior_entry: false,
+      allows_existing_works: true,
+      materials: [
+        "含 index.html 入口的 ZIP 包", "ZIP 限制合规（≤1000 文件、解压后 ≤500MB、单文件 ≤200MB、路径 ≤240 字符）",
+        "相对路径引用资源", "AI 生成内容披露（AI Disclosure 栏）",
+        "移动端适配（Mobile Friendly）", "封面图与截图",
+      ],
+      note: "2026-11-18 逐字核实 itch.io 官方文档《Uploading HTML5 games》（https://itch.io/docs/creators/html5）与《Content creator quality guidelines》（https://itch.io/docs/creators/quality-guidelines）：ZIP 包须含 index.html 入口；ZIP 限制如材料所列；须用相对路径；含生成式 AI 内容的作品须在 AI Disclosure 栏准确标注；移动端适配用 Mobile Friendly 选项。",
     },
   ]
 }
