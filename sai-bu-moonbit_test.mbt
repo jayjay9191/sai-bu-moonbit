@@ -544,12 +544,13 @@ test "is_valid_date rejects non-digit in date" {
 
 ///|
 test "verified_at is valid for all targets" {
-  // 台账每行都有最后核实日期：8 行是 2026-11-13 全量核实轮次，
+  // 台账每行都有最后核实日期：7 行是 2026-11-13 全量核实轮次
+  // （Rokid 已于 2026-11-18 重核改到 11-18），
   // 5 行是 2026-11-15（7 个新关注比赛减去 CAAI 青年赛、软件创新大赛），
-  // 6 行是 2026-11-16（同步脚本第三批自动更新：绿联、PAYATHON、
-  // 松江、涌现奖、CAAI 青年赛核实通过，另加 TapTap 上架资质核实），
-  // 2 行是 2026-11-18（软件创新大赛：大工通知核对原创条款；
-  // itch.io：官方文档逐字核实）。
+  // 1 行是 2026-11-16（TapTap 上架资质核实；绿联、PAYATHON、
+  // 松江、涌现奖、CAAI 青年赛已于 2026-11-18 同步脚本重核），
+  // 8 行是 2026-11-18（软件创新大赛：大工通知核对原创条款；
+  // itch.io：官方文档逐字核实；另加同步脚本重核 5 行 + Rokid 重核 1 行）。
   let comps = @sai-bu-moonbit.all_competitions()
   let mut count_1113 = 0
   let mut count_1115 = 0
@@ -568,10 +569,10 @@ test "verified_at is valid for all targets" {
       count_1118 = count_1118 + 1
     }
   }
-  assert_eq(count_1113, 8)
+  assert_eq(count_1113, 7)
   assert_eq(count_1115, 5)
-  assert_eq(count_1116, 6)
-  assert_eq(count_1118, 2)
+  assert_eq(count_1116, 1)
+  assert_eq(count_1118, 8)
 }
 
 ///|

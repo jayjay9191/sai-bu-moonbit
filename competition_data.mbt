@@ -26,7 +26,7 @@ pub fn all_competitions() -> Array[Competition] {
         "提案文档（主题：重启 RESET）", "可体验原型链接（核心试玩 ≥1 分钟）",
         "队名 + 队员姓名与分工",
       ],
-      note: "报名只走小红书群（LinkLike 科创社区，8609354634），无 URL；完整格式清单须在群里问",
+      note: "报名只走小红书群（LinkLike 科创社区，8609354634），无 URL；完整格式清单须在群里问；2026-11-18 复核：提案截止 11-17 已过（提案已提交，用户 11-16 确认）；评审 11-18–11-22，30 队晋级 11-22 公布；11-27–29 杭州线下决赛（it168 11-17 报道）",
     },
     {
       name: "BayHack 大湾区黑客松",
@@ -45,7 +45,7 @@ pub fn all_competitions() -> Array[Competition] {
       materials: [
         "报名表（公众号「BayHack」）", "3–6 人队伍（至少 1 技术 + 1 非技术）",
       ],
-      note: "官网 bayhack.cn 打不开",
+      note: "2026-11-18 复核：官网 bayhack.cn 可打开（JS 渲染，首页确认 400+ 创造者、48 小时、12-18–20 佛山智科大厦）；奖金池 30 万元已确认（hack123 汇总官方页：含现金、合作方专项奖、技术/服务权益，具体金额以报名规则为准）；报名 11-18 截止，HackerTrip 显示报名已截止；用户已决定不去佛山现场",
     },
     {
       name: "荣耀·英特尔 AI 智造创新赛",
@@ -65,7 +65,7 @@ pub fn all_competitions() -> Array[Competition] {
         "小红书图文/视频（带话题）", "官网上传页提交链接 + 信息表",
         "学信网学籍验证截图",
       ],
-      note: "转评赞 ≥10 待确认；结果 12-10 公布",
+      note: "转评赞 ≥10 待确认（须用户在小红书 App 内查看）；结果 12-10 公布；2026-11-18 复核：参赛协议页明文截止投稿 2026-11-22 23:59，已确认",
     },
     {
       name: "华为小红书 Skill 创新赛",
@@ -84,7 +84,7 @@ pub fn all_competitions() -> Array[Competition] {
       materials: [
         "Skill ZIP（≤30 个文件/≤40MB）", "演示视频/GIF", "晒单笔记",
       ],
-      note: "两市场均已发布；晒单笔记、演示视频/GIF、200 元券未确认",
+      note: "两市场均已发布；晒单笔记、演示视频/GIF、200 元券未确认（须用户确认）；2026-11-18 复核：华为云赛题页仍为 JS 渲染壳，公开 HTML 无正文，截止 11-24 未能再确认",
     },
     {
       name: "DoBe 全球 AI 创客大赛",
@@ -101,7 +101,7 @@ pub fn all_competitions() -> Array[Competition] {
       requires_no_prior_entry: false,
       allows_existing_works: false,
       materials: ["报名表", "AI 应用/自由创意作品"],
-      note: "奖金未核实；入围赴上海路演",
+      note: "奖金未核实（2026-11-18 复核：湾区 AI 日历确认报名截止 11-27、决赛上海长宁乐动虹桥路演，但奖金数额未在公开渠道写明；官方微信文章入口仍需完成验证，未看到）；入围赴上海路演",
     },
     {
       name: "兴智杯",
@@ -118,7 +118,7 @@ pub fn all_competitions() -> Array[Competition] {
       requires_no_prior_entry: false,
       allows_existing_works: false,
       materials: ["报名表（细则未核实）"],
-      note: "截止日期未核实：11-05 与 11-28 两来源冲突；官网 www.aiinnovation.com.cn 打不开（ERR_CONNECTION_CLOSED）；总决赛深圳线下；未核实前不要以任一版本为准",
+      note: "2026-11-18 复核：aitop100 九月盘点写报名 8-31–11-05、作品征稿 9-17–11-22；湾区 AI 日历列 11-28 且注明“各赛题截止时间以官网为准”；官网 www.aiinnovation.com.cn 公开页仅导航壳、无日期；11-05 与 11-28 的冲突仍未解决，未核实前不要以任一版本为准；总决赛深圳线下",
     },
     {
       name: "Qoder 高校创造力大赛",
@@ -157,14 +157,14 @@ pub fn all_competitions() -> Array[Competition] {
       materials: [
         "AIGC技术应用方案（非视频赛道）", "报名（官方微信/新华 QR）",
       ],
-      note: "线上报名，决赛答辩+颁奖在深圳线下；奖金只写“证书与奖金”，金额未公布；报名走官方微信/新华 QR",
+      note: "线上报名，决赛答辩+颁奖在深圳线下；奖金只写“证书与奖金”，金额未公布（2026-11-18 复核：十方融海官网 10-30 新闻与变好科技通稿均只写“证书与奖金”，金额官方未公布；报名截止 11-30 已确认）；报名走官方微信/新华 QR",
     },
     {
       name: "第十一届全国青年人工智能创新创业大赛",
       target_kind: "比赛",
       deadline: "2026-11-30 24:00（报名）",
       deadline_date: "2026-11-30",
-      verified_at: "2026-11-16",
+      verified_at: "2026-11-18",
       prize: "无现金奖、只有证书",
       track: "创新赛道学生组 · 总决赛 12 月末深圳现场答辩，仅入围才去",
       status: "关注中，未报名",
@@ -201,7 +201,7 @@ pub fn all_competitions() -> Array[Competition] {
       target_kind: "比赛",
       deadline: "2026-12-01 23:59（报名）/ 2026-12-09 23:59（作品）",
       deadline_date: "2026-12-01",
-      verified_at: "2026-11-16",
+      verified_at: "2026-11-18",
       prize: "奖池 ¥200,000（Vibe Pay 一等奖 ¥30,000）",
       track: "Vibe Pay 赛道 · 个人可申请独立开发者",
       status: "未报名，可先行",
@@ -240,7 +240,7 @@ pub fn all_competitions() -> Array[Competition] {
       target_kind: "比赛",
       deadline: "2026-12-06 23:59",
       deadline_date: "2026-12-06",
-      verified_at: "2026-11-16",
+      verified_at: "2026-11-18",
       prize: "现金 ¥30,000 税前（自由创作一等奖 ¥6,000）",
       track: "自由创作赛道 · 明确已有成品可参赛",
       status: "未投稿",
@@ -257,7 +257,7 @@ pub fn all_competitions() -> Array[Competition] {
       target_kind: "比赛",
       deadline: "2026-12-06 零点",
       deadline_date: "2026-12-06",
-      verified_at: "2026-11-16",
+      verified_at: "2026-11-18",
       prize: "首轮前 200 各“价值 5000 元”；年度最佳 ¥1,000,000（2027 Q4）",
       track: "生活好帮手 / 消费新体验",
       status: "已投 3 件，均审核中",
@@ -274,7 +274,7 @@ pub fn all_competitions() -> Array[Competition] {
       target_kind: "比赛",
       deadline: "2026-12-07（初稿）",
       deadline_date: "2026-12-07",
-      verified_at: "2026-11-16",
+      verified_at: "2026-11-18",
       prize: "奖池 ¥34,000（冠军 ¥15,000 + NAS）",
       track: "效率工具 / 生活助手 / 智能管理 / 开放创新",
       status: "未开始",
@@ -303,7 +303,7 @@ pub fn all_competitions() -> Array[Competition] {
       requires_no_prior_entry: false,
       allows_existing_works: false,
       materials: ["报名表", "AI 应用产品"],
-      note: "奖金未核实；个人大学生能否报未核实；初赛 12-18/19 北京现场路演",
+      note: "奖金未核实（2026-11-18 复核：协会官网实时抓取断开，公开缓存为 2026-04-21 的旧首页、无大赛内容，奖金仍未看到）；个人大学生能否报未核实；初赛 12-18/19 北京现场路演",
     },
     {
       name: "造化首届体素游戏创作大赛",
@@ -344,10 +344,10 @@ pub fn all_competitions() -> Array[Competition] {
     {
       name: "Rokid Spatial Joy 2026",
       target_kind: "比赛",
-      deadline: "2027-01-28（待核对：另有 01-22 的说法）",
+      deadline: "2027-01-28（提交截止）",
       deadline_date: "2027-01-28",
-      verified_at: "2026-11-13",
-      prize: "总奖池 ¥5,000,000（AI 赛道约 ¥2,100,000+）",
+      verified_at: "2026-11-18",
+      prize: "总奖池 ¥5,000,000（声网对话式 AI 专项奖 ¥60,000；AI 赛道周榜奖金，TOP1 最高 ¥2,000/周；决赛 2027 年 3 月中旬）",
       track: "AI 赛道 · AIUI 智能体 · 循环打榜",
       status: "未开始",
       plan_status: "在途",
@@ -356,7 +356,7 @@ pub fn all_competitions() -> Array[Competition] {
       requires_no_prior_entry: false,
       allows_existing_works: false,
       materials: ["作品策划案", "AIUI 智能体（Rokid AIUI Studio）"],
-      note: "⚠️ 截止、奖金分项、决赛日期多处数字冲突，官网链接未找到，核对前不要以任一版本为准",
+      note: "2026-11-18 复核：投资界 10-27 与掘金 11-05 均写 2027 年 1 月 28 日截止提交、总奖池 ¥500 万、决赛 2027 年 3 月中旬；01-22 的说法未找到出处，视为误记；AI 赛道约 ¥2,100,000+ 的说法无出处，已删；官网链接仍未找到，以发布会通稿为准",
     },
     {
       name: "TapTap 游戏上架",

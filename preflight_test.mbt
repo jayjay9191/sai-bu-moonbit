@@ -287,8 +287,11 @@ test "preflight on real data at 2026-11-15" {
     }
   }
   // 11 个旧已核实行 + 2 个新平台目标行（TapTap 11-16、itch.io 11-18
-  // 核实，过期检查只看“距今是否超过 30 天”，未来日期不算过期）。
-  assert_eq(verified_rows, 13)
+  // 核实，过期检查只看“距今是否超过 30 天”，未来日期不算过期）
+  // + Rokid 1 行（2026-11-18 重核：截止 01-28 已确认，note 里
+  // “待核对”标记已去掉；verified_at 2026-11-18 对模拟的 11-15
+  // 是未来日期，不算过期）。
+  assert_eq(verified_rows, 14)
   assert_eq(report.packs.length(), 84)
   assert_eq(report.certifiable_count, 2)
   assert_eq(report.blocked_count, 7)
