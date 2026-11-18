@@ -3,7 +3,8 @@
 /// 代表性案例全部用真实台账数据——《第零次黎明》→ 魔搭是 2026-11-18
 /// 报名初审驳回时点名要的“从规则适用条件、来源证据到结论”的完整机制
 /// 与代表性案例；验价尺 → 软件创新大赛是规则 3 只读 submitted_to
-/// 的直接证据。Run `moon test` to execute.
+/// 的直接证据；黎明 → 知乎 S3 是 P1（须新做、不阻断）的代表性案例。
+/// Run `moon test` to execute.
 
 ///|
 test "trace first publish P0 for dawn to moda" {
@@ -139,6 +140,48 @@ test "trace new work P1 for dawn to zhihu" {
           assert_true(
             @sai-bu-moonbit.render_trace(t).contains("48h 新做作品"),
           )
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace new work P1 for dawn to zhihu renders full chain" {
+  // P1 案例的完整链：结论是 P1（须新做，不能直接交），渲染文本里
+  // 规则原文、事实证据、来源三样都必须在，缺一样就是链断了。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("知乎黑客松 S3") {
+        Some(comp) => {
+          let t = @sai-bu-moonbit.trace_new_work(w, comp)
+          assert_true(t.violated)
+          assert_eq(t.level, "P1")
+          assert_eq(t.conclusion, "P1：须新做，不能直接交")
+          let text = @sai-bu-moonbit.render_trace(t)
+          assert_true(text.contains("48h 新做作品"))
+          assert_true(text.contains("Combos 分享页"))
+          assert_true(text.contains("知乎黑客松 S3 官方活动页"))
+          assert_true(text.contains("2026-11-02 之前"))
+        }
+        None => assert_true(false)
+      }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "trace all rules dawn to zhihu has one P1" {
+  // 知乎 S3 只开规则 2 一个标志位，追踪应恰好 1 份，且为 P1。
+  match @sai-bu-moonbit.work_by_name("第零次黎明") {
+    Some(w) =>
+      match @sai-bu-moonbit.competition_by_name("知乎黑客松 S3") {
+        Some(comp) => {
+          let traces = @sai-bu-moonbit.trace_all_rules(w, comp)
+          assert_eq(traces.length(), 1)
+          assert_true(traces[0].violated)
+          assert_eq(traces[0].level, "P1")
         }
         None => assert_true(false)
       }
