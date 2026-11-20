@@ -405,3 +405,32 @@ test "deadline calendar emits verified dates with escaped and UTF-8-folded text"
     assert_true(@utf8.encode(line.to_owned()).length() <= 75)
   }
 }
+
+///|
+test "calendar keeps a verified later stage after the first deadline passes" {
+  let two_days = {
+    ..order_fixture("跨日样例"),
+    deadline: "2026-12-01 23:59（报名）/ 2026-12-09 23:59（提交） / 2026-12-09 12:00（补充）",
+  }
+  let same_day = {
+    ..order_fixture("同日样例"),
+    deadline: "2026-12-01 12:00（报名）/ 18:00（提交）",
+  }
+  let before = deadline_calendar([two_days, same_day], "2026-11-20")
+  assert_eq(before.split("BEGIN:VEVENT").to_array().length(), 4)
+  let later = deadline_calendar([two_days, same_day], "2026-12-02")
+  assert_false(later.contains("DTSTART;VALUE=DATE:20261201"))
+  assert_true(later.contains("DTSTART;VALUE=DATE:20261209"))
+  assert_eq(later.split("BEGIN:VEVENT").to_array().length(), 2)
+  for
+    deadline in [
+      "2026-12-01 报名 / 2026-12-09x待定", "2026-12-01 报名 / 2026-12-09（暂定）",
+      "2026-12-01X / 2026-12-09（提交）",
+    ] {
+    assert_false(
+      deadline_calendar([{ ..two_days, deadline, }], "2026-12-02").contains(
+        "BEGIN:VEVENT",
+      ),
+    )
+  }
+}

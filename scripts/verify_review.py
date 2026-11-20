@@ -23,15 +23,19 @@ def verify_calendar():
     assert all(len(line) <= 75 for line in raw.split(b"\r\n"))
     unfolded = raw.decode("utf-8").replace("\r\n ", "")
     events = re.findall(r"BEGIN:VEVENT\r\n(.*?)END:VEVENT\r\n", unfolded, re.S)
-    assert len(events) == 11
-    assert len({re.search(r"^UID:(.+)\r$", item, re.M).group(1) for item in events}) == 11
+    assert len(events) == 12
+    assert len({re.search(r"^UID:(.+)\r$", item, re.M).group(1) for item in events}) == 12
     assert "SUMMARY:itch.io 游戏上架" not in unfolded and "SUMMARY:兴智杯" not in unfolded
     assert "SUMMARY:AI PLAY" not in unfolded
     for event in events:
         date = re.search(r"^DTSTART;VALUE=DATE:(\d{8})\r$", event, re.M).group(1)
         assert datetime.strptime(date, "%Y%m%d").date() >= datetime(2026, 11, 20).date()
     assert "12:00（报名）/ 18:00（提交）" in unfolded
-    print("PASS calendar: 11 verified date reminders, original stage times, unique UIDs and UTF-8 folding")
+    later = run("calendar", "2026-12-02").replace("\n ", "")
+    assert "SUMMARY:PAYATHON 2026（后续截止）" in later
+    assert "DTSTART;VALUE=DATE:20261209" in later
+    assert "DTSTART;VALUE=DATE:20261201" not in later
+    print("PASS calendar: 12 verified date reminders, later stage retained, unique UIDs and UTF-8 folding")
 
 
 def main():
