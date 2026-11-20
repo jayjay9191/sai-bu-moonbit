@@ -316,3 +316,31 @@ test "first-public review uses recorded dates for platforms and recognizes own e
   )
   assert_eq(options[0].reasons, ["台账已登记投稿，不重复规划"])
 }
+
+///|
+test "certification recomputes P0 under the current work and ignores foreign conflicts" {
+  let comp = order_fixture("首发赛", first=true)
+  let work = order_work()
+  let prior = { ..work, submitted_to: ["其他赛"], }
+  let row = row_verdict(comp, date_to_days("2026-11-20"))
+  let missing = certify_pack(prior, comp, [], row)
+  assert_false(missing.certifiable)
+  assert_true(missing.blocked)
+  assert_true(missing.reasons[0].contains("已投 其他赛"))
+  assert_true(generate_pack(prior, comp, []).blocked)
+  let unrelated = detect_conflicts({ ..prior, name: "另一件作品", }, [comp])
+  assert_true(certify_pack(work, comp, unrelated, row).certifiable)
+  assert_false(generate_pack(work, comp, unrelated).blocked)
+  let supplied = detect_conflicts(prior, [comp])
+  assert_eq(certify_pack(prior, comp, supplied, row).reasons, missing.reasons)
+  let restricted = {
+    ..comp,
+    requires_first_publish: false,
+    requires_no_prior_entry: true,
+  }
+  let entered = {
+    ..work,
+    submitted_to: ["第二十届全国大学生软件创新大赛"],
+  }
+  assert_true(certify_pack(entered, restricted, [], row).blocked)
+}

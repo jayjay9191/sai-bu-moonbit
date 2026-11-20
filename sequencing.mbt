@@ -26,12 +26,7 @@ fn sequence_reasons(
   comp : Competition,
   today : Int32,
 ) -> Array[String] {
-  let reasons = certify_pack(
-    work,
-    comp,
-    detect_conflicts(work, [comp]),
-    row_verdict(comp, today),
-  ).reasons.copy()
+  let reasons = certify_pack(work, comp, [], row_verdict(comp, today)).reasons.copy()
   let submitted = work.submitted_to.any(name => same_entry(name, comp.name))
   if submitted {
     reasons.push("台账已登记投稿，不重复规划")

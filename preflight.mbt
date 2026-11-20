@@ -206,7 +206,8 @@ pub fn certify_pack(
   conflicts : Array[Conflict],
   row : RowVerdict,
 ) -> PackVerdict {
-  let pack = generate_pack(work, comp, conflicts)
+  let blockers = pack_blockers(work, comp, conflicts)
+  let pack = assemble_pack(work, comp, !blockers.is_empty())
   let reasons : Array[String] = []
   if row.competition != comp.name {
     reasons.push(
@@ -220,18 +221,8 @@ pub fn certify_pack(
   if scope != "" {
     reasons.push(scope)
   }
-  if pack.blocked {
-    let list = conflicts_for_competition(conflicts, comp.name)
-    let mut found_p0 = false
-    for i in 0..<list.length() {
-      if list[i].level == "P0" {
-        reasons.push("P0 冲突：" + list[i].message)
-        found_p0 = true
-      }
-    }
-    if !found_p0 {
-      reasons.push("P0 冲突（未知原因）")
-    }
+  for message in blockers {
+    reasons.push("P0 冲突：" + message)
   }
   if comp.requires_first_publish {
     let (level, reason) = first_publish_decision(work, comp)
@@ -293,9 +284,8 @@ pub fn preflight(
   let mut blocked = 0
   for wi in 0..<works.length() {
     let w = works[wi]
-    let conflicts = detect_conflicts(w, comps)
     for ci in 0..<comps.length() {
-      let v = certify_pack(w, comps[ci], conflicts, rows[ci])
+      let v = certify_pack(w, comps[ci], [], rows[ci])
       if v.certifiable {
         certifiable = certifiable + 1
       }

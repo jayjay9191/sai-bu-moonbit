@@ -28,10 +28,42 @@ fn scope_issue(work : Work, comp : Competition) -> String {
 }
 
 ///|
+fn pack_blockers(
+  work : Work,
+  comp : Competition,
+  supplied : Array[Conflict],
+) -> Array[String] {
+  let blockers : Array[String] = []
+  for conflict in supplied {
+    if conflict.level == "P0" &&
+      conflict.work == work.name &&
+      conflict.competition == comp.name &&
+      !blockers.contains(conflict.message) {
+      blockers.push(conflict.message)
+    }
+  }
+  for conflict in detect_conflicts(work, [comp]) {
+    if conflict.level == "P0" && !blockers.contains(conflict.message) {
+      blockers.push(conflict.message)
+    }
+  }
+  blockers
+}
+
+///|
 pub fn generate_pack(
   work : Work,
   comp : Competition,
   conflicts : Array[Conflict],
+) -> SubmissionPack {
+  assemble_pack(work, comp, !pack_blockers(work, comp, conflicts).is_empty())
+}
+
+///|
+fn assemble_pack(
+  work : Work,
+  comp : Competition,
+  blocked : Bool,
 ) -> SubmissionPack {
   let ready : Array[String] = []
   let gaps : Array[String] = []
@@ -43,7 +75,6 @@ pub fn generate_pack(
       gaps.push(m)
     }
   }
-  let blocked = has_p0_conflict(conflicts, comp.name)
   let scope = scope_issue(work, comp)
   let note = if scope != "" {
     scope
