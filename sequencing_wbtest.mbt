@@ -434,3 +434,23 @@ test "calendar keeps a verified later stage after the first deadline passes" {
     )
   }
 }
+
+///|
+test "calendar sorts out-of-order entries and later stages by date and name" {
+  let staged = {
+    ..order_fixture("B"),
+    deadline: "2026-12-01 23:59（报名）/ 2026-12-09 23:59（提交）",
+  }
+  let early = { ..order_fixture("E"), deadline_date: "2026-11-27", }
+  let same = order_fixture("A")
+  let output = deadline_calendar([staged, early, same], "2026-11-20")
+  let summaries = output
+    .split("\r\n")
+    .map(line => line.to_owned())
+    .to_array()
+    .filter(line => line.has_prefix("SUMMARY:"))
+  assert_eq(summaries, [
+    "SUMMARY:E", "SUMMARY:A", "SUMMARY:B", "SUMMARY:B（后续截止）",
+  ])
+  assert_eq(output, deadline_calendar([same, staged, early], "2026-11-20"))
+}

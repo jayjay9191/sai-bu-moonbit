@@ -89,36 +89,48 @@ pub fn deadline_calendar(
     ] {
     calendar_line(out, line)
   }
+  let stages : Array[(String, Competition)] = []
   for comp in comps {
-    for stage_date in recorded_deadline_dates(comp) {
-      if !row_verdict({ ..comp, deadline_date: stage_date, }, today).verified {
-        continue
+    for date in recorded_deadline_dates(comp) {
+      if row_verdict({ ..comp, deadline_date: date, }, today).verified {
+        stages.push((date, comp))
       }
-      let later = stage_date != comp.deadline_date
-      let date = stage_date.replace_all(old="-", new="")
-      let key = if later { comp.name + "\n" + stage_date } else { comp.name }
-      let uid = sha256_hex(key) + "@sai-bu.invalid"
-      let summary = calendar_text(
-        if later {
-          comp.name + "（后续截止）"
-        } else {
-          comp.name
-        },
-      )
-      let details = calendar_text("台账截止原文：" + comp.deadline)
-      for
-        line in [
-          "BEGIN:VEVENT",
-          "UID:" + uid,
-          "DTSTAMP:" + stamp,
-          "DTSTART;VALUE=DATE:" + date,
-          "TRANSP:TRANSPARENT",
-          "SUMMARY:" + summary,
-          "DESCRIPTION:" + details,
-          "END:VEVENT",
-        ] {
-        calendar_line(out, line)
-      }
+    }
+  }
+  stages.sort_by((a, b) => {
+    let (date_a, comp_a) = a
+    let (date_b, comp_b) = b
+    if date_a == date_b {
+      comp_a.name.compare(comp_b.name)
+    } else {
+      date_a.compare(date_b)
+    }
+  })
+  for (stage_date, comp) in stages {
+    let later = stage_date != comp.deadline_date
+    let date = stage_date.replace_all(old="-", new="")
+    let key = if later { comp.name + "\n" + stage_date } else { comp.name }
+    let uid = sha256_hex(key) + "@sai-bu.invalid"
+    let summary = calendar_text(
+      if later {
+        comp.name + "（后续截止）"
+      } else {
+        comp.name
+      },
+    )
+    let details = calendar_text("台账截止原文：" + comp.deadline)
+    for
+      line in [
+        "BEGIN:VEVENT",
+        "UID:" + uid,
+        "DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + date,
+        "TRANSP:TRANSPARENT",
+        "SUMMARY:" + summary,
+        "DESCRIPTION:" + details,
+        "END:VEVENT",
+      ] {
+      calendar_line(out, line)
     }
   }
   calendar_line(out, "END:VCALENDAR")

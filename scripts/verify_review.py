@@ -27,9 +27,10 @@ def verify_calendar():
     assert len({re.search(r"^UID:(.+)\r$", item, re.M).group(1) for item in events}) == 12
     assert "SUMMARY:itch.io 游戏上架" not in unfolded and "SUMMARY:兴智杯" not in unfolded
     assert "SUMMARY:AI PLAY" not in unfolded
-    for event in events:
-        date = re.search(r"^DTSTART;VALUE=DATE:(\d{8})\r$", event, re.M).group(1)
-        assert datetime.strptime(date, "%Y%m%d").date() >= datetime(2026, 11, 20).date()
+    dates = [re.search(r"^DTSTART;VALUE=DATE:(\d{8})\r$", event, re.M).group(1) for event in events]
+    assert dates == sorted(dates)
+    assert all(datetime.strptime(date, "%Y%m%d").date() >= datetime(2026, 11, 20).date()
+               for date in dates)
     assert "12:00（报名）/ 18:00（提交）" in unfolded
     later = run("calendar", "2026-12-02").replace("\n ", "")
     assert "SUMMARY:PAYATHON 2026（后续截止）" in later
