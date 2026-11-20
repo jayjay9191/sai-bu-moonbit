@@ -196,7 +196,7 @@ fn print_usage() -> Unit {
     "itch-zip：从 ZIP 元数据校验 itch.io HTML5 包体，入口用 scripts/inspect_itch_zip.py",
   )
   println(
-    "materials-plan <作品名> <日期> <材料预算0-3>：优先补齐可复用材料",
+    "materials-plan <作品名> <日期> <材料预算0-3|frontier>：优先补齐可复用材料",
   )
   println("help：显示本帮助")
 }
@@ -205,32 +205,51 @@ fn print_usage() -> Unit {
 fn cmd_materials_plan(args : Array[String]) -> Unit {
   try {
     if args.length() != 4 || !@lib.is_valid_date(args[2]) {
-      fail("用法：materials-plan <作品名> <YYYY-MM-DD> <材料预算0-3>")
+      fail(
+        "用法：materials-plan <作品名> <YYYY-MM-DD> <材料预算0-3|frontier>",
+      )
     }
     guard @lib.work_by_name(args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
-    let budget = @string.parse_int(args[3])
+    let comps = @lib.all_competitions()
+    let today = @lib.date_to_days(args[2])
+    if args[3] == "frontier" {
+      let plans = @lib.material_frontier(work, comps, today)
+      for i in 0..<plans.length() {
+        let plan = plans[i]
+        println(
+          "预算 \{i} | 已具备 \{plan.ready.length()} | 补齐后新增 \{plan.unlocked.length()}",
+        )
+        print_material_plan_items(plan)
+      }
+      return
+    }
     let plan = @lib.plan_materials(
       work,
-      @lib.all_competitions(),
-      @lib.date_to_days(args[2]),
-      budget,
+      comps,
+      today,
+      @string.parse_int(args[3]),
     )
     println(
       "已具备条件：\{plan.ready.length()}；补齐后新增：\{plan.unlocked.length()}",
     )
-    for material in plan.materials {
-      println("待补材料 | " + material)
-    }
-    for name in plan.unlocked {
-      println("满足台账认证 | " + name)
-    }
+    print_material_plan_items(plan)
   } catch {
     err => {
       eprintln("材料规划失败：" + err.to_string())
       @env.exit(2)
     }
+  }
+}
+
+///|
+fn print_material_plan_items(plan : @lib.MaterialPlan) -> Unit {
+  for material in plan.materials {
+    println("待补材料 | " + material)
+  }
+  for name in plan.unlocked {
+    println("满足台账认证 | " + name)
   }
 }
 

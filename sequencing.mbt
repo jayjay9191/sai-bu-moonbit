@@ -187,6 +187,26 @@ pub fn plan_materials(
   if budget < 0 || budget > 3 {
     raise InvalidSequence("材料预算须为 0 至 3 项")
   }
+  material_plans(work, comps, today, budget)[budget]
+}
+
+///|
+/// Return the best independent plan at each budget from zero through three.
+pub fn material_frontier(
+  work : Work,
+  comps : Array[Competition],
+  today : Int32,
+) -> Array[MaterialPlan] raise SequenceError {
+  material_plans(work, comps, today, 3)
+}
+
+///|
+fn material_plans(
+  work : Work,
+  comps : Array[Competition],
+  today : Int32,
+  budget : Int32,
+) -> Array[MaterialPlan] raise SequenceError {
   let ready : Array[String] = []
   let candidates : Array[(String, Array[String])] = []
   validate_planning_targets(comps)
@@ -213,8 +233,10 @@ pub fn plan_materials(
   let bundles : Array[Array[String]] = [[]]
   let seen : Map[String, Bool] = { "[]": true }
   let mut index = 0
-  let mut best : Array[String] = []
-  let mut unlocked : Array[String] = []
+  let best : Array[(Array[String], Array[String])] = Array::make(
+    budget + 1,
+    ([], []),
+  )
   while index < bundles.length() {
     let bundle = bundles[index]
     index += 1
@@ -233,19 +255,28 @@ pub fn plan_materials(
         }
       }
     }
-    if covered.length() > unlocked.length() ||
-      (
-        covered.length() == unlocked.length() &&
+    for limit in bundle.length()..<(budget + 1) {
+      let (old_bundle, old_covered) = best[limit]
+      if covered.length() > old_covered.length() ||
         (
-          bundle.length() < best.length() ||
-          (bundle.length() == best.length() && bundle.compare(best) < 0)
-        )
-      ) {
-      best = bundle
-      unlocked = covered
+          covered.length() == old_covered.length() &&
+          (
+            bundle.length() < old_bundle.length() ||
+            (
+              bundle.length() == old_bundle.length() &&
+              bundle.compare(old_bundle) < 0
+            )
+          )
+        ) {
+        best[limit] = (bundle, covered)
+      }
     }
   }
-  unlocked.sort()
   ready.sort()
-  { materials: best, unlocked, ready, }
+  best.map(pair => {
+    let (bundle, covered) = pair
+    let unlocked = covered.copy()
+    unlocked.sort()
+    { materials: bundle.copy(), unlocked, ready: ready.copy(), }
+  })
 }

@@ -559,6 +559,7 @@ test "material search matches a brute force oracle for every supported budget" {
     { ..order_fixture("E"), materials: ["d"], },
     { ..order_fixture("F"), materials: ["b", "d"], },
   ]
+  let frontier = material_frontier(work, targets.rev(), date)
   for budget in 0..<=3 {
     let mut expected : Array[String] = []
     let mut score = -1
@@ -599,5 +600,31 @@ test "material search matches a brute force oracle for every supported budget" {
     let plan = plan_materials(work, targets.rev(), date, budget)
     assert_eq(plan.materials, expected)
     assert_eq(plan.unlocked.length(), score)
+    assert_eq(frontier[budget].materials, expected)
+    assert_eq(frontier[budget].unlocked.length(), score)
   }
+}
+
+///|
+test "material frontier reports every preparation budget without changing single-budget results" {
+  let work = order_work()
+  let date = date_to_days("2026-11-20")
+  let targets = [
+    order_fixture("Ready"),
+    { ..order_fixture("A"), materials: ["demo"], },
+    { ..order_fixture("B"), materials: ["demo", "slides"], },
+    { ..order_fixture("C"), materials: ["summary"], },
+  ]
+  let plans = material_frontier(work, targets, date)
+  assert_eq(plans.length(), 4)
+  assert_eq(plans.map(plan => plan.unlocked.length()), [0, 1, 2, 3])
+  for i in 0..<plans.length() {
+    let separate = plan_materials(work, targets.rev(), date, i)
+    assert_eq(plans[i].materials, separate.materials)
+    assert_eq(plans[i].unlocked, separate.unlocked)
+    assert_eq(plans[i].ready, ["Ready"])
+  }
+  plans[0].ready.clear()
+  assert_eq(plans[1].ready, ["Ready"])
+  assert_eq(work.materials_ready, ["fixture"])
 }
