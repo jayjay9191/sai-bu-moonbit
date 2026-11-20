@@ -150,11 +150,22 @@ fn has_unverified_marker(c : Competition) -> Bool {
 }
 
 ///|
-/// 单行核验：已过截止 → 未核实标记 → 核验过期，依次判断；
+fn invalid_deadline_reason(comp : Competition) -> String {
+  "截止日期缺失或格式无效：" + comp.deadline_date
+}
+
+///|
+/// 单行核验：截止格式与有效期 → 未核实标记 → 核验过期。
 /// 全过才算已核实。
 pub fn row_verdict(c : Competition, today : Int32) -> RowVerdict {
-  let deadline = date_to_days(c.deadline_date)
-  if deadline >= 0 && deadline < today {
+  if !valid_target_deadline(c) {
+    return {
+      competition: c.name,
+      verified: false,
+      reason: invalid_deadline_reason(c),
+    }
+  }
+  if c.deadline_date != "" && date_to_days(c.deadline_date) < today {
     return {
       competition: c.name,
       verified: false,
@@ -246,6 +257,8 @@ pub fn certify_pack(
   }
   if !row.verified {
     reasons.push("数据未核实/已过期，拒绝认证：" + row.reason)
+  } else if !valid_target_deadline(comp) {
+    reasons.push(invalid_deadline_reason(comp))
   }
   {
     work: work.name,

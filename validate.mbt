@@ -14,6 +14,12 @@
 ///   allows_existing_works 与 requires_no_prior_entry 同时为真
 
 ///|
+fn valid_target_deadline(comp : Competition) -> Bool {
+  is_valid_date(comp.deadline_date) ||
+  (comp.target_kind == "平台上架" && comp.deadline_date == "")
+}
+
+///|
 pub fn validate_data(
   comps : Array[Competition],
   works : Array[Work],
@@ -37,7 +43,7 @@ pub fn validate_data(
         c.target_kind,
       )
     }
-    if c.target_kind != "平台上架" && !is_valid_date(c.deadline_date) {
+    if !valid_target_deadline(c) {
       issues.push(
         "比赛《" +
         c.name +

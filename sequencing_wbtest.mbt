@@ -344,3 +344,33 @@ test "certification recomputes P0 under the current work and ignores foreign con
   }
   assert_true(certify_pack(entered, restricted, [], row).blocked)
 }
+
+///|
+test "deadline validation rejects impossible or missing dates except open platforms" {
+  let today = date_to_days("2026-11-20")
+  let comp = order_fixture("普通赛")
+  let work = order_work()
+  let platform = { ..comp, target_kind: "平台上架", deadline_date: "", }
+  assert_true(row_verdict(platform, today).verified)
+  assert_true(validate_data([platform], [work]).is_empty())
+  assert_true(
+    row_verdict({ ..comp, deadline_date: "2026-11-20", }, today).verified,
+  )
+  for
+    bad in [
+      { ..comp, deadline_date: "", },
+      { ..comp, deadline_date: "2026-11-31", },
+      { ..platform, deadline_date: "2026-11-31", },
+    ] {
+    let row = row_verdict(bad, today)
+    assert_false(row.verified)
+    assert_true(row.reason.contains("截止日期"))
+    assert_false(
+      certify_pack(work, bad, [], row_verdict(comp, today)).certifiable,
+    )
+    assert_false(certify_pack(work, bad, [], row).certifiable)
+    assert_true(
+      validate_data([bad], [work]).any(text => text.contains("deadline_date")),
+    )
+  }
+}
