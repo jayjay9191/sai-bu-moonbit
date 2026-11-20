@@ -22,7 +22,7 @@
 moon run cmd/main -- materials-plan 小店日结 2026-11-20 frontier
 ```
 
-可导入 `jayjay9191/sai-bu-moonbit` 并调用 `material_frontier(work, targets, today)`。一次搜索返回 0 至 3 项预算各自的最优方案。小店日结的台账已有 1 个可认证目标，四档模拟新增数为 **0、1、1、2**。预算从 1 加到 2 时新增数量不变。
+可导入 `jayjay9191/sai-bu-moonbit` 并调用 `material_frontier(work, targets, today)`。一次搜索返回 0 至 3 项预算各自的最优方案。小店日结的台账已有 1 个可认证目标，四档模拟新增数为 **0、1、1、2**。预算从 1 加到 2 时新增数量不变。将 `frontier` 改为 `frontier-json` 可供脚本或页面直接读取，结果同时保留作品、审计日和各档预算。新增目标必须满足同一审计日 `explain-json` 的资格判定，且所缺材料全部被对应方案覆盖。
 
 结果保留每档实际需要的材料和涉及目标，各档可独立使用。新旧入口与穷举结果逐档核对，也检查外部调用方修改一档结果时其他档的结果。
 

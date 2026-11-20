@@ -197,6 +197,7 @@ pub(all) struct MaterialEligibility {
   blockers : Array[String]
 }
 
+#derive(@json.ToJson)
 pub(all) struct MaterialPlan {
   materials : Array[String]
   unlocked : Array[String]

@@ -85,6 +85,18 @@ def main():
         fixed = run("materials-plan", "小店日结", "2026-11-20", str(i))
         expected = re.search(r"已具备条件：(\d+)；补齐后新增：(\d+)", fixed).groups()
         assert header == f"预算 {i} | 已具备 {expected[0]} | 补齐后新增 {expected[1]}"
+    machine = json.loads(run("materials-plan", "小店日结", "2026-11-20", "frontier-json"))
+    assert (machine["work"], machine["as_of"]) == ("小店日结", "2026-11-20")
+    assert [entry["budget"] for entry in machine["plans"]] == [0, 1, 2, 3]
+    evidence = json.loads(run("materials-plan", "小店日结", "2026-11-20", "explain-json"))
+    by_target = {row["name"]: row for row in evidence}
+    for entry, expected_count in zip(machine["plans"], (0, 1, 1, 2)):
+        assert len(entry["plan"]["unlocked"]) == expected_count
+        assert len(entry["plan"]["ready"]) == 1
+        assert len(entry["plan"]["materials"]) <= entry["budget"]
+        for target in entry["plan"]["unlocked"]:
+            row = by_target[target]
+            assert not row["blockers"] and set(row["missing"]) <= set(entry["plan"]["materials"])
     print("PASS materials frontier: " + " / ".join(headers))
     explanations = run("materials-plan", "第零次黎明", "2026-11-20", "explain").splitlines()
     starts = [i for i, line in enumerate(explanations) if not line.startswith(" ")]

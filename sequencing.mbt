@@ -169,6 +169,7 @@ pub fn plan_submission_order(
 }
 
 ///|
+#derive(ToJson)
 pub(all) struct MaterialPlan {
   materials : Array[String]
   unlocked : Array[String]
