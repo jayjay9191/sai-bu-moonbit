@@ -38,6 +38,8 @@ pub fn date_to_days(String) -> Int32
 
 pub fn detect_conflicts(Work, Array[Competition]) -> Array[Conflict]
 
+pub fn evidence_for_work(Work) -> WorkEvidence
+
 pub fn fact_evidence_issues(Work, rule? : String) -> Array[EvidenceIssue]
 
 pub fn generate_pack(Work, Competition, Array[Conflict]) -> SubmissionPack
@@ -256,6 +258,7 @@ pub(all) struct Work {
 }
 
 pub struct WorkEvidence {
+  first_public_date : String
   first_public : FactEvidence?
   submitted : Array[FactEvidence]
 }

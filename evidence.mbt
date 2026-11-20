@@ -31,6 +31,7 @@ pub struct FactEvidence {
 ///|
 /// 一件作品的事实证据包：首次公开一条 + 已投比赛各一条。
 pub struct WorkEvidence {
+  first_public_date : String // 首次公开证据所支持的事实值，不是来源核实日
   first_public : FactEvidence?
   submitted : Array[FactEvidence]
 }
@@ -124,6 +125,7 @@ pub fn rule_citation_for(rule : String, competition : String) -> RuleCitation {
 pub fn work_evidence_for(name : String) -> WorkEvidence {
   if name == "第零次黎明" {
     {
+      first_public_date: "2026-11-02 之前",
       first_public: Some({
         fact: "首次公开",
         evidence: "Combos 分享页 https://share.combos.game/p/1737054",
@@ -144,6 +146,7 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
     }
   } else if name == "小店日结" {
     {
+      first_public_date: "",
       first_public: None,
       submitted: [
         {
@@ -155,6 +158,7 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
     }
   } else if name == "诉求整理台" {
     {
+      first_public_date: "",
       first_public: None,
       submitted: [
         {
@@ -166,6 +170,7 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
     }
   } else if name == "验价尺" {
     {
+      first_public_date: "2026-11-16",
       first_public: Some({
         fact: "首次公开",
         evidence: "GitHub 公开仓库 https://github.com/jayjay9191/yan-jia-chi-moonbit",
@@ -174,7 +179,18 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
       submitted: [],
     }
   } else {
-    { first_public: None, submitted: [], }
+    { first_public_date: "", first_public: None, submitted: [], }
+  }
+}
+
+///|
+/// Bind a stored proof to the claim it supported; editing the date does not update the proof.
+pub fn evidence_for_work(work : Work) -> WorkEvidence {
+  let recorded = work_evidence_for(work.name)
+  if recorded.first_public_date != work.first_public_date {
+    { ..recorded, first_public: None, }
+  } else {
+    recorded
   }
 }
 
@@ -212,7 +228,7 @@ pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
       level: "通过",
     }
   } else {
-    let ev = work_evidence_for(work.name)
+    let ev = evidence_for_work(work)
     let steps : Array[String] = []
     steps.push(
       "适用条件：比赛要求“活动期间首次公开发布”（标志位 requires_first_publish = true）。",
@@ -295,7 +311,7 @@ pub fn trace_new_work(work : Work, comp : Competition) -> DecisionTrace {
       level: "通过",
     }
   } else {
-    let ev = work_evidence_for(work.name)
+    let ev = evidence_for_work(work)
     let steps : Array[String] = []
     steps.push(
       "适用条件：比赛要求必须新做（标志位 requires_new_work = true）。",
@@ -369,7 +385,7 @@ pub fn trace_no_prior_entry(work : Work, comp : Competition) -> DecisionTrace {
       level: "通过",
     }
   } else {
-    let ev = work_evidence_for(work.name)
+    let ev = evidence_for_work(work)
     let steps : Array[String] = []
     steps.push(
       "适用条件：比赛要求“参赛作品必须是原创且未参加过其他国家级公开比赛”（标志位 requires_no_prior_entry = true）。",

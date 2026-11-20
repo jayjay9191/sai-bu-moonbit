@@ -71,7 +71,7 @@ pub fn fact_evidence_issues(
   work : Work,
   rule~ : String = "",
 ) -> Array[EvidenceIssue] {
-  audit_work_facts(work, work_evidence_for(work.name), rule)
+  audit_work_facts(work, evidence_for_work(work), rule)
 }
 
 ///|

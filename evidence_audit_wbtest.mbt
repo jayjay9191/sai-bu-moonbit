@@ -198,6 +198,7 @@ test "blank fact evidence or source cannot support a first-public claim" {
   let work = order_work()
   for (evidence, source) in [("", "source"), ("proof", " ")] {
     let facts : WorkEvidence = {
+      first_public_date: work.first_public_date,
       first_public: Some({ fact: "首次公开", evidence, source, }),
       submitted: [],
     }
@@ -220,4 +221,36 @@ test "unrecorded rule citations are exposed by the full audit" {
   assert_true(report.issues.any(issue => issue.kind == "缺原文"))
   assert_true(report.issues.any(issue => issue.kind == "缺来源"))
   assert_true(report.issues.any(issue => issue.kind == "缺核实日期"))
+}
+
+///|
+test "changing the first-public claim invalidates the stored fact evidence" {
+  guard work_by_name("第零次黎明") is Some(work) else {
+    abort("missing work")
+  }
+  let changed = { ..work, first_public_date: "2026-11-20", }
+  assert_true(
+    fact_evidence_issues(changed, rule="首次发布").any(issue => {
+      issue.detail == "首次公开"
+    }),
+  )
+  assert_true(evidence_for_work(work).first_public is Some(_))
+  assert_true(evidence_for_work(changed).first_public is None)
+  guard competition_by_name("魔搭 AI+∞ 第三期「AI 造游戏」")
+    is Some(comp) else {
+    abort("missing competition")
+  }
+  assert_false(
+    trace_first_publish(changed, comp).steps.any(step => {
+      step.contains("Combos 分享页")
+    }),
+  )
+  assert_eq(
+    audit_decision(
+      trace_first_publish(changed, comp),
+      changed,
+      date_to_days("2026-11-20"),
+    ).grade,
+    "待核对",
+  )
 }
