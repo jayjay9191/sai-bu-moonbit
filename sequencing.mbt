@@ -58,24 +58,34 @@ fn simulate_submission(
 }
 
 ///|
-/// Enumerate legal first choices, then simulate the remaining targets on copies.
-pub fn submission_options(
-  work : Work,
+fn validate_planning_targets(
   comps : Array[Competition],
-  today : Int32,
-) -> Array[FirstSubmission] raise SequenceError {
-  let names = []
+) -> Unit raise SequenceError {
+  let names : Array[String] = []
   for comp in comps {
-    if comp.name == "" ||
-      contains_string(names, comp.name) ||
+    let name = comp.name.trim().to_owned()
+    if name == "" ||
+      names.any(previous => {
+        same_entry(previous, name) || same_entry(name, previous)
+      }) ||
       (comp.target_kind != "比赛" && comp.target_kind != "平台上架") ||
       (comp.deadline_date != "" && !is_valid_date(comp.deadline_date)) {
       raise InvalidSequence(
         "目标名重复/为空、目标类型或截止日期无效",
       )
     }
-    names.push(comp.name)
+    names.push(name)
   }
+}
+
+///|
+/// Enumerate legal first choices, then simulate the remaining targets on copies.
+pub fn submission_options(
+  work : Work,
+  comps : Array[Competition],
+  today : Int32,
+) -> Array[FirstSubmission] raise SequenceError {
+  validate_planning_targets(comps)
   let options = []
   for first in comps {
     let reasons = sequence_reasons(work, first, today)
@@ -179,12 +189,8 @@ pub fn plan_materials(
   }
   let ready : Array[String] = []
   let candidates : Array[(String, Array[String])] = []
-  let names : Map[String, Bool] = Map([])
+  validate_planning_targets(comps)
   for comp in comps {
-    if names.contains(comp.name) {
-      raise InvalidSequence("投稿目标重复：" + comp.name)
-    }
-    names[comp.name] = true
     let gaps : Array[String] = []
     for material in comp.materials {
       if !work.materials_ready.contains(material) && !gaps.contains(material) {

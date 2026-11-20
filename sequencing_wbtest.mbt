@@ -502,3 +502,102 @@ test "materials planning finds a shared budget bundle without certifying blocked
   )
   assert_eq(work.materials_ready, ["fixture"])
 }
+
+///|
+test "material planning rejects the same invalid rows as ordering" {
+  let date = date_to_days("2026-11-20")
+  let work = order_work()
+  for
+    invalid in [
+      order_fixture(" "),
+      { ..order_fixture("Bad type"), target_kind: "待分类", },
+      { ..order_fixture("Bad date"), deadline_date: "2026-02-30", },
+    ] {
+    let result = Ok(plan_materials(work, [invalid], date, 2)) catch {
+      err => Err(err)
+    }
+    assert_true(result is Err(_))
+  }
+}
+
+///|
+test "registered competition aliases cannot inflate planning target counts" {
+  let date = date_to_days("2026-11-20")
+  let duplicate = [
+    order_fixture("Qoder"),
+    order_fixture("Qoder 高校创造力大赛"),
+  ]
+  let order = Ok(submission_options(order_work(), duplicate, date)) catch {
+    err => Err(err)
+  }
+  let plan = Ok(plan_materials(order_work(), duplicate.rev(), date, 1)) catch {
+    err => Err(err)
+  }
+  assert_true(order is Err(_))
+  assert_true(plan is Err(_))
+}
+
+///|
+test "calendar rejects duplicate emitted identifiers" {
+  let comp = order_fixture("重复赛事")
+  let result = Ok(deadline_calendar([comp, comp], "2026-11-20")) catch {
+    err => Err(err)
+  }
+  assert_true(result is Err(_))
+}
+
+///|
+test "material search matches a brute force oracle for every supported budget" {
+  let date = date_to_days("2026-11-20")
+  let work = order_work()
+  let items = ["a", "b", "c", "d"]
+  let targets = [
+    { ..order_fixture("A"), materials: ["c", "b"], },
+    { ..order_fixture("B"), materials: ["c", "a"], },
+    { ..order_fixture("C"), materials: ["c", "d"], },
+    { ..order_fixture("D"), materials: ["b"], },
+    { ..order_fixture("E"), materials: ["d"], },
+    { ..order_fixture("F"), materials: ["b", "d"], },
+  ]
+  for budget in 0..<=3 {
+    let mut expected : Array[String] = []
+    let mut score = -1
+    for mask in 0..<16 {
+      let subset : Array[String] = []
+      for i in 0..<items.length() {
+        if (mask & (1 << i)) != 0 {
+          subset.push(items[i])
+        }
+      }
+      if subset.length() > budget {
+        continue
+      }
+      let simulated = {
+        ..work,
+        materials_ready: work.materials_ready + subset,
+      }
+      let count = targets
+        .filter(comp => {
+          certify_pack(simulated, comp, [], row_verdict(comp, date)).certifiable
+        })
+        .length()
+      if count > score ||
+        (
+          count == score &&
+          (
+            subset.length() < expected.length() ||
+            (
+              subset.length() == expected.length() &&
+              subset.compare(expected) < 0
+            )
+          )
+        ) {
+        score = count
+        expected = subset
+      }
+    }
+    let plan = plan_materials(work, targets.rev(), date, budget)
+    assert_eq(plan.materials, expected)
+    assert_eq(plan.unlocked.length(), score)
+  }
+}

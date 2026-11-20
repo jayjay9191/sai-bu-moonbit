@@ -113,11 +113,16 @@ pub fn deadline_calendar(
       date_a.compare(date_b)
     }
   })
+  let uids : Map[String, Bool] = Map([])
   for (stage_date, comp) in stages {
     let later = stage_date != comp.deadline_date
     let date = stage_date.replace_all(old="-", new="")
     let key = if later { comp.name + "\n" + stage_date } else { comp.name }
     let uid = sha256_hex(key) + "@sai-bu.invalid"
+    if uids.contains(uid) {
+      fail("calendar has duplicate event identifiers for " + comp.name)
+    }
+    uids[uid] = true
     let summary = calendar_text(
       if later {
         comp.name + "（后续截止）"
