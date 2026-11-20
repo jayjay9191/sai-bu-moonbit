@@ -254,3 +254,25 @@ test "changing the first-public claim invalidates the stored fact evidence" {
     "待核对",
   )
 }
+
+///|
+test "audit never certifies evidence from a different work or a padded placeholder" {
+  guard work_by_name("第零次黎明") is Some(work) else {
+    abort("missing work")
+  }
+  guard work_by_name("验价尺") is Some(other) else { abort("missing work") }
+  guard competition_by_name("Qoder 高校创造力大赛") is Some(comp) else {
+    abort("missing competition")
+  }
+  let trace = trace_all_rules(work, comp)[0]
+  let audit = audit_decision(trace, other, date_to_days("2026-11-20"))
+  assert_false(audit.evidence_current)
+  assert_eq(audit.grade, "待核对")
+  assert_eq(
+    audit_rule(
+      { ..audit_citation(), source: " 未收录 ", },
+      date_to_days("2026-11-20"),
+    ).grade,
+    "待核对",
+  )
+}

@@ -23,7 +23,7 @@ pub fn audit_rule(citation : RuleCitation, today : Int32) -> RuleAudit {
       (citation.source, "缺来源"),
       (citation.verified_at, "缺核实日期"),
     ] {
-    if value.trim().is_empty() || value == "未收录" {
+    if value.trim().is_empty() || value.trim() == "未收录" {
       issues.push({
         kind,
         subject: citation.rule,
@@ -129,7 +129,9 @@ pub fn audit_decision(
   today : Int32,
 ) -> AuditedDecision {
   let citation = audit_rule(trace.rule, today)
-  let grade = if trace.rule.rule == "" {
+  let grade = if trace.work != work.name {
+    "待核对"
+  } else if trace.rule.rule == "" {
     "无适用规则"
   } else if !fact_evidence_issues(work, rule=trace.rule.rule).is_empty() {
     "待核对"

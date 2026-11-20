@@ -39,6 +39,7 @@ fn main {
     other => {
       println("未知子命令：\{other}")
       print_usage()
+      @env.exit(2)
     }
   }
 }

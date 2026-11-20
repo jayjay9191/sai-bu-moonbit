@@ -15,6 +15,7 @@ def run(*args, success=True):
 
 
 def main():
+    assert "用法" in run("help")
     audit = run("audit-evidence", "2026-11-20")
     assert "规则证据：6条；结论：84项；完整性问题：8项" in audit
     items = [line for line in audit.splitlines() if "| 用户本人 |" in line]
@@ -40,7 +41,7 @@ def main():
     assert "今天：2026-11-15" in historical
     assert "可提交 0 个" in historical and "核验日期晚于审计日" in historical
     assert "12-01 提交前务必" not in run()
-    for args in (("order",), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
+    for args in (("unknown-review-command",), ("order",), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),
                  ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra")):
         run(*args, success=False)
