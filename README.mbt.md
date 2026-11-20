@@ -12,6 +12,7 @@
 ```sh
 moon run cmd/main -- audit-evidence 2026-11-20
 moon run cmd/main -- order 第零次黎明 2026-11-20
+moon run cmd/main -- order-demo
 moon run cmd/main -- preflight 2026-11-20
 python scripts/verify_review.py
 ```
@@ -34,9 +35,10 @@ python scripts/verify_review.py
 AI PLAY，且存在材料缺口，当前 21 个目标均不具备完整提交条件，推荐为 0 步。
 **这不是通过调整顺序就能恢复首次发布资格的案例。**
 
-单独的合成测试在“公开时间处于窗口内、未投稿、材料齐全”的前提下验证顺序影响：
-先 Qoder 剩余 1 个、魔搭被首次发布规则阻断；先魔搭剩余 2 个；贪心结果为魔搭 →
-AI PLAY → Qoder，每步剩余为 2、1、0。此结果不能用于描述真实作品当前资格。
+直接运行 `order-demo` 可复现合成案例。假设作品在窗口内公开、尚未投稿且材料齐备。
+先投普通赛 A，只剩 1 项可投，首发赛 C 被 P0 阻断。先投首发赛 C，可保留 2 项。
+推荐顺序为 C → B → A，每步剩余 2、1、0。该案例复用正式规划器，
+比赛、规则和日期均为演示输入。CI 同时检查这个案例与《第零次黎明》的真实 0 步结果。
 
 258 项测试全部通过（新增 26 项手写测试）；`evidence_audit.mbt` 和
 `sequencing.mbt` 行覆盖报告无未覆盖行，CLI 另由上述脚本实际执行。

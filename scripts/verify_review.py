@@ -31,6 +31,14 @@ def main():
     for name in ("Qoder 高校创造力大赛", "AI PLAY 72H 创作黑客松", "魔搭 AI+∞ 第三期「AI 造游戏」"):
         assert f"{name} | 当前可提交 false" in order
     assert "首次发布冲突" in order and "台账已登记投稿，不重复规划" in order
+    demo = run("order-demo")
+    assert "合成案例" in demo and "未投稿 | 材料齐备" in demo
+    assert "普通赛 A | 当前可提交 true | 其后剩余可投 1" in demo
+    assert "后续阻断 首发赛 C：P0" in demo
+    assert "首发赛 C | 当前可提交 true | 其后剩余可投 2" in demo
+    assert "推荐顺序：3步；未可安排：0项" in demo
+    assert [line.split(" |")[0] for line in demo.splitlines() if re.match(r"[1-3]\. ", line)] == [
+        "1. 首发赛 C", "2. 普通赛 B", "3. 普通赛 A"]
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")
     assert "最短阻断链：首次发布 → 不可提交（P0）" in trace
     assert "认证结论：不可提交" in trace
@@ -41,7 +49,7 @@ def main():
     assert "今天：2026-11-15" in historical
     assert "可提交 0 个" in historical and "核验日期晚于审计日" in historical
     assert "12-01 提交前务必" not in run()
-    for args in (("unknown-review-command",), ("order",), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
+    for args in (("unknown-review-command",), ("order",), ("order-demo", "extra"), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),
                  ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra")):
         run(*args, success=False)

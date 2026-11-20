@@ -34,7 +34,7 @@ fn main {
     "preflight" => cmd_preflight(args)
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
-    "audit-evidence" | "order" => cmd_review(args)
+    "audit-evidence" | "order" | "order-demo" => cmd_review(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -164,6 +164,9 @@ fn print_usage() -> Unit {
   println(
     "order <作品名> [YYYY-MM-DD]：首选枚举与贪心投稿顺序（本地模拟）",
   )
+  println(
+    "order-demo：重放合成案例，对照普通赛和首发赛两种开局",
+  )
   println("用法：moon run cmd/main [子命令 ...]")
   println(
     "无参数：跑整条流水线（台账 → 冲突检测 → 撞期提醒 → 投稿包）",
@@ -193,6 +196,13 @@ fn print_usage() -> Unit {
 ///|
 fn cmd_review(args : Array[String]) -> Unit {
   try {
+    if args[0] == "order-demo" {
+      if args.length() != 1 {
+        fail("用法：order-demo")
+      }
+      order_demo()
+      return
+    }
     let offset = if args[0] == "order" { 2 } else { 1 }
     if args.length() < offset || args.length() > offset + 1 {
       fail("用法：audit-evidence [日期] 或 order <作品名> [日期]")
@@ -244,36 +254,7 @@ fn cmd_review(args : Array[String]) -> Unit {
       guard @lib.work_by_name(args[1]) is Some(work) else {
         fail("未找到作品：" + args[1])
       }
-      println(
-        "《\{work.name}》首选枚举（沿用现有公开、投稿、材料和核验记录）：",
-      )
-      for option in @lib.submission_options(work, comps, today) {
-        println(
-          "\{option.name} | 当前可提交 \{option.can_submit} | 其后剩余可投 \{option.remaining}",
-        )
-        for reason in option.reasons {
-          println("  拒绝：\{reason}")
-        }
-        for blocked in option.blocked {
-          println(
-            "  后续阻断 \{blocked.name}：\{@lib.join_strings(blocked.reasons, "；")}",
-          )
-        }
-      }
-      let plan = @lib.plan_submission_order(work, comps, today)
-      println(
-        "推荐顺序：\{plan.steps.length()}步；未可安排：\{plan.unavailable.length()}项",
-      )
-      for i in 0..<plan.steps.length() {
-        println(
-          "\{i + 1}. \{plan.steps[i].name} | 其后剩余可投 \{plan.steps[i].remaining}",
-        )
-      }
-      if plan.steps.is_empty() {
-        println(
-          "当前没有已满足资格和材料条件的路线，须先处理上列原因。",
-        )
-      }
+      print_order(work, comps, today)
     }
   } catch {
     err => {
@@ -281,6 +262,98 @@ fn cmd_review(args : Array[String]) -> Unit {
       @env.exit(2)
     }
   }
+}
+
+///|
+fn print_order(
+  work : @lib.Work,
+  comps : Array[@lib.Competition],
+  today : Int32,
+) -> Unit raise @lib.SequenceError {
+  println(
+    "《\{work.name}》首选枚举（沿用现有公开、投稿、材料和核验记录）：",
+  )
+  for option in @lib.submission_options(work, comps, today) {
+    println(
+      "\{option.name} | 当前可提交 \{option.can_submit} | 其后剩余可投 \{option.remaining}",
+    )
+    for reason in option.reasons {
+      println("  拒绝：\{reason}")
+    }
+    for blocked in option.blocked {
+      println(
+        "  后续阻断 \{blocked.name}：\{@lib.join_strings(blocked.reasons, "；")}",
+      )
+    }
+  }
+  let plan = @lib.plan_submission_order(work, comps, today)
+  println(
+    "推荐顺序：\{plan.steps.length()}步；未可安排：\{plan.unavailable.length()}项",
+  )
+  for i in 0..<plan.steps.length() {
+    println(
+      "\{i + 1}. \{plan.steps[i].name} | 其后剩余可投 \{plan.steps[i].remaining}",
+    )
+  }
+  if plan.steps.is_empty() {
+    println(
+      "当前没有已满足资格和材料条件的路线，须先处理上列原因。",
+    )
+  }
+}
+
+///|
+fn order_demo() -> Unit raise {
+  let a : @lib.Competition = {
+    name: "普通赛 A",
+    target_kind: "比赛",
+    deadline: "2026-12-01",
+    deadline_date: "2026-12-01",
+    required_work_kind: "game",
+    publish_start: "",
+    publish_end: "",
+    verified_at: "2026-11-20",
+    prize: "",
+    track: "",
+    status: "未报名",
+    plan_status: "在途",
+    requires_first_publish: false,
+    requires_new_work: false,
+    requires_no_prior_entry: false,
+    allows_existing_works: true,
+    materials: ["演示链接"],
+    note: "合成规则",
+  }
+  let b = {
+    ..a,
+    name: "普通赛 B",
+    deadline: "2026-11-28",
+    deadline_date: "2026-11-28",
+  }
+  let c = {
+    ..a,
+    name: "首发赛 C",
+    requires_first_publish: true,
+    allows_existing_works: false,
+    publish_start: "2026-11-01",
+    publish_end: "2026-12-01",
+  }
+  guard @lib.work_by_name("第零次黎明") is Some(game) else {
+    fail("缺少游戏类型示例")
+  }
+  let work : @lib.Work = {
+    name: "合成作品",
+    kind: game.kind,
+    oneliner: "",
+    first_public_date: "2026-11-20",
+    submitted_to: [],
+    materials_ready: ["演示链接"],
+    note: "",
+  }
+  println(
+    "合成案例 | 审计日 2026-11-20 | 首次公开 2026-11-20 | 未投稿 | 材料齐备",
+  )
+  print_order(work, [a, b, c], @lib.date_to_days("2026-11-20"))
 }
 
 ///|
