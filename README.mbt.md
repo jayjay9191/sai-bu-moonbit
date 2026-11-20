@@ -6,6 +6,8 @@
 
 ## 初审核对
 
+在仓库根目录运行 `moon test review`。两个 [公开接口案例](review/public_contract_test.mbt) 用固定台账核对不同预算的选择，以及材料补齐后已投稿的目标仍会被排除。
+
 运行 `moon run cmd/main -- materials-plan 小店日结 2026-11-20 3`。MoonBit 先模拟补齐每个目标的材料并复跑认证，再在预算内枚举缺项集合的去重并集，选出最多能新增多少可认证目标。并列时优先选材料较少的方案。预算为 0 至 3 项，同名材料按一项计。
 
 11 月 20 日台账中，小店日结原有 **1 个**目标具备条件。模拟补齐策划案、邮件 PPT 和 Rokid AIUI 智能体后，按台账可新增 **2 个**：Rokid Spatial Joy 2026 和第十一届全国青年人工智能创新创业大赛。方案结果取决于台账已有证据和模拟完成的材料。
@@ -26,7 +28,7 @@ moon run cmd/main -- materials-plan 小店日结 2026-11-20 frontier
 
 使用 `moon run cmd/main -- materials-plan 第零次黎明 2026-11-20 explain` 可查看 21 个目标。对每个目标分别显示缺项以及模拟补齐后依然存在的资格、台账或截止阻断。比如 Qoder 的已登记投稿状态不会因补材料而解除，魔搭的首次发布冲突会明确保留。
 
-其他 MoonBit 项目可调用 `material_eligibility(work, targets, today)` 取得每个目标的 `missing` 和 `blockers`。材料预算规划从同一份判定选择目标。即使某个目标所缺材料超过三项，解释结果仍会列出全部缺项。
+其他 MoonBit 项目可调用 `material_eligibility(work, targets, today)` 取得每个目标的 `missing` 和 `blockers`。材料预算规划从同一份判定选择目标。将 CLI 的 `explain` 换成 `explain-json` 可输出相同判定的结构化 JSON，字段为 `name`、`missing` 和 `blockers`。即使某个目标所缺材料超过三项，解释结果仍会列出全部缺项。
 
 ## v0.1.4：审证据，算顺序（2026-11-20）
 
@@ -64,7 +66,7 @@ AI PLAY，且存在材料缺口，当前 21 个目标均不具备完整提交条
 推荐顺序为 C → B → A，每步剩余 2、1、0。该案例复用正式规划器，
 比赛、规则和日期均为演示输入。CI 同时检查这个案例与《第零次黎明》的真实 0 步结果。
 
-274 项测试全部通过（新增 42 项手写测试）；`evidence_audit.mbt` 和
+276 项测试全部通过（新增 44 项手写测试）；`evidence_audit.mbt` 和
 `sequencing.mbt` 行覆盖报告无未覆盖行，CLI 另由上述脚本实际执行。
 历史覆盖数字保留在下文的日期记录中，不代表当前总量。新清单 SHA-256：
 `5e7464f90786dd6bf73d290dacfd053c638fd8acdd86907192b2ff3cd5528d2d`。

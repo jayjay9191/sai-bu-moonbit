@@ -201,6 +201,7 @@ pub fn material_frontier(
 }
 
 ///|
+#derive(ToJson)
 pub(all) struct MaterialEligibility {
   name : String
   missing : Array[String]

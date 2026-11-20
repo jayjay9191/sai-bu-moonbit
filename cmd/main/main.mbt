@@ -196,7 +196,7 @@ fn print_usage() -> Unit {
     "itch-zip：从 ZIP 元数据校验 itch.io HTML5 包体，入口用 scripts/inspect_itch_zip.py",
   )
   println(
-    "materials-plan <作品名> <日期> <材料预算0-3|frontier|explain>：优先补齐可复用材料",
+    "materials-plan <作品名> <日期> <材料预算0-3|frontier|explain|explain-json>：优先补齐可复用材料",
   )
   println("help：显示本帮助")
 }
@@ -206,7 +206,7 @@ fn cmd_materials_plan(args : Array[String]) -> Unit {
   try {
     if args.length() != 4 || !@lib.is_valid_date(args[2]) {
       fail(
-        "用法：materials-plan <作品名> <YYYY-MM-DD> <材料预算0-3|frontier|explain>",
+        "用法：materials-plan <作品名> <YYYY-MM-DD> <材料预算0-3|frontier|explain|explain-json>",
       )
     }
     guard @lib.work_by_name(args[1]) is Some(work) else {
@@ -214,6 +214,10 @@ fn cmd_materials_plan(args : Array[String]) -> Unit {
     }
     let comps = @lib.all_competitions()
     let today = @lib.date_to_days(args[2])
+    if args[3] == "explain-json" {
+      println(Json(@lib.material_eligibility(work, comps, today)).stringify())
+      return
+    }
     if args[3] == "explain" {
       for row in @lib.material_eligibility(work, comps, today) {
         println(

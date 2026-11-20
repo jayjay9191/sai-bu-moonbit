@@ -96,6 +96,11 @@ def main():
     assert any("剩余阻断" in line and "已登记投稿" in line for line in qoder[1:])
     model = next(lines for title, lines in rows.items() if title.startswith("魔搭 AI+∞"))
     assert any("剩余阻断" in line and "首次发布" in line for line in model[1:])
+    encoded = json.loads(run("materials-plan", "第零次黎明", "2026-11-20", "explain-json"))
+    assert len(encoded) == 21
+    qoder_json = next(row for row in encoded if row["name"] == "Qoder 高校创造力大赛")
+    assert qoder_json["missing"] and any("已登记投稿" in reason for reason in qoder_json["blockers"])
+    assert sum(len(row["missing"]) for row in encoded) == sum(line.startswith("  待补材料") for line in explanations)
     print("PASS material explanations keep missing documents separate from rules and prior-submission blockers")
     assert run("materials-plan", "小店日结", "2026-11-20", "4", success=False) == ""
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")

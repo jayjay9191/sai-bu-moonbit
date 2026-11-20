@@ -190,6 +190,7 @@ pub(all) struct FirstSubmission {
   deadline : String
 }
 
+#derive(@json.ToJson)
 pub(all) struct MaterialEligibility {
   name : String
   missing : Array[String]

@@ -1,0 +1,3 @@
+import {
+  "jayjay9191/sai-bu-moonbit" @lib,
+} for "test"
