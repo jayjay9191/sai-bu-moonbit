@@ -798,7 +798,8 @@ test "cell: 小店日结 × 知乎黑客松 S3" {
           let list = @sai-bu-moonbit.conflicts_for_competition(
             conflicts, "知乎黑客松 S3",
           )
-          assert_eq(list.length(), 0)
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
           assert_eq(pack.blocked, false)
         }
@@ -1308,7 +1309,8 @@ test "cell: 诉求整理台 × 知乎黑客松 S3" {
           let list = @sai-bu-moonbit.conflicts_for_competition(
             conflicts, "知乎黑客松 S3",
           )
-          assert_eq(list.length(), 0)
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
           assert_eq(pack.blocked, false)
         }

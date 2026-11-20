@@ -559,8 +559,9 @@ test "material search matches a brute force oracle for every supported budget" {
     { ..order_fixture("E"), materials: ["d"], },
     { ..order_fixture("F"), materials: ["b", "d"], },
   ]
-  let frontier = material_frontier(work, targets.rev(), date)
+  let frontier = material_tradeoffs(work, targets.rev(), date)
   for budget in 0..<=3 {
+    let optimal : Array[Array[String]] = []
     let mut expected : Array[String] = []
     let mut score = -1
     for mask in 0..<16 {
@@ -583,25 +584,32 @@ test "material search matches a brute force oracle for every supported budget" {
         })
         .length()
       if count > score ||
-        (
-          count == score &&
-          (
-            subset.length() < expected.length() ||
-            (
-              subset.length() == expected.length() &&
-              subset.compare(expected) < 0
-            )
-          )
-        ) {
+        (count == score && subset.length() < expected.length()) {
         score = count
         expected = subset
+        optimal.clear()
+      }
+      if count == score && subset.length() == expected.length() {
+        optimal.push(subset)
+        if subset.compare(expected) < 0 {
+          expected = subset
+        }
       }
     }
     let plan = plan_materials(work, targets.rev(), date, budget)
     assert_eq(plan.materials, expected)
     assert_eq(plan.unlocked.length(), score)
-    assert_eq(frontier[budget].materials, expected)
-    assert_eq(frontier[budget].unlocked.length(), score)
+    assert_eq(frontier[budget].plan.materials, expected)
+    assert_eq(frontier[budget].plan.unlocked.length(), score)
+    assert_eq(frontier[budget].optimal_count, optimal.length())
+    assert_eq(
+      frontier[budget].required_materials,
+      items.filter(item => optimal.all(choice => choice.contains(item))),
+    )
+    assert_eq(
+      frontier[budget].possible_materials,
+      items.filter(item => optimal.any(choice => choice.contains(item))),
+    )
   }
 }
 
@@ -666,4 +674,53 @@ test "material explanation does not omit targets outside the supported budget" {
   assert_eq(rows[0].missing, ["a", "b", "c", "d"])
   assert_eq(rows[0].blockers, [])
   assert_eq(material_frontier(work, targets, date)[3].unlocked, [])
+}
+
+///|
+test "material tradeoffs count tied minimum bundles and identify universally required materials" {
+  let date = date_to_days("2026-11-20")
+  let work = order_work()
+  let targets = [
+    { ..order_fixture("A"), materials: ["a", "b"], },
+    { ..order_fixture("B"), materials: ["a", "c"], },
+    {
+      ..order_fixture("Expired"),
+      deadline_date: "2026-11-19",
+      materials: ["a", "c"],
+    },
+  ]
+  let steps = material_tradeoffs(work, targets, date)
+  assert_eq(steps[1].optimal_count, 1)
+  assert_eq(steps[1].possible_materials, [])
+  assert_eq(steps[2].optimal_count, 2)
+  assert_eq(steps[2].required_materials, ["a"])
+  assert_eq(steps[2].possible_materials, ["a", "b", "c"])
+  assert_eq(steps[2].plan.materials, ["a", "b"])
+  assert_eq(steps[3].optimal_count, 1)
+  assert_eq(steps[3].required_materials, ["a", "b", "c"])
+  assert_eq(steps[3].plan.unlocked, ["A", "B"])
+}
+
+///|
+test "material planning cannot infer new-work eligibility from a missing publication date" {
+  guard work_by_name("小店日结") is Some(work) else {
+    abort("missing ledger work")
+  }
+  guard competition_by_name("知乎黑客松 S3") is Some(target) else {
+    abort("missing ledger target")
+  }
+  let today = date_to_days("2026-11-20")
+  let complete = {
+    ..work,
+    materials_ready: work.materials_ready + target.materials,
+  }
+  let proof = certify_pack(complete, target, [], row_verdict(target, today))
+  assert_false(proof.certifiable)
+  assert_true(proof.reasons.any(reason => reason.contains("其他投稿")))
+  let trace = trace_new_work(work, target)
+  assert_eq(trace.level, "P1")
+  assert_true(trace.steps.any(step => step.contains("其他投稿记录")))
+  assert_true(
+    material_tradeoffs(work, [target], today)[3].plan.unlocked.is_empty(),
+  )
 }

@@ -30,6 +30,14 @@ moon run cmd/main -- materials-plan 小店日结 2026-11-20 frontier
 
 其他 MoonBit 项目可调用 `material_eligibility(work, targets, today)` 取得每个目标的 `missing` 和 `blockers`。材料预算规划从同一份判定选择目标。将 CLI 的 `explain` 换成 `explain-json` 可输出相同判定的结构化 JSON，字段为 `name`、`missing` 和 `blockers`。即使某个目标所缺材料超过三项，解释结果仍会列出全部缺项。
 
+### 并列方案与必备材料
+
+`material_tradeoffs(work, targets, today)` 对每档预算先最大化可新增目标数，再最小化材料项数。`optimal_count` 统计达到这两个目标的材料组合，`required_materials` 取交集，`possible_materials` 取并集。`frontier-json` 同时输出这些字段和一个可复现的代表方案。并集里的材料可能互斥或需要成组，具体以代表方案及组合约束为准。
+
+合成用例中，两个候选分别需要 `[a,b]`、`[a,c]`。预算两项时存在两个并列最优方案，`a` 必备。`moon test -f 'material tradeoffs*'` 可直接复跑。另有穷举对照验证四档预算下的并列数、交集和并集。
+
+小店日结的固定台账已登记涌现奖投稿。知乎 S3 的收录条款明确不允许一稿多投，即使首次公开日期留空、材料补齐，冲突、追踪与认证都会留为新作资格待核实。剔除该路径后，预算 3 仍可解锁两个目标，最优材料组合为一套。
+
 ## v0.1.4：审证据，算顺序（2026-11-20）
 
 源码版本已升至 0.1.4，Mooncakes 新版本尚待登录后发布。新增机制由 MoonBit
@@ -66,7 +74,7 @@ AI PLAY，且存在材料缺口，当前 21 个目标均不具备完整提交条
 推荐顺序为 C → B → A，每步剩余 2、1、0。该案例复用正式规划器，
 比赛、规则和日期均为演示输入。CI 同时检查这个案例与《第零次黎明》的真实 0 步结果。
 
-276 项测试全部通过（新增 44 项手写测试）；`evidence_audit.mbt` 和
+278 项测试全部通过（新增 46 项手写测试）；`evidence_audit.mbt` 和
 `sequencing.mbt` 行覆盖报告无未覆盖行，CLI 另由上述脚本实际执行。
 历史覆盖数字保留在下文的日期记录中，不代表当前总量。新清单 SHA-256：
 `5e7464f90786dd6bf73d290dacfd053c638fd8acdd86907192b2ff3cd5528d2d`。

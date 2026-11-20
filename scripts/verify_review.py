@@ -90,10 +90,19 @@ def main():
     assert [entry["budget"] for entry in machine["plans"]] == [0, 1, 2, 3]
     evidence = json.loads(run("materials-plan", "小店日结", "2026-11-20", "explain-json"))
     by_target = {row["name"]: row for row in evidence}
+    assert machine["plans"][3]["optimal_count"] == 1
+    assert "知乎黑客松 S3" not in machine["plans"][3]["plan"]["unlocked"]
+    assert any("其他投稿" in reason for reason in by_target["知乎黑客松 S3"]["blockers"])
+    zhihu = run("trace", "小店日结", "知乎黑客松 S3")
+    assert "已有其他投稿记录" in zhihu and "认证结论：不可提交" in zhihu
     for entry, expected_count in zip(machine["plans"], (0, 1, 1, 2)):
         assert len(entry["plan"]["unlocked"]) == expected_count
         assert len(entry["plan"]["ready"]) == 1
         assert len(entry["plan"]["materials"]) <= entry["budget"]
+        assert entry["optimal_count"] >= 1
+        assert set(entry["required_materials"]) <= set(entry["plan"]["materials"]) <= set(entry["possible_materials"])
+        if entry["optimal_count"] == 1:
+            assert entry["required_materials"] == entry["possible_materials"] == entry["plan"]["materials"]
         for target in entry["plan"]["unlocked"]:
             row = by_target[target]
             assert not row["blockers"] and set(row["missing"]) <= set(entry["plan"]["materials"])

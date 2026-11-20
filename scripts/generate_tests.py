@@ -63,8 +63,10 @@ CELL_EXPECT = {
     ("第零次黎明", "造化首届体素游戏创作大赛"): (["P1"], False),
     ("第零次黎明", "第二十届全国大学生软件创新大赛"): (["P1"], False),
     ("小店日结", "魔搭 AI+∞ 第三期「AI 造游戏」"): (["P0"], True),
+    ("小店日结", "知乎黑客松 S3"): (["P1"], False),
     ("小店日结", "第二十届全国大学生软件创新大赛"): (["P1"], False),
     ("诉求整理台", "魔搭 AI+∞ 第三期「AI 造游戏」"): (["P0"], True),
+    ("诉求整理台", "知乎黑客松 S3"): (["P1"], False),
     ("诉求整理台", "第二十届全国大学生软件创新大赛"): (["P1"], False),
     ("验价尺", "魔搭 AI+∞ 第三期「AI 造游戏」"): ([], False),
     ("验价尺", "知乎黑客松 S3"): (["P1"], False),
@@ -229,7 +231,7 @@ def main() -> int:
     for (w, c) in CELL_EXPECT:
         assert w in work_names and c in comp_names, (w, c)
     assert len(COMPS) == 21 and len(WORKS) == 4
-    assert len(CELL_EXPECT) == 19, "预期表应为 19 格（含无冲突对照）"
+    assert len(CELL_EXPECT) == 21, "预期表应为 21 格（含无冲突对照）"
 
     parts = [HEADER.rstrip("\n"), ""]
     for work in WORKS:

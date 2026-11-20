@@ -237,9 +237,16 @@ fn cmd_materials_plan(args : Array[String]) -> Unit {
       return
     }
     if args[3] == "frontier-json" {
-      let plans = @lib.material_frontier(work, comps, today)
-      let entries = Array::makei(plans.length(), i => {
-        Json::object({ "budget": Json(i), "plan": Json(plans[i]) })
+      let steps = @lib.material_tradeoffs(work, comps, today)
+      let entries = Array::makei(steps.length(), i => {
+        let step = steps[i]
+        Json::object({
+          "budget": Json(i),
+          "plan": Json(step.plan),
+          "optimal_count": Json(step.optimal_count),
+          "required_materials": Json(step.required_materials),
+          "possible_materials": Json(step.possible_materials),
+        })
       })
       println(
         Json::object({

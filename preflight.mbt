@@ -247,10 +247,9 @@ pub fn certify_pack(
       reasons.push(reason)
     }
   }
-  if comp.requires_new_work && work.first_public_date != "" {
-    reasons.push(
-      "须新做：作品已有公开版本，须补齐资格后才能认证",
-    )
+  let new_work = new_work_issue(work, comp)
+  if !new_work.is_empty() {
+    reasons.push(new_work)
   }
   if pack.gaps.length() > 0 {
     reasons.push("材料缺口 " + pack.gaps.length().to_string() + " 项")

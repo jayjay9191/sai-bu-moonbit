@@ -150,9 +150,30 @@ fn no_prior_entry_decision(work : Work, comp : Competition) -> (String, String) 
 }
 
 ///|
+fn new_work_issue(work : Work, comp : Competition) -> String {
+  if !comp.requires_new_work {
+    return ""
+  }
+  if !work.first_public_date.trim().is_empty() {
+    return "须新做：作品已有公开版本（" +
+      work.first_public_date +
+      "），不能直接交"
+  }
+  let citation = rule_citation_for("须新做", comp.name)
+  let prior = other_competition_entries(work, comp)
+  if prior.is_empty() || !citation.rule_text.contains("不得一稿多投") {
+    ""
+  } else {
+    "须新做：已有其他投稿记录（" +
+    join_strings(prior, "、") +
+    "），须核实新作资格"
+  }
+}
+
+///|
 /// 逐个目标检查一件作品的规则冲突。
 /// 规则 1：窗口外首次公开或另投比赛为 P0，缺日期或窗口为 P1。
-/// 规则 2（P1）：比赛要求“必须新做”，但作品已有公开版本。
+/// 规则 2（P1）：已有公开版本，或违反已收录的禁止重复投稿条款，须核实新作资格。
 /// 规则 3：其他国家级公开赛事有证据则 P0，缺范围证据则 P1。
 /// 规则 4（P1）：平台上架目标要求完成上架资质清单（materials 即清单，
 ///   如 TapTap 四项资质、itch.io 的 ZIP 包与 AI 披露），但作品有未就
@@ -176,14 +197,13 @@ pub fn detect_conflicts(
         })
       }
     }
-    if comp.requires_new_work && work.first_public_date != "" {
+    let new_work = new_work_issue(work, comp)
+    if !new_work.is_empty() {
       result.push({
         level: "P1",
         competition: comp.name,
         work: work.name,
-        message: "须新做：作品已有公开版本（" +
-        work.first_public_date +
-        "），不能直接交",
+        message: new_work,
       })
     }
     if comp.requires_no_prior_entry {

@@ -207,14 +207,14 @@ test "xiaodianjie triggers moda P0 via submitted_to" {
   // 小店日结从未公开（first_public_date 为空），但已投过涌现奖；
   // 规则 1 的第二条分支（已投过其他比赛）仍应触发魔搭 P0。
   // 另有软件创新大赛规则 3（原创条款）触发 P1 待核实，
-  // 再加两平台上架目标的规则 4（上架资质缺口 P1），共 4 个冲突。
+  // 知乎禁止一稿多投另报 P1；再加两平台的资质缺口，共 5 个冲突。
   match @sai-bu-moonbit.work_by_name("小店日结") {
     Some(w) => {
       let conflicts = @sai-bu-moonbit.detect_conflicts(
         w,
         @sai-bu-moonbit.all_competitions(),
       )
-      assert_eq(conflicts.length(), 4)
+      assert_eq(conflicts.length(), 5)
       assert_eq(conflicts[0].level, "P0")
       assert_eq(
         conflicts[0].competition,
@@ -226,9 +226,8 @@ test "xiaodianjie triggers moda P0 via submitted_to" {
 }
 
 ///|
-test "suqiu has no P1 for zhihu" {
-  // 诉求整理台从未公开，知乎“须新做”规则只针对已有公开版本的作品，
-  // 所以不应报 P1。
+test "suqiu requires new-work verification for the documented Zhihu exclusivity clause" {
+  // 未填公开日期，但已登记其他比赛；知乎条款明确禁止一稿多投。
   match @sai-bu-moonbit.work_by_name("诉求整理台") {
     Some(w) => {
       let conflicts = @sai-bu-moonbit.detect_conflicts(
@@ -238,7 +237,9 @@ test "suqiu has no P1 for zhihu" {
       let list = @sai-bu-moonbit.conflicts_for_competition(
         conflicts, "知乎黑客松 S3",
       )
-      assert_eq(list.length(), 0)
+      assert_eq(list.length(), 1)
+      assert_eq(list[0].level, "P1")
+      assert_true(list[0].message.contains("其他投稿"))
     }
     None => assert_true(false)
   }
@@ -314,9 +315,9 @@ test "benchmark sweep counts" {
       }
     }
   }
-  assert_eq(total_conflicts, 18)
+  assert_eq(total_conflicts, 20)
   assert_eq(p0, 3)
-  assert_eq(p1, 15)
+  assert_eq(p1, 17)
   assert_eq(total_packs, 84)
   assert_eq(blocked_packs, 3)
   assert_eq(@sai-bu-moonbit.collision_dates(comps).length(), 3)
@@ -508,11 +509,15 @@ test "p0 message has no empty parens for xiaodianjie" {
         w,
         @sai-bu-moonbit.all_competitions(),
       )
-      assert_eq(conflicts.length(), 4)
+      assert_eq(conflicts.length(), 5)
       assert_true(!conflicts[0].message.contains("（）"))
       assert_true(conflicts[0].message.contains("已投 涌现奖"))
-      assert_true(conflicts[2].message.contains("上架资质缺口"))
-      assert_true(conflicts[3].message.contains("上架资质缺口"))
+      assert_eq(
+        conflicts
+        .filter(conflict => conflict.message.contains("上架资质缺口"))
+        .length(),
+        2,
+      )
     }
     None => assert_true(false)
   }

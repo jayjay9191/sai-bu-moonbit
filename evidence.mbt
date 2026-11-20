@@ -293,7 +293,7 @@ pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
 }
 
 ///|
-/// 规则 2（须新做）追踪：只读首次公开日期。
+/// 规则 2（须新做）追踪：复用认证对公开与其他投稿记录的判断。
 pub fn trace_new_work(work : Work, comp : Competition) -> DecisionTrace {
   let citation = rule_citation_for("须新做", comp.name)
   if !comp.requires_new_work {
@@ -325,9 +325,12 @@ pub fn trace_new_work(work : Work, comp : Competition) -> DecisionTrace {
       citation.verified_at +
       "）。",
     )
-    if work.first_public_date == "" {
-      steps.push("事实：作品未公开（first_public_date 为空）。")
-      steps.push("推导：没有公开版本，新做要求满足。")
+    let issue = new_work_issue(work, comp)
+    if issue.is_empty() {
+      steps.push(
+        "事实：台账缺少首次公开日期及其他比赛投稿记录。",
+      )
+      steps.push("推导：已登记信息中未发现新作资格冲突。")
       steps.push("结论：通过——可以新做投稿。")
       {
         work: work.name,
@@ -343,13 +346,19 @@ pub fn trace_new_work(work : Work, comp : Competition) -> DecisionTrace {
         Some(f) => "证据：" + f.evidence + "（" + f.source + "）"
         None => "证据：台账记录，未收录单独来源"
       }
-      steps.push(
-        "事实：作品已有公开版本（首次公开于 " +
-        work.first_public_date +
-        "）。" +
-        e,
-      )
-      steps.push("推导：已有公开版本，不能直接交，须新做。")
+      if work.first_public_date.trim().is_empty() {
+        steps.push(
+          "事实：首次公开日期空缺，台账另有比赛投稿记录。",
+        )
+      } else {
+        steps.push(
+          "事实：作品已有公开版本（首次公开于 " +
+          work.first_public_date +
+          "）。" +
+          e,
+        )
+      }
+      steps.push("推导：" + issue)
       steps.push("结论：P1——须新做，不能直接交。")
       {
         work: work.name,

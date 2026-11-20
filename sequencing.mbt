@@ -188,7 +188,7 @@ pub fn plan_materials(
   if budget < 0 || budget > 3 {
     raise InvalidSequence("材料预算须为 0 至 3 项")
   }
-  material_plans(work, comps, today, budget)[budget]
+  search_material_bundles(work, comps, today, budget)[budget].plan
 }
 
 ///|
@@ -198,7 +198,25 @@ pub fn material_frontier(
   comps : Array[Competition],
   today : Int32,
 ) -> Array[MaterialPlan] raise SequenceError {
-  material_plans(work, comps, today, 3)
+  material_tradeoffs(work, comps, today).map(result => result.plan)
+}
+
+///|
+pub(all) struct MaterialTradeoff {
+  plan : MaterialPlan
+  optimal_count : Int32
+  required_materials : Array[String]
+  possible_materials : Array[String]
+}
+
+///|
+/// For each budget, count the bundles that maximize coverage then minimize materials.
+pub fn material_tradeoffs(
+  work : Work,
+  comps : Array[Competition],
+  today : Int32,
+) -> Array[MaterialTradeoff] raise SequenceError {
+  search_material_bundles(work, comps, today, 3)
 }
 
 ///|
@@ -232,12 +250,12 @@ pub fn material_eligibility(
 }
 
 ///|
-fn material_plans(
+fn search_material_bundles(
   work : Work,
   comps : Array[Competition],
   today : Int32,
   budget : Int32,
-) -> Array[MaterialPlan] raise SequenceError {
+) -> Array[MaterialTradeoff] raise SequenceError {
   let ready : Array[String] = []
   let candidates : Array[(String, Array[String])] = []
   for row in material_eligibility(work, comps, today) {
@@ -253,10 +271,12 @@ fn material_plans(
   let bundles : Array[Array[String]] = [[]]
   let seen : Map[String, Bool] = { "[]": true }
   let mut index = 0
-  let best : Array[(Array[String], Array[String])] = Array::make(
-    budget + 1,
-    ([], []),
-  )
+  let best : Array[MaterialTradeoff] = Array::make(budget + 1, {
+    plan: { materials: [], unlocked: [], ready: [], },
+    optimal_count: 0,
+    required_materials: [],
+    possible_materials: [],
+  })
   while index < bundles.length() {
     let bundle = bundles[index]
     index += 1
@@ -275,28 +295,55 @@ fn material_plans(
         }
       }
     }
+    let plan = { materials: bundle, unlocked: covered, ready: [], }
     for limit in bundle.length()..<(budget + 1) {
-      let (old_bundle, old_covered) = best[limit]
-      if covered.length() > old_covered.length() ||
-        (
-          covered.length() == old_covered.length() &&
-          (
-            bundle.length() < old_bundle.length() ||
-            (
-              bundle.length() == old_bundle.length() &&
-              bundle.compare(old_bundle) < 0
-            )
-          )
-        ) {
-        best[limit] = (bundle, covered)
+      let previous = best[limit]
+      let difference = covered.length() - previous.plan.unlocked.length()
+      let extra = bundle.length() - previous.plan.materials.length()
+      if previous.optimal_count == 0 ||
+        difference > 0 ||
+        (difference == 0 && extra < 0) {
+        best[limit] = {
+          plan,
+          optimal_count: 1,
+          required_materials: bundle,
+          possible_materials: bundle,
+        }
+      } else if difference == 0 && extra == 0 {
+        let representative = if bundle.compare(previous.plan.materials) < 0 {
+          plan
+        } else {
+          previous.plan
+        }
+        let required = previous.required_materials.filter(item => {
+          bundle.contains(item)
+        })
+        let possible = previous.possible_materials +
+          bundle.filter(item => !previous.possible_materials.contains(item))
+        best[limit] = {
+          plan: representative,
+          optimal_count: previous.optimal_count + 1,
+          required_materials: required,
+          possible_materials: possible,
+        }
       }
     }
   }
   ready.sort()
-  best.map(pair => {
-    let (bundle, covered) = pair
-    let unlocked = covered.copy()
+  best.map(entry => {
+    let unlocked = entry.plan.unlocked.copy()
+    let possible = entry.possible_materials.copy()
     unlocked.sort()
-    { materials: bundle.copy(), unlocked, ready: ready.copy(), }
+    possible.sort()
+    {
+      plan: {
+        materials: entry.plan.materials.copy(),
+        unlocked,
+        ready: ready.copy(),
+      },
+      optimal_count: entry.optimal_count,
+      required_materials: entry.required_materials.copy(),
+      possible_materials: possible,
+    }
   })
 }
