@@ -57,6 +57,8 @@ pub fn join_strings(Array[String], String) -> String
 
 pub fn manifest_canonical(Array[Competition], Array[Work]) -> String
 
+pub fn material_eligibility(Work, Array[Competition], Int32) -> Array[MaterialEligibility] raise SequenceError
+
 pub fn material_frontier(Work, Array[Competition], Int32) -> Array[MaterialPlan] raise SequenceError
 
 pub fn pending_age(PendingItem, Int32) -> Int32?
@@ -186,6 +188,12 @@ pub(all) struct FirstSubmission {
   remaining : Int32
   blocked : Array[BlockedTarget]
   deadline : String
+}
+
+pub(all) struct MaterialEligibility {
+  name : String
+  missing : Array[String]
+  blockers : Array[String]
 }
 
 pub(all) struct MaterialPlan {

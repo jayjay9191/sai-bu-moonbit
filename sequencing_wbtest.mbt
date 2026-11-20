@@ -628,3 +628,42 @@ test "material frontier reports every preparation budget without changing single
   assert_eq(plans[1].ready, ["Ready"])
   assert_eq(work.materials_ready, ["fixture"])
 }
+
+///|
+test "material explanations keep gaps separate from rules and match frontier eligibility" {
+  let date = date_to_days("2026-11-20")
+  let work = { ..order_work(), submitted_to: ["Qoder"], }
+  let targets = [
+    order_fixture("Ready"),
+    { ..order_fixture("Material"), materials: ["demo", "demo"], },
+    { ..order_fixture("Qoder 高校创造力大赛"), materials: ["slides"], },
+    {
+      ..order_fixture("Past"),
+      deadline_date: "2026-11-19",
+      materials: ["demo"],
+    },
+  ]
+  let rows = material_eligibility(work, targets, date)
+  assert_eq(rows[0].missing, [])
+  assert_eq(rows[0].blockers, [])
+  assert_eq(rows[1].missing, ["demo"])
+  assert_eq(rows[1].blockers, [])
+  assert_eq(rows[2].missing, ["slides"])
+  assert_true(
+    rows[2].blockers.any(reason => reason.contains("已登记投稿")),
+  )
+  assert_true(!rows[3].blockers.is_empty())
+  assert_eq(material_frontier(work, targets, date)[3].unlocked, ["Material"])
+  assert_eq(work.materials_ready, ["fixture"])
+}
+
+///|
+test "material explanation does not omit targets outside the supported budget" {
+  let work = order_work()
+  let date = date_to_days("2026-11-20")
+  let targets = [{ ..order_fixture("Long"), materials: ["a", "b", "c", "d"], }]
+  let rows = material_eligibility(work, targets, date)
+  assert_eq(rows[0].missing, ["a", "b", "c", "d"])
+  assert_eq(rows[0].blockers, [])
+  assert_eq(material_frontier(work, targets, date)[3].unlocked, [])
+}

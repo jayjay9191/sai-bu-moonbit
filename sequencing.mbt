@@ -201,6 +201,35 @@ pub fn material_frontier(
 }
 
 ///|
+pub(all) struct MaterialEligibility {
+  name : String
+  missing : Array[String]
+  blockers : Array[String]
+}
+
+///|
+/// Explain every target using the same hypothetical material completion as the planner.
+/// Blockers remain after all listed materials have been supplied.
+pub fn material_eligibility(
+  work : Work,
+  comps : Array[Competition],
+  today : Int32,
+) -> Array[MaterialEligibility] raise SequenceError {
+  validate_planning_targets(comps)
+  comps.map(comp => {
+    let missing : Array[String] = []
+    for material in comp.materials {
+      if !work.materials_ready.contains(material) && !missing.contains(material) {
+        missing.push(material)
+      }
+    }
+    let simulated = { ..work, materials_ready: work.materials_ready + missing, }
+    let blockers = sequence_reasons(simulated, comp, today)
+    { name: comp.name, missing, blockers, }
+  })
+}
+
+///|
 fn material_plans(
   work : Work,
   comps : Array[Competition],
@@ -209,25 +238,14 @@ fn material_plans(
 ) -> Array[MaterialPlan] raise SequenceError {
   let ready : Array[String] = []
   let candidates : Array[(String, Array[String])] = []
-  validate_planning_targets(comps)
-  for comp in comps {
-    let gaps : Array[String] = []
-    for material in comp.materials {
-      if !work.materials_ready.contains(material) && !gaps.contains(material) {
-        gaps.push(material)
-      }
-    }
-    if gaps.length() > budget {
+  for row in material_eligibility(work, comps, today) {
+    if !row.blockers.is_empty() || row.missing.length() > budget {
       continue
     }
-    let simulated = { ..work, materials_ready: work.materials_ready + gaps, }
-    if !sequence_reasons(simulated, comp, today).is_empty() {
-      continue
-    }
-    if gaps.is_empty() {
-      ready.push(comp.name)
+    if row.missing.is_empty() {
+      ready.push(row.name)
     } else {
-      candidates.push((comp.name, gaps))
+      candidates.push((row.name, row.missing))
     }
   }
   let bundles : Array[Array[String]] = [[]]

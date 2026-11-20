@@ -86,6 +86,17 @@ def main():
         expected = re.search(r"已具备条件：(\d+)；补齐后新增：(\d+)", fixed).groups()
         assert header == f"预算 {i} | 已具备 {expected[0]} | 补齐后新增 {expected[1]}"
     print("PASS materials frontier: " + " / ".join(headers))
+    explanations = run("materials-plan", "第零次黎明", "2026-11-20", "explain").splitlines()
+    starts = [i for i, line in enumerate(explanations) if not line.startswith(" ")]
+    assert len(starts) == 21
+    rows = {explanations[a].split(" | ")[0]: explanations[a:b]
+            for a, b in zip(starts, starts[1:] + [len(explanations)])}
+    qoder = rows["Qoder 高校创造力大赛"]
+    assert any("待补材料" in line for line in qoder[1:])
+    assert any("剩余阻断" in line and "已登记投稿" in line for line in qoder[1:])
+    model = next(lines for title, lines in rows.items() if title.startswith("魔搭 AI+∞"))
+    assert any("剩余阻断" in line and "首次发布" in line for line in model[1:])
+    print("PASS material explanations keep missing documents separate from rules and prior-submission blockers")
     assert run("materials-plan", "小店日结", "2026-11-20", "4", success=False) == ""
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")
     assert "最短阻断链：首次发布 → 不可提交（P0）" in trace
