@@ -763,3 +763,18 @@ test "exact shortlist keeps targets that become legal after platform publication
   }
   assert_true(result is Err(_))
 }
+
+///|
+test "exact shortlist counts every permutation at the seven-target boundary" {
+  let targets = ["A", "B", "C", "D", "E", "F", "G"]
+  let route = plan_exact_shortlist(
+    order_work(),
+    targets.rev().map(name => order_fixture(name)),
+    date_to_days("2026-11-20"),
+  )
+  assert_eq(route.steps, targets)
+  assert_eq(route.optimal_order_count, 7 * 6 * 5 * 4 * 3 * 2)
+  assert_eq(route.required_targets, targets)
+  assert_eq(route.possible_targets, targets)
+  assert_true(route.remaining.is_empty())
+}

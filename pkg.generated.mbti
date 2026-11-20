@@ -184,6 +184,9 @@ pub(all) struct EvidenceIssue {
 pub(all) struct ExactSubmissionOrder {
   steps : Array[String]
   remaining : Array[BlockedTarget]
+  optimal_order_count : Int32
+  required_targets : Array[String]
+  possible_targets : Array[String]
 }
 
 pub struct FactEvidence {

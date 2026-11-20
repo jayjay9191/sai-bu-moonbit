@@ -38,3 +38,47 @@ test "review sample keeps a prior submission blocker after material completion" 
     route.remaining[0].reasons.any(reason => reason.contains("已登记投稿")),
   )
 }
+
+///|
+test "review distinguishes required and interchangeable targets across optimal orders" {
+  guard @lib.work_by_name("第零次黎明") is Some(base) &&
+    @lib.competition_by_name("Qoder 高校创造力大赛") is Some(model) else {
+    abort("missing base records")
+  }
+  let work = {
+    ..base,
+    name: "合成顺序案例",
+    first_public_date: "2026-11-20",
+    submitted_to: [],
+    materials_ready: ["fixture"],
+  }
+  let ordinary = {
+    ..model,
+    name: "A",
+    deadline_date: "2026-12-01",
+    verified_at: "2026-11-20",
+    materials: ["fixture"],
+    requires_first_publish: false,
+    allows_existing_works: true,
+    publish_start: "2026-11-01",
+    publish_end: "2026-12-01",
+  }
+  let first = {
+    ..ordinary,
+    name: "B",
+    requires_first_publish: true,
+    allows_existing_works: false,
+  }
+  let alternative = { ..first, name: "C", }
+  let blocked = { ..ordinary, name: "D", materials: ["missing"], }
+  let today = @lib.date_to_days("2026-11-20")
+  let route = @lib.plan_exact_shortlist(
+    work,
+    [alternative, blocked, ordinary, first],
+    today,
+  )
+  assert_eq(route.steps, ["B", "A"])
+  assert_eq(route.optimal_order_count, 2)
+  assert_eq(route.required_targets, ["A"])
+  assert_eq(route.possible_targets, ["A", "B", "C"])
+}

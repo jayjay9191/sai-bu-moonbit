@@ -3,11 +3,15 @@
 pub(all) struct ExactSubmissionOrder {
   steps : Array[String]
   remaining : Array[BlockedTarget]
+  optimal_order_count : Int32
+  required_targets : Array[String]
+  possible_targets : Array[String]
 }
 
 ///|
-/// Find a longest valid sequence on one audit date; ties prefer earlier deadlines then names.
-/// ponytail: bound the shortlist to seven targets, so no memoization is needed.
+/// Count all longest valid sequences on one audit date, including one empty sequence
+/// if no target can be completed. The example prefers earlier deadlines then names.
+/// ponytail: enumerate at most seven targets; consider memoization for larger lists.
 pub fn plan_exact_shortlist(
   work : Work,
   comps : Array[Competition],
@@ -39,32 +43,55 @@ pub fn plan_exact_shortlist(
   let path : Array[String] = []
   let mut best : Array[String] = []
   let mut best_state = work
-  fn search(current : Work, remaining : Array[Competition]) -> Unit {
+  let mut optimal_order_count = 0
+  let mut required_mask = 0
+  let mut possible_mask = 0
+  fn search(current : Work, used : Int32) -> Unit {
     if path.length() > best.length() {
       best = path.copy()
       best_state = current
+      optimal_order_count = 0
+      required_mask = used
+      possible_mask = 0
     }
-    if path.length() + remaining.length() <= best.length() {
-      return
+    if path.length() == best.length() {
+      optimal_order_count += 1
+      required_mask = required_mask & used
+      possible_mask = possible_mask | used
     }
-    for comp in remaining {
-      if !sequence_reasons(current, comp, today).is_empty() {
+    for i, comp in pending {
+      let bit = 1 << i
+      if (used & bit) != 0 || !sequence_reasons(current, comp, today).is_empty() {
         continue
       }
       path.push(comp.name)
-      search(
-        simulate_submission(current, comp, today),
-        remaining.filter(target => target.name != comp.name),
-      )
+      search(simulate_submission(current, comp, today), used | bit)
       ignore(path.pop())
     }
   }
-  search(work, pending)
+  search(work, 0)
   let remaining = pending
     .filter(comp => !best.contains(comp.name))
     .map(comp => {
       name: comp.name,
       reasons: sequence_reasons(best_state, comp, today),
     })
-  { steps: best, remaining, }
+  let required_targets = []
+  let possible_targets = []
+  for i, comp in pending {
+    let bit = 1 << i
+    if (required_mask & bit) != 0 {
+      required_targets.push(comp.name)
+    }
+    if (possible_mask & bit) != 0 {
+      possible_targets.push(comp.name)
+    }
+  }
+  {
+    steps: best,
+    remaining,
+    optimal_order_count,
+    required_targets,
+    possible_targets,
+  }
 }
