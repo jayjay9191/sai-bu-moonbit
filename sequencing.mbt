@@ -5,6 +5,7 @@ pub suberror SequenceError {
 }
 
 ///|
+#derive(ToJson)
 pub(all) struct BlockedTarget {
   name : String
   reasons : Array[String]

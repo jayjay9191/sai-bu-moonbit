@@ -724,3 +724,42 @@ test "material planning cannot infer new-work eligibility from a missing publica
     material_tradeoffs(work, [target], today)[3].plan.unlocked.is_empty(),
   )
 }
+
+///|
+test "exact shortlist order detects mutually exclusive first-public targets" {
+  let work = order_work()
+  let today = date_to_days("2026-11-20")
+  let targets = [
+    order_fixture("A"),
+    order_fixture("B", first=true),
+    order_fixture("C", first=true),
+  ]
+  assert_true(
+    submission_options(work, targets, today).all(option => option.can_submit),
+  )
+  let best = plan_exact_shortlist(work, targets, today)
+  assert_eq(best.steps, ["B", "A"])
+  assert_eq(best.remaining.map(row => row.name), ["C"])
+  assert_true(
+    best.remaining[0].reasons.any(reason => reason.contains("首次发布")),
+  )
+  assert_eq(plan_exact_shortlist(work, targets.rev(), today).steps, best.steps)
+  assert_true(work.submitted_to.is_empty())
+}
+
+///|
+test "exact shortlist keeps targets that become legal after platform publication" {
+  let first = order_fixture("A", first=true)
+  let platform = { ..order_fixture("B"), target_kind: "平台上架", }
+  let work = { ..order_work(), first_public_date: "", }
+  let today = date_to_days("2026-11-20")
+  let best = plan_exact_shortlist(work, [first, platform], today)
+  assert_eq(best.steps, ["B", "A"])
+  assert_eq(best.remaining.length(), 0)
+  assert_eq(work.first_public_date, "")
+  let oversized = Array::makei(8, i => order_fixture(i.to_string()))
+  let result = Ok(plan_exact_shortlist(work, oversized, today)) catch {
+    err => Err(err)
+  }
+  assert_true(result is Err(_))
+}

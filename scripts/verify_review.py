@@ -63,6 +63,12 @@ def main():
     for name in ("Qoder 高校创造力大赛", "AI PLAY 72H 创作黑客松", "魔搭 AI+∞ 第三期「AI 造游戏」"):
         assert f"{name} | 当前可提交 false" in order
     assert "首次发布冲突" in order and "台账已登记投稿，不重复规划" in order
+    names = ("Qoder 高校创造力大赛", "AI PLAY 72H 创作黑客松", "魔搭 AI+∞ 第三期「AI 造游戏」")
+    exact = json.loads(run("order-exact", "第零次黎明", "2026-11-20", *names))
+    assert exact["steps"] == [] and {row["name"] for row in exact["remaining"]} == set(names)
+    assert any("首次发布冲突" in reason for row in exact["remaining"] for reason in row["reasons"])
+    assert run("order-exact", "第零次黎明", "2026-11-20", names[0], names[0], success=False) == ""
+    print("PASS exact shortlist preserves the three recorded blockers for Dawn")
     demo = run("order-demo")
     assert "合成案例" in demo and "未投稿 | 材料齐备" in demo
     assert "普通赛 A | 当前可提交 true | 其后剩余可投 1" in demo

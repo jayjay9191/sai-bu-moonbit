@@ -65,6 +65,8 @@ pub fn material_tradeoffs(Work, Array[Competition], Int32) -> Array[MaterialTrad
 
 pub fn pending_age(PendingItem, Int32) -> Int32?
 
+pub fn plan_exact_shortlist(Work, Array[Competition], Int32) -> ExactSubmissionOrder raise SequenceError
+
 pub fn plan_materials(Work, Array[Competition], Int32, Int32) -> MaterialPlan raise SequenceError
 
 pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder raise SequenceError
@@ -121,6 +123,7 @@ pub(all) struct AuditedDecision {
   evidence_current : Bool
 }
 
+#derive(@json.ToJson)
 pub(all) struct BlockedTarget {
   name : String
   reasons : Array[String]
@@ -175,6 +178,12 @@ pub(all) struct EvidenceIssue {
   kind : String
   subject : String
   detail : String
+}
+
+#derive(@json.ToJson)
+pub(all) struct ExactSubmissionOrder {
+  steps : Array[String]
+  remaining : Array[BlockedTarget]
 }
 
 pub struct FactEvidence {

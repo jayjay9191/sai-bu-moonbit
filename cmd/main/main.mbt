@@ -37,6 +37,7 @@ fn main {
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
     "audit-evidence" | "order" | "order-demo" => cmd_review(args)
+    "order-exact" => cmd_order_exact(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -198,6 +199,9 @@ fn print_usage() -> Unit {
   println(
     "materials-plan <作品名> <日期> <材料预算0-3|frontier|frontier-json|explain|explain-json>：优先补齐可复用材料",
   )
+  println(
+    "order-exact <作品名> <日期> <目标1> [目标2 ...]：精确搜索 1 至 7 个目标的同日顺序",
+  )
   println("help：显示本帮助")
 }
 
@@ -293,6 +297,35 @@ fn print_material_plan_items(plan : @lib.MaterialPlan) -> Unit {
   }
   for name in plan.unlocked {
     println("满足台账认证 | " + name)
+  }
+}
+
+///|
+fn cmd_order_exact(args : Array[String]) -> Unit {
+  try {
+    if args.length() < 4 || args.length() > 10 || !@lib.is_valid_date(args[2]) {
+      fail(
+        "用法：order-exact <作品名> <YYYY-MM-DD> <目标1> [目标2 ...]，最多 7 个目标",
+      )
+    }
+    guard @lib.work_by_name(args[1]) is Some(work) else {
+      fail("未找到作品：" + args[1])
+    }
+    let targets : Array[@lib.Competition] = []
+    for i in 3..<args.length() {
+      guard @lib.competition_by_name(args[i]) is Some(comp) else {
+        fail("未找到目标：" + args[i])
+      }
+      targets.push(comp)
+    }
+    println(
+      Json(@lib.plan_exact_shortlist(work, targets, @lib.date_to_days(args[2]))).stringify(),
+    )
+  } catch {
+    err => {
+      eprintln("精确顺序规划失败：" + err.to_string())
+      @env.exit(2)
+    }
   }
 }
 

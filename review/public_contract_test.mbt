@@ -29,4 +29,12 @@ test "review sample keeps a prior submission blocker after material completion" 
       !plan.unlocked.contains(qoder.name)
     }),
   )
+  guard @lib.competition_by_name(qoder.name) is Some(target) else {
+    abort("missing review target")
+  }
+  let route = @lib.plan_exact_shortlist(work, [target], today)
+  assert_true(route.steps.is_empty())
+  assert_true(
+    route.remaining[0].reasons.any(reason => reason.contains("已登记投稿")),
+  )
 }
