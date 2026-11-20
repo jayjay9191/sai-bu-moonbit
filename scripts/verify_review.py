@@ -33,12 +33,16 @@ def main():
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")
     assert "最短阻断链：首次发布 → 不可提交（P0）" in trace
     assert "认证结论：不可提交" in trace
-    preflight = run("preflight")
+    preflight = run("preflight", "2026-11-20")
     assert "投稿包认证：84 个，可提交 2 个，P0 挡住 3 个" in preflight
     digest = re.search(r"清单 SHA-256：([0-9a-f]{64})", preflight).group(1)
+    historical = run("preflight", "2026-11-15")
+    assert "今天：2026-11-15" in historical
+    assert "可提交 0 个" in historical and "核验日期晚于审计日" in historical
     assert "12-01 提交前务必" not in run()
     for args in (("order",), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
-                 ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra")):
+                 ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),
+                 ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra")):
         run(*args, success=False)
     data = json.loads((ROOT / "data/competitions.json").read_text(encoding="utf-8"))
     assert len(data["competitions"]) == 21 and len(data["works"]) == 4

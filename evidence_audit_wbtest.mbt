@@ -10,6 +10,16 @@ fn audit_citation() -> RuleCitation {
 }
 
 ///|
+test "shared preflight refuses future verification before certifying any route" {
+  let today = date_to_days("2026-11-20")
+  let comp = { ..order_fixture("future"), verified_at: "2026-11-21", }
+  let row = row_verdict(comp, today)
+  assert_false(row.verified)
+  assert_true(row.reason.contains("核验日期晚于"))
+  assert_false(certify_pack(order_work(), comp, [], row).certifiable)
+}
+
+///|
 test "citation freshness has non-overlapping 20 21 30 31 day boundaries" {
   let citation = audit_citation()
   let today = date_to_days(citation.verified_at)

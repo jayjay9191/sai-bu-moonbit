@@ -32,10 +32,6 @@ fn sequence_reasons(
     detect_conflicts(work, [comp]),
     row_verdict(comp, today),
   ).reasons.copy()
-  // Historical preflight keeps its existing contract; new planning enforces an as-of date.
-  if date_to_days(comp.verified_at) > today {
-    reasons.push("核验日期晚于规划日，须重新确认")
-  }
   // Existing data uses short display names for these two already-submitted events.
   let submitted = work.submitted_to.any(name => {
     name == comp.name ||

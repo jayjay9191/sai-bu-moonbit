@@ -176,6 +176,13 @@ pub fn row_verdict(c : Competition, today : Int32) -> RowVerdict {
       reason: "核验日期格式不对：" + c.verified_at,
     }
   }
+  if verified > today {
+    return {
+      competition: c.name,
+      verified: false,
+      reason: "核验日期晚于审计日：" + c.verified_at,
+    }
+  }
   if today - verified > STALE_DAYS {
     return {
       competition: c.name,

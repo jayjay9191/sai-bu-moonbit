@@ -289,14 +289,11 @@ test "preflight on real data at 2026-11-15" {
       verified_rows = verified_rows + 1
     }
   }
-  // 11 个旧已核实行 + 2 个新平台目标行（TapTap 11-16、itch.io 11-18
-  // 核实，过期检查只看“距今是否超过 30 天”，未来日期不算过期）
-  // + Rokid 1 行（2026-11-18 重核：截止 01-28 已确认，note 里
-  // “待核对”标记已去掉；verified_at 2026-11-18 对模拟的 11-15
-  // 是未来日期，不算过期）。
-  assert_eq(verified_rows, 14)
+  // 按 11-15 回放时，11-16/18 核实的行尚不能作为当时的证据。
+  // 符合条件的只有 AI PLAY、Qoder、魔搭、知乎、造化五行。
+  assert_eq(verified_rows, 5)
   assert_eq(report.packs.length(), 84)
-  assert_eq(report.certifiable_count, 2)
+  assert_eq(report.certifiable_count, 0)
   assert_eq(report.blocked_count, 3)
   assert_eq(report.collisions.length(), 3)
   assert_eq(report.manifest_hash.length(), 64)
@@ -352,7 +349,7 @@ test "certify xiaodian and suqiu to emerge are submittable" {
     Some(emerge) => {
       let row = @sai-bu-moonbit.row_verdict(
         emerge,
-        @sai-bu-moonbit.date_to_days("2026-11-15"),
+        @sai-bu-moonbit.date_to_days("2026-11-20"),
       )
       assert_true(row.verified)
       for name in ["小店日结", "诉求整理台"] {

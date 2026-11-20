@@ -212,6 +212,6 @@ test "new-work qualification and future verification dates cannot certify a subm
     )[0]
   assert_false(future.can_submit)
   assert_true(
-    future.reasons.any(reason => reason.contains("核验日期晚于规划日")),
+    future.reasons.any(reason => reason.contains("核验日期晚于审计日")),
   )
 }

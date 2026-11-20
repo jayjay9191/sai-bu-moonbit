@@ -31,7 +31,7 @@ fn main {
     "collisions" => cmd_collisions()
     "benchmark" => cmd_benchmark()
     "validate" => cmd_validate()
-    "preflight" => cmd_preflight()
+    "preflight" => cmd_preflight(args)
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
     "audit-evidence" | "order" => cmd_review(args)
@@ -178,7 +178,7 @@ fn print_usage() -> Unit {
   )
   println("validate：校验台账数据，有问题返回码 1")
   println(
-    "preflight：全链路预检（validate → 逐行核验 → 冲突检测 → 投稿包认证 → 撞期提醒），输出清单 SHA-256",
+    "preflight [YYYY-MM-DD]：全链路预检（默认北京时间当天），支持按指定审计日复跑，输出清单 SHA-256",
   )
   println(
     "trace <作品名> <目标名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
@@ -414,10 +414,24 @@ fn cmd_validate() -> Unit {
 /// 数据自相矛盾就整单拒绝（返回码 1）；P0 冲突直接标 blocked；
 /// 数据未核实或已过期拒绝认证；不自动重试；失败原因逐项写清。
 /// 单个包的拒绝是结论，不是进程失败——只在 validate 有问题时返回码 1。
-fn cmd_preflight() -> Unit {
+fn cmd_preflight(args : Array[String]) -> Unit {
+  if args.length() > 2 || (args.length() == 2 && !@lib.is_valid_date(args[1])) {
+    println("用法：preflight [YYYY-MM-DD]，日期必须有效")
+    @env.exit(2)
+  }
+  let now = if args.length() == 2 {
+    let day = @lib.date_to_days(args[1])
+    if day < 0 {
+      println("审计日期须为 1970-01-01 或以后")
+      @env.exit(2)
+    }
+    day.to_uint64() * 86400000UL
+  } else {
+    @env.now() + 28800000UL
+  }
   let comps = @lib.all_competitions()
   let works = @lib.all_works()
-  let report = @lib.preflight(comps, works, @env.now())
+  let report = @lib.preflight(comps, works, now)
   println("== preflight 全链路预检 ==")
   println("今天：\{report.today}")
   if report.validate_issues.length() > 0 {
@@ -542,7 +556,7 @@ fn cmd_trace(args : Array[String]) -> Unit {
 ///|
 fn print_pack_review(w : @lib.Work, comp : @lib.Competition) -> Unit {
   let conflicts = @lib.detect_conflicts(w, [comp])
-  let row = @lib.row_verdict(comp, @lib.today_days(@env.now()))
+  let row = @lib.row_verdict(comp, @lib.today_days(@env.now() + 28800000UL))
   let verdict = @lib.certify_pack(w, comp, conflicts, row)
   println("== 投稿包认证 ==")
   print_pack(@lib.generate_pack(w, comp, conflicts))
