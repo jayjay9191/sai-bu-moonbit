@@ -59,6 +59,8 @@ pub fn manifest_canonical(Array[Competition], Array[Work]) -> String
 
 pub fn pending_age(PendingItem, Int32) -> Int32?
 
+pub fn plan_materials(Work, Array[Competition], Int32, Int32) -> MaterialPlan raise SequenceError
+
 pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder raise SequenceError
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
@@ -182,6 +184,12 @@ pub(all) struct FirstSubmission {
   remaining : Int32
   blocked : Array[BlockedTarget]
   deadline : String
+}
+
+pub(all) struct MaterialPlan {
+  materials : Array[String]
+  unlocked : Array[String]
+  ready : Array[String]
 }
 
 pub struct PackVerdict {

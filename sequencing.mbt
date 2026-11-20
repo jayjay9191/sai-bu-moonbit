@@ -157,3 +157,89 @@ pub fn plan_submission_order(
   }
   { steps, unavailable, }
 }
+
+///|
+pub(all) struct MaterialPlan {
+  materials : Array[String]
+  unlocked : Array[String]
+  ready : Array[String]
+}
+
+///|
+/// Maximize newly certifiable targets with up to three reusable materials.
+/// Search only unions of complete target gaps: extra items cannot open a route.
+pub fn plan_materials(
+  work : Work,
+  comps : Array[Competition],
+  today : Int32,
+  budget : Int32,
+) -> MaterialPlan raise SequenceError {
+  if budget < 0 || budget > 3 {
+    raise InvalidSequence("材料预算须为 0 至 3 项")
+  }
+  let ready : Array[String] = []
+  let candidates : Array[(String, Array[String])] = []
+  let names : Map[String, Bool] = Map([])
+  for comp in comps {
+    if names.contains(comp.name) {
+      raise InvalidSequence("投稿目标重复：" + comp.name)
+    }
+    names[comp.name] = true
+    let gaps : Array[String] = []
+    for material in comp.materials {
+      if !work.materials_ready.contains(material) && !gaps.contains(material) {
+        gaps.push(material)
+      }
+    }
+    if gaps.length() > budget {
+      continue
+    }
+    let simulated = { ..work, materials_ready: work.materials_ready + gaps, }
+    if !sequence_reasons(simulated, comp, today).is_empty() {
+      continue
+    }
+    if gaps.is_empty() {
+      ready.push(comp.name)
+    } else {
+      candidates.push((comp.name, gaps))
+    }
+  }
+  let bundles : Array[Array[String]] = [[]]
+  let seen : Map[String, Bool] = { "[]": true }
+  let mut index = 0
+  let mut best : Array[String] = []
+  let mut unlocked : Array[String] = []
+  while index < bundles.length() {
+    let bundle = bundles[index]
+    index += 1
+    let covered : Array[String] = []
+    for (name, gaps) in candidates {
+      let extra = gaps.filter(item => !bundle.contains(item))
+      if extra.is_empty() {
+        covered.push(name)
+      } else if bundle.length() + extra.length() <= budget {
+        let combined = bundle + extra
+        combined.sort()
+        let key = Json(combined).stringify()
+        if !seen.contains(key) {
+          seen[key] = true
+          bundles.push(combined)
+        }
+      }
+    }
+    if covered.length() > unlocked.length() ||
+      (
+        covered.length() == unlocked.length() &&
+        (
+          bundle.length() < best.length() ||
+          (bundle.length() == best.length() && bundle.compare(best) < 0)
+        )
+      ) {
+      best = bundle
+      unlocked = covered
+    }
+  }
+  unlocked.sort()
+  ready.sort()
+  { materials: best, unlocked, ready, }
+}

@@ -473,3 +473,32 @@ test "calendar horizon includes the start and excludes the first day outside the
     is Err(_),
   )
 }
+
+///|
+test "materials planning finds a shared budget bundle without certifying blocked targets" {
+  let date = date_to_days("2026-11-20")
+  let work = { ..order_work(), submitted_to: ["曾投稿赛事"], }
+  let targets = [
+    { ..order_fixture("目标 A"), materials: ["演示", "截图", "截图"], },
+    { ..order_fixture("目标 B"), materials: ["演示", "截图"], },
+    { ..order_fixture("目标 C"), materials: ["演示", "说明"], },
+    { ..order_fixture("目标 D"), materials: ["演示"], },
+    { ..order_fixture("首发限制", first=true), materials: ["演示"], },
+    {
+      ..order_fixture("过期"),
+      deadline_date: "2026-11-19",
+      materials: ["演示"],
+    },
+    order_fixture("已就绪"),
+  ]
+  let plan = plan_materials(work, targets, date, 2)
+  assert_eq(plan.materials, ["截图", "演示"])
+  assert_eq(plan.unlocked, ["目标 A", "目标 B", "目标 D"])
+  assert_eq(plan.ready, ["已就绪"])
+  assert_eq(plan_materials(work, targets, date, 1).unlocked, ["目标 D"])
+  assert_eq(
+    plan_materials(work, targets.rev(), date, 2).unlocked,
+    plan.unlocked,
+  )
+  assert_eq(work.materials_ready, ["fixture"])
+}

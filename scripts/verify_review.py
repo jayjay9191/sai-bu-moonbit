@@ -71,6 +71,14 @@ def main():
     assert "推荐顺序：3步；未可安排：0项" in demo
     assert [line.split(" |")[0] for line in demo.splitlines() if re.match(r"[1-3]\. ", line)] == [
         "1. 首发赛 C", "2. 普通赛 B", "3. 普通赛 A"]
+    materials = run("materials-plan", "小店日结", "2026-11-20", "3")
+    assert "已具备条件：1；补齐后新增：2" in materials
+    assert [line for line in materials.splitlines() if line.startswith("待补材料")] == [
+        "待补材料 | 作品策划案", "待补材料 | PPT（发邮箱）", "待补材料 | AIUI 智能体（Rokid AIUI Studio）"]
+    assert "满足台账认证 | Rokid Spatial Joy 2026" in materials
+    assert "满足台账认证 | 第十一届全国青年人工智能创新创业大赛" in materials
+    assert "已具备条件：1；补齐后新增：0" in run("materials-plan", "小店日结", "2026-11-20", "0")
+    assert run("materials-plan", "小店日结", "2026-11-20", "4", success=False) == ""
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")
     assert "最短阻断链：首次发布 → 不可提交（P0）" in trace
     assert "认证结论：不可提交" in trace
