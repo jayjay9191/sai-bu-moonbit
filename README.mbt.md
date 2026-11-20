@@ -40,7 +40,7 @@ AI PLAY，且存在材料缺口，当前 21 个目标均不具备完整提交条
 推荐顺序为 C → B → A，每步剩余 2、1、0。该案例复用正式规划器，
 比赛、规则和日期均为演示输入。CI 同时检查这个案例与《第零次黎明》的真实 0 步结果。
 
-265 项测试全部通过（新增 33 项手写测试）；`evidence_audit.mbt` 和
+266 项测试全部通过（新增 34 项手写测试）；`evidence_audit.mbt` 和
 `sequencing.mbt` 行覆盖报告无未覆盖行，CLI 另由上述脚本实际执行。
 历史覆盖数字保留在下文的日期记录中，不代表当前总量。新清单 SHA-256：
 `5e7464f90786dd6bf73d290dacfd053c638fd8acdd86907192b2ff3cd5528d2d`。
@@ -61,10 +61,12 @@ AI PLAY，且存在材料缺口，当前 21 个目标均不具备完整提交条
 截止提醒可导出为 `.ics` 文件。下面的命令在 Bash 或 PowerShell 7.4 及以上可保留 UTF-8 字节。
 
 ```sh
-moon run cmd/main -- calendar 2026-11-20 > deadlines.ics
+moon run cmd/main -- calendar 2026-11-20 --days 14 > deadlines.ics
 ```
 
-以 2026-11-20 审计可得到 12 条已核实的全天提醒。PAYATHON 的 12 月 1 日报名和
+`--days 14` 从起始日（含）起导出 14 个自然日。本例到 12 月 3 日（含），共 4 条。
+日期范围的设计参考 [khal](https://github.com/pimutils/khal/blob/master/doc/source/usage.rst#list)。
+省略 `--days` 可得到全部 12 条已核实的全天提醒。PAYATHON 的 12 月 1 日报名和
 12 月 9 日作品提交分别入历。先前阶段到期后，仍会保留未到期的明确日期。
 同日多阶段合为一条，暂定的后续日期留在台账原文中。提醒按日期排序，同日按赛事名称排序。具体阶段时间以说明原文为准。日期字段与文本转义参考
 [iCalendar 项目](https://github.com/icalendar/icalendar) 和 [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545)。

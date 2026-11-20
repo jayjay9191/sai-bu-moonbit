@@ -36,6 +36,12 @@ def verify_calendar():
     assert "SUMMARY:PAYATHON 2026（后续截止）" in later
     assert "DTSTART;VALUE=DATE:20261209" in later
     assert "DTSTART;VALUE=DATE:20261201" not in later
+    bounded = run("calendar", "2026-11-20", "--days", "14")
+    assert bounded.count("BEGIN:VEVENT") == 4
+    assert "DTSTART;VALUE=DATE:20261201" in bounded and "DTSTART;VALUE=DATE:20261204" not in bounded
+    assert run("calendar", "2026-11-20", "--days", "15").count("BEGIN:VEVENT") == 5
+    for args in (("--days",), ("--days", "0"), ("--days", "1.5"), ("--days", "2147483648")):
+        assert run("calendar", "2026-11-20", *args, success=False) == ""
     print("PASS calendar: 12 verified date reminders, later stage retained, unique UIDs and UTF-8 folding")
 
 

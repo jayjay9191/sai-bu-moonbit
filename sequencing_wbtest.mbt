@@ -454,3 +454,22 @@ test "calendar sorts out-of-order entries and later stages by date and name" {
   ])
   assert_eq(output, deadline_calendar([same, staged, early], "2026-11-20"))
 }
+
+///|
+test "calendar horizon includes the start and excludes the first day outside the window" {
+  let staged = {
+    ..order_fixture("Demo"),
+    deadline: "2026-12-01 12:00（报名） / 2026-12-09 18:00（作品）",
+  }
+  let short = deadline_calendar([staged], "2026-12-01", days=Some(8))
+  assert_true(short.contains("DTSTART;VALUE=DATE:20261201"))
+  assert_false(short.contains("DTSTART;VALUE=DATE:20261209"))
+  let both = deadline_calendar([staged], "2026-12-01", days=Some(9))
+  assert_true(both.contains("DTSTART;VALUE=DATE:20261209"))
+  assert_true(
+    (Ok(deadline_calendar([staged], "2026-12-01", days=Some(0))) catch {
+      e => Err(e)
+    })
+    is Err(_),
+  )
+}

@@ -183,7 +183,7 @@ fn print_usage() -> Unit {
   )
   println("validate：校验台账数据，有问题返回码 1")
   println(
-    "calendar [YYYY-MM-DD]：输出已核实的未过期截止日期提醒（iCalendar）",
+    "calendar [YYYY-MM-DD] [--days 天数]：输出已核实的未过期截止日期提醒（iCalendar）",
   )
   println(
     "preflight [YYYY-MM-DD]：全链路预检（默认北京时间当天），支持按指定审计日复跑，输出清单 SHA-256",

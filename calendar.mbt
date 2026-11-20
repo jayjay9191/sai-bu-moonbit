@@ -76,9 +76,13 @@ fn recorded_deadline_dates(comp : Competition) -> Array[String] {
 pub fn deadline_calendar(
   comps : Array[Competition],
   as_of : String,
+  days~ : Int32? = None,
 ) -> String raise {
   if !is_valid_date(as_of) || date_to_days(as_of) < 0 {
     fail("calendar date must be YYYY-MM-DD on or after 1970-01-01")
+  }
+  if days is Some(limit) && limit < 1 {
+    fail("calendar days must be positive")
   }
   let today = date_to_days(as_of)
   let stamp = as_of.replace_all(old="-", new="") + "T000000Z"
@@ -92,6 +96,9 @@ pub fn deadline_calendar(
   let stages : Array[(String, Competition)] = []
   for comp in comps {
     for date in recorded_deadline_dates(comp) {
+      if days is Some(limit) && date_to_days(date) - today >= limit {
+        continue
+      }
       if row_verdict({ ..comp, deadline_date: date, }, today).verified {
         stages.push((date, comp))
       }

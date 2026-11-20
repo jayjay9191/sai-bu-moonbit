@@ -37,7 +37,7 @@ pub fn contains_string(Array[String], String) -> Bool
 
 pub fn date_to_days(String) -> Int32
 
-pub fn deadline_calendar(Array[Competition], String) -> String raise
+pub fn deadline_calendar(Array[Competition], String, days? : Int32?) -> String raise
 
 pub fn detect_conflicts(Work, Array[Competition]) -> Array[Conflict]
 
