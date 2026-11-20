@@ -374,3 +374,34 @@ test "deadline validation rejects impossible or missing dates except open platfo
     )
   }
 }
+
+///|
+test "deadline calendar emits verified dates with escaped and UTF-8-folded text" {
+  let sample = order_fixture("日历\\测试,一；二;三\n四")
+  let sample = {
+    ..sample,
+    deadline: "2026-12-01 12:00（报名）/ 18:00（提交）",
+  }
+  let open = {
+    ..order_fixture("长期平台"),
+    target_kind: "平台上架",
+    deadline_date: "",
+  }
+  let past = { ..order_fixture("过期"), deadline_date: "2026-11-19", }
+  let pending = { ..order_fixture("待核实事项"), deadline: "未核实", }
+  let output = deadline_calendar([sample, open, past, pending], "2026-11-20")
+  assert_true(output.has_prefix("BEGIN:VCALENDAR\r\n"))
+  assert_true(output.has_suffix("END:VCALENDAR\r\n"))
+  assert_true(output.contains("DTSTART;VALUE=DATE:20261201"))
+  let unfolded = output.replace_all(old="\r\n ", new="")
+  assert_true(
+    unfolded.contains("SUMMARY:日历\\\\测试\\,一；二\\;三\\n四"),
+  )
+  assert_true(unfolded.contains("12:00（报名）/ 18:00（提交）"))
+  assert_false(output.contains("长期平台"))
+  assert_false(output.contains("过期"))
+  assert_false(output.contains("待核实事项"))
+  for line in output.split("\r\n") {
+    assert_true(@utf8.encode(line.to_owned()).length() <= 75)
+  }
+}

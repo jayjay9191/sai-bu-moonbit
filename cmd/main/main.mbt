@@ -32,6 +32,7 @@ fn main {
     "benchmark" => cmd_benchmark()
     "validate" => cmd_validate()
     "preflight" => cmd_preflight(args)
+    "calendar" => cmd_calendar(args)
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
     "audit-evidence" | "order" | "order-demo" => cmd_review(args)
@@ -181,6 +182,9 @@ fn print_usage() -> Unit {
     "benchmark：实测扫描（目标数/规则数/冲突数/投稿包数/耗时）",
   )
   println("validate：校验台账数据，有问题返回码 1")
+  println(
+    "calendar [YYYY-MM-DD]：输出已核实的未过期截止日期提醒（iCalendar）",
+  )
   println(
     "preflight [YYYY-MM-DD]：全链路预检（默认北京时间当天），支持按指定审计日复跑，输出清单 SHA-256",
   )

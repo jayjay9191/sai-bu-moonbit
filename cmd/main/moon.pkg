@@ -1,7 +1,14 @@
 import {
   "jayjay9191/sai-bu-moonbit" @lib,
   "moonbitlang/core/env",
+  "moonbitlang/core/async",
+  "moonbitlang/core/async/stdio",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",
 }
 
 pkgtype(kind: "executable")
+
+options(
+  "allow-experimental-packages": true,
+)

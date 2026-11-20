@@ -1,4 +1,5 @@
 """Replay the second-review CLI and retained certification results."""
+from datetime import datetime
 from pathlib import Path
 import json
 import re
@@ -14,8 +15,28 @@ def run(*args, success=True):
     return result.stdout
 
 
+def verify_calendar():
+    args = ["moon", "run", "cmd/main", "--", "calendar", "2026-11-20"]
+    result = subprocess.run(args, cwd=ROOT, capture_output=True, timeout=90, check=True)
+    raw = result.stdout
+    assert b"\r\r\n" not in raw and raw.endswith(b"END:VCALENDAR\r\n")
+    assert all(len(line) <= 75 for line in raw.split(b"\r\n"))
+    unfolded = raw.decode("utf-8").replace("\r\n ", "")
+    events = re.findall(r"BEGIN:VEVENT\r\n(.*?)END:VEVENT\r\n", unfolded, re.S)
+    assert len(events) == 11
+    assert len({re.search(r"^UID:(.+)\r$", item, re.M).group(1) for item in events}) == 11
+    assert "SUMMARY:itch.io 游戏上架" not in unfolded and "SUMMARY:兴智杯" not in unfolded
+    assert "SUMMARY:AI PLAY" not in unfolded
+    for event in events:
+        date = re.search(r"^DTSTART;VALUE=DATE:(\d{8})\r$", event, re.M).group(1)
+        assert datetime.strptime(date, "%Y%m%d").date() >= datetime(2026, 11, 20).date()
+    assert "12:00（报名）/ 18:00（提交）" in unfolded
+    print("PASS calendar: 11 verified date reminders, original stage times, unique UIDs and UTF-8 folding")
+
+
 def main():
     assert "用法" in run("help")
+    verify_calendar()
     audit = run("audit-evidence", "2026-11-20")
     assert "规则证据：6条；结论：84项；完整性问题：8项" in audit
     items = [line for line in audit.splitlines() if "| 用户本人 |" in line]
@@ -51,7 +72,8 @@ def main():
     assert "12-01 提交前务必" not in run()
     for args in (("unknown-review-command",), ("order",), ("order-demo", "extra"), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),
-                 ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra")):
+                 ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra"),
+                 ("calendar", "2026-02-30"), ("calendar", "2026-11-20", "extra")):
         run(*args, success=False)
     data = json.loads((ROOT / "data/competitions.json").read_text(encoding="utf-8"))
     assert len(data["competitions"]) == 21 and len(data["works"]) == 4
