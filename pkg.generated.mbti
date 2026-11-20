@@ -3,6 +3,7 @@ package "jayjay9191/sai-bu-moonbit"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -115,6 +116,7 @@ pub(all) struct BlockedTarget {
   reasons : Array[String]
 }
 
+#derive(@json.ToJson)
 pub(all) struct Competition {
   name : String
   target_kind : String
@@ -247,6 +249,7 @@ pub struct SubmissionPack {
   note : String
 }
 
+#derive(@json.ToJson)
 pub(all) struct Work {
   name : String
   kind : WorkKind
@@ -263,6 +266,7 @@ pub struct WorkEvidence {
   submitted : Array[FactEvidence]
 }
 
+#derive(@json.ToJson)
 pub enum WorkKind {
   Game
   Tool

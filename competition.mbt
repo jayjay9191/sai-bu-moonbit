@@ -6,6 +6,7 @@
 /// 改数据只改 JSON，改完跑：python3 scripts/generate_data.py
 
 ///|
+#derive(ToJson)
 pub(all) struct Competition {
   name : String
   target_kind : String // "比赛" 或 "平台上架"：台账不只管比赛，也管作品投稿目标
@@ -28,12 +29,14 @@ pub(all) struct Competition {
 }
 
 ///|
+#derive(ToJson)
 pub enum WorkKind {
   Game
   Tool
 }
 
 ///|
+#derive(ToJson)
 pub(all) struct Work {
   name : String
   kind : WorkKind

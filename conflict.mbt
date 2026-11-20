@@ -34,6 +34,26 @@ pub fn contains_string(items : Array[String], target : String) -> Bool {
 }
 
 ///|
+// Old ledger rows contain short aliases for exactly these two competition names.
+fn same_entry(recorded : String, target : String) -> Bool {
+  recorded == target ||
+  (recorded == "Qoder" && target == "Qoder 高校创造力大赛") ||
+  (recorded == "AI PLAY" && target == "AI PLAY 72H 创作黑客松")
+}
+
+///|
+fn known_platform_entry(name : String) -> Bool {
+  name == "itch.io 游戏上架" || name == "TapTap 游戏上架"
+}
+
+///|
+fn other_competition_entries(work : Work, comp : Competition) -> Array[String] {
+  work.submitted_to.filter(name => {
+    !same_entry(name, comp.name) && !known_platform_entry(name)
+  })
+}
+
+///|
 /// 明确冲突优先于待核实项。日期窗口按日比较，首尾均包含。
 fn first_publish_decision(work : Work, comp : Competition) -> (String, String) {
   let conflicts : Array[String] = []
@@ -64,7 +84,7 @@ fn first_publish_decision(work : Work, comp : Competition) -> (String, String) {
         "）"
     }
   }
-  let other_entries = work.submitted_to.filter(name => name != comp.name)
+  let other_entries = other_competition_entries(work, comp)
   if other_entries.length() > 0 {
     conflicts.push("已投 " + join_strings(other_entries, "、"))
   }
@@ -87,9 +107,12 @@ fn prior_entry_scope(name : String) -> (String, String) {
       ("范围内", "https://aisoft.lnpu.edu.cn/info/1028/12632.htm")
     "第二十届全国大学生软件创新大赛" =>
       ("范围内", "https://ss.dlut.edu.cn/info/1371/35562.htm")
-    "itch.io 游戏上架" | "TapTap 游戏上架" =>
-      ("范围外", "台账类型为平台上架")
-    _ => ("待核实", "缺少国家级公开比赛的范围证据")
+    _ =>
+      if known_platform_entry(name) {
+        ("范围外", "台账类型为平台上架")
+      } else {
+        ("待核实", "缺少国家级公开比赛的范围证据")
+      }
   }
 }
 
@@ -98,7 +121,7 @@ fn no_prior_entry_decision(work : Work, comp : Competition) -> (String, String) 
   let confirmed : Array[String] = []
   let pending : Array[String] = []
   for name in work.submitted_to {
-    if name != comp.name {
+    if !same_entry(name, comp.name) {
       match prior_entry_scope(name).0 {
         "范围内" => confirmed.push(name)
         "待核实" => pending.push(name)

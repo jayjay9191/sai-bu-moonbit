@@ -267,3 +267,52 @@ test "platform publication changes public status without inventing a competition
     is Err(_),
   )
 }
+
+///|
+test "ledger digest distinguishes entries containing separators from separate entries" {
+  let work = order_work()
+  let comp = order_fixture("A")
+  assert_not_eq(
+    manifest_canonical([comp], [{ ..work, materials_ready: ["a,b"], }]),
+    manifest_canonical([comp], [{ ..work, materials_ready: ["a", "b"], }]),
+  )
+  assert_not_eq(
+    manifest_canonical([{ ..comp, prize: "a|b", track: "c", }], [work]),
+    manifest_canonical([{ ..comp, prize: "a", track: "b|c", }], [work]),
+  )
+}
+
+///|
+test "first-public review uses recorded dates for platforms and recognizes own entry aliases" {
+  let work = order_work()
+  let qoder = order_fixture("Qoder 高校创造力大赛", first=true)
+  assert_eq(
+    first_publish_decision(
+      { ..work, submitted_to: ["itch.io 游戏上架"], },
+      qoder,
+    ).0,
+    "通过",
+  )
+  assert_eq(
+    first_publish_decision({ ..work, submitted_to: ["Qoder"], }, qoder).0,
+    "通过",
+  )
+  assert_eq(
+    first_publish_decision({ ..work, submitted_to: ["未知比赛"], }, qoder).0,
+    "P0",
+  )
+  let trace = trace_first_publish(
+    { ..work, submitted_to: ["itch.io 游戏上架", "Qoder"], },
+    qoder,
+  )
+  assert_eq(trace.level, "通过")
+  assert_true(
+    trace.steps.any(step => step.contains("未登记其他比赛投稿")),
+  )
+  let options = submission_options(
+    { ..work, submitted_to: ["Qoder"], },
+    [qoder],
+    date_to_days("2026-11-20"),
+  )
+  assert_eq(options[0].reasons, ["台账已登记投稿，不重复规划"])
+}

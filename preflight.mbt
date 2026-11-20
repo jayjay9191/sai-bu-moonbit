@@ -266,84 +266,12 @@ pub fn certify_pack(
 }
 
 ///|
-/// 台账数据的规范序列化：字段按固定顺序、行按台账顺序，改一个字哈希就变。
-/// 只用于算清单哈希，不用于展示。
+/// 台账使用固定字段/行序的 JSON，保留字段、列表与条目的边界。
 pub fn manifest_canonical(
   comps : Array[Competition],
   works : Array[Work],
 ) -> String {
-  let mut out = ""
-  for i in 0..<comps.length() {
-    let c = comps[i]
-    out = out +
-      "C|" +
-      c.name +
-      "|" +
-      c.deadline +
-      "|" +
-      c.deadline_date +
-      "|" +
-      c.required_work_kind +
-      "|" +
-      c.publish_start +
-      "|" +
-      c.publish_end +
-      "|" +
-      c.verified_at +
-      "|" +
-      c.prize +
-      "|" +
-      c.track +
-      "|" +
-      c.status +
-      "|" +
-      c.plan_status +
-      "|" +
-      c.target_kind +
-      "|" +
-      bool01(c.requires_first_publish) +
-      bool01(c.requires_new_work) +
-      bool01(c.requires_no_prior_entry) +
-      bool01(c.allows_existing_works) +
-      "|" +
-      join_strings(c.materials, ",") +
-      "|" +
-      c.note +
-      "\n"
-  }
-  for i in 0..<works.length() {
-    let w = works[i]
-    let kind = match w.kind {
-      Game => "Game"
-      Tool => "Tool"
-    }
-    out = out +
-      "W|" +
-      w.name +
-      "|" +
-      kind +
-      "|" +
-      w.oneliner +
-      "|" +
-      w.first_public_date +
-      "|" +
-      join_strings(w.submitted_to, ",") +
-      "|" +
-      join_strings(w.materials_ready, ",") +
-      "|" +
-      w.note +
-      "\n"
-  }
-  out
-}
-
-///|
-fn bool01(b : Bool) -> String {
-  if b {
-    "1"
-  } else {
-    "0"
-  }
+  Json([Json("sai-bu-ledger-v2"), Json(comps), Json(works)]).stringify()
 }
 
 ///|

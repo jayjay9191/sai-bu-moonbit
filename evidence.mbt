@@ -254,16 +254,15 @@ pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
         "事实 1：作品首次公开于 " + work.first_public_date + "。" + e,
       )
     }
-    if work.submitted_to.length() == 0 {
-      steps.push(
-        "事实 2：作品未投过其他比赛（submitted_to 为空）——已投分支不触发。",
-      )
+    let other_entries = other_competition_entries(work, comp)
+    if other_entries.is_empty() {
+      steps.push("事实 2：台账未登记其他比赛投稿。")
     } else {
       let mut line = "事实 2：作品已投 " +
-        join_strings(work.submitted_to, "、") +
+        join_strings(other_entries, "、") +
         "。"
-      for i in 0..<work.submitted_to.length() {
-        line = line + evidence_for_submitted(ev, work.submitted_to[i])
+      for name in other_entries {
+        line = line + evidence_for_submitted(ev, name)
       }
       steps.push(line)
     }

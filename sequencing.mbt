@@ -32,12 +32,7 @@ fn sequence_reasons(
     detect_conflicts(work, [comp]),
     row_verdict(comp, today),
   ).reasons.copy()
-  // Existing data uses short display names for these two already-submitted events.
-  let submitted = work.submitted_to.any(name => {
-    name == comp.name ||
-    (name == "Qoder" && comp.name == "Qoder 高校创造力大赛") ||
-    (name == "AI PLAY" && comp.name == "AI PLAY 72H 创作黑客松")
-  })
+  let submitted = work.submitted_to.any(name => same_entry(name, comp.name))
   if submitted {
     reasons.push("台账已登记投稿，不重复规划")
   }
