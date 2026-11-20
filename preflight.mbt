@@ -208,6 +208,14 @@ pub fn certify_pack(
 ) -> PackVerdict {
   let pack = generate_pack(work, comp, conflicts)
   let reasons : Array[String] = []
+  if row.competition != comp.name {
+    reasons.push(
+      "核验结果与投稿目标不匹配：" +
+      row.competition +
+      " / " +
+      comp.name,
+    )
+  }
   let scope = scope_issue(work, comp)
   if scope != "" {
     reasons.push(scope)

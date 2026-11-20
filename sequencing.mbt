@@ -45,6 +45,29 @@ fn sequence_reasons(
 }
 
 ///|
+/// Platform distribution is publication, not competition participation.
+fn simulate_submission(
+  work : Work,
+  target : Competition,
+  today : Int32,
+) -> Work {
+  let entries = work.submitted_to.copy()
+  let platform = target.target_kind == "平台上架"
+  if !platform {
+    entries.push(target.name)
+  }
+  {
+    ..work,
+    submitted_to: entries,
+    first_public_date: if platform && work.first_public_date == "" {
+      today_string(today.to_uint64() * 86400000UL)
+    } else {
+      work.first_public_date
+    },
+  }
+}
+
+///|
 /// Enumerate legal first choices, then simulate the remaining targets on copies.
 pub fn submission_options(
   work : Work,
@@ -55,8 +78,11 @@ pub fn submission_options(
   for comp in comps {
     if comp.name == "" ||
       contains_string(names, comp.name) ||
+      (comp.target_kind != "比赛" && comp.target_kind != "平台上架") ||
       (comp.deadline_date != "" && !is_valid_date(comp.deadline_date)) {
-      raise InvalidSequence("目标名重复、为空或截止日期无效")
+      raise InvalidSequence(
+        "目标名重复/为空、目标类型或截止日期无效",
+      )
     }
     names.push(comp.name)
   }
@@ -67,9 +93,7 @@ pub fn submission_options(
     let blocked = []
     let mut remaining = 0
     if can_submit {
-      let entries = work.submitted_to.copy()
-      entries.push(first.name)
-      let simulated = { ..work, submitted_to: entries, }
+      let simulated = simulate_submission(work, first, today)
       for target in comps {
         if target.name == first.name {
           continue
@@ -136,9 +160,9 @@ pub fn plan_submission_order(
     })
     let chosen = eligible[0]
     steps.push(chosen)
-    let entries = current.submitted_to.copy()
-    entries.push(chosen.name)
-    current = { ..current, submitted_to: entries, }
+    // Names were validated as unique; chosen comes from this pending list.
+    let target = pending.filter(target => target.name == chosen.name)[0]
+    current = simulate_submission(current, target, today)
     pending = pending.filter(comp => comp.name != chosen.name)
   }
   { steps, unavailable, }

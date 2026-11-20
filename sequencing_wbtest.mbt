@@ -215,3 +215,55 @@ test "new-work qualification and future verification dates cannot certify a subm
     future.reasons.any(reason => reason.contains("核验日期晚于审计日")),
   )
 }
+
+///|
+test "platform publication changes public status without inventing a competition entry" {
+  let work = order_work()
+  let platform = {
+    ..order_fixture("合成平台"),
+    target_kind: "平台上架",
+  }
+  let first_only = order_fixture("合成首发赛", first=true)
+  let options = submission_options(
+    work,
+    [platform, first_only],
+    date_to_days("2026-11-20"),
+  )
+  assert_eq(options[0].remaining, 1)
+  let unpublished = { ..work, first_public_date: "", }
+  let new_only = {
+    ..order_fixture("合成新作赛"),
+    requires_new_work: true,
+    allows_existing_works: false,
+  }
+  let after_platform = submission_options(
+    unpublished,
+    [platform, new_only],
+    date_to_days("2026-11-20"),
+  )
+  assert_eq(after_platform[0].remaining, 0)
+  assert_true(
+    after_platform[0].blocked.any(target => {
+      target.reasons.any(reason => reason.contains("须新做"))
+    }),
+  )
+  let plan = plan_submission_order(
+    unpublished,
+    [platform, new_only],
+    date_to_days("2026-11-20"),
+  )
+  assert_eq(plan.steps[0].name, "合成新作赛")
+  assert_eq(unpublished.first_public_date, "")
+  assert_true(
+    (Ok(
+      submission_options(
+        work,
+        [{ ..platform, target_kind: "unknown", }],
+        date_to_days("2026-11-20"),
+      ),
+    ) catch {
+      e => Err(e)
+    })
+    is Err(_),
+  )
+}

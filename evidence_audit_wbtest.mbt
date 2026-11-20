@@ -276,3 +276,19 @@ test "audit never certifies evidence from a different work or a padded placehold
     "待核对",
   )
 }
+
+///|
+test "pack certification cannot reuse a verdict from another target" {
+  let work = order_work()
+  let first = order_fixture("合成目标A")
+  let second = order_fixture("合成目标B")
+  let wrong = row_verdict(first, date_to_days("2026-11-20"))
+  let result = certify_pack(
+    work,
+    second,
+    detect_conflicts(work, [second]),
+    wrong,
+  )
+  assert_false(result.certifiable)
+  assert_true(result.reasons.any(reason => reason.contains("不匹配")))
+}
