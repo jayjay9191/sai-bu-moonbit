@@ -34,6 +34,7 @@ fn main {
     "preflight" => cmd_preflight()
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
+    "audit-evidence" | "order" => cmd_review(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -130,7 +131,7 @@ fn run_full_pipeline() -> Unit {
       }
       println("")
       println(
-        "数据说明：目标数据来自已核实的《最近要参加的比赛汇总》与平台官方上架要求；魔搭“首次发布”条款来自 AIBetas 转述官方页，官网原文因登录墙未直接读到，12-01 提交前务必在官网或官方群问清。",
+        "数据说明：规则原文以台账核实日期为准，过期项见 audit-evidence。",
       )
     }
     None => println("未找到作品《第零次黎明》")
@@ -156,6 +157,12 @@ fn print_pack(pack : @lib.SubmissionPack) -> Unit {
 
 ///|
 fn print_usage() -> Unit {
+  println(
+    "audit-evidence [YYYY-MM-DD]：证据时效、完整性与结构化跟进事项",
+  )
+  println(
+    "order <作品名> [YYYY-MM-DD]：首选枚举与贪心投稿顺序（本地模拟）",
+  )
   println("用法：moon run cmd/main [子命令 ...]")
   println(
     "无参数：跑整条流水线（台账 → 冲突检测 → 撞期提醒 → 投稿包）",
@@ -180,6 +187,99 @@ fn print_usage() -> Unit {
     "itch-zip：从 ZIP 元数据校验 itch.io HTML5 包体，入口用 scripts/inspect_itch_zip.py",
   )
   println("help：显示本帮助")
+}
+
+///|
+fn cmd_review(args : Array[String]) -> Unit {
+  try {
+    let offset = if args[0] == "order" { 2 } else { 1 }
+    if args.length() < offset || args.length() > offset + 1 {
+      fail("用法：audit-evidence [日期] 或 order <作品名> [日期]")
+    }
+    let today = if args.length() == offset + 1 {
+      if !@lib.is_valid_date(args[offset]) {
+        fail("审计日期不合法")
+      }
+      @lib.date_to_days(args[offset])
+    } else {
+      @lib.today_days(@env.now() + 28800000UL)
+    }
+    let comps = @lib.all_competitions()
+    if args[0] == "audit-evidence" {
+      let report = @lib.audit_evidence(comps, @lib.all_works(), today)
+      println(
+        "规则证据：\{report.rules.length()}条；结论：\{report.decisions.length()}项；完整性问题：\{report.issues.length()}项",
+      )
+      for rule in report.rules {
+        let age = match rule.age {
+          Some(days) => "\{days}天"
+          None => "账龄未知"
+        }
+        println("\{rule.subject} | \{rule.grade} | \{age}")
+      }
+      for issue in report.issues {
+        println("\{issue.kind} | \{issue.subject} | \{issue.detail}")
+      }
+      for decision in report.decisions {
+        if !decision.evidence_current || decision.grade == "将过期" {
+          println(
+            "\{decision.work} → \{decision.competition} | \{decision.rule} | \{decision.level}",
+          )
+        }
+      }
+      println(
+        "跟进事项（账龄从台账观察日计，已解决事项冻结）：",
+      )
+      for item in @lib.all_pending_items() {
+        let age = match @lib.pending_age(item, today) {
+          Some(days) => "\{days}天"
+          None => "账龄未知"
+        }
+        println(
+          "\{item.id} | \{item.competition} | \{item.issue} | \{item.status} | \{item.owner} | \{age} | 确认/结束日 \{item.resolved_at}",
+        )
+      }
+    } else {
+      guard @lib.work_by_name(args[1]) is Some(work) else {
+        fail("未找到作品：" + args[1])
+      }
+      println(
+        "《\{work.name}》首选枚举（沿用现有公开、投稿、材料和核验记录）：",
+      )
+      for option in @lib.submission_options(work, comps, today) {
+        println(
+          "\{option.name} | 当前可提交 \{option.can_submit} | 其后剩余可投 \{option.remaining}",
+        )
+        for reason in option.reasons {
+          println("  拒绝：\{reason}")
+        }
+        for blocked in option.blocked {
+          println(
+            "  后续阻断 \{blocked.name}：\{@lib.join_strings(blocked.reasons, "；")}",
+          )
+        }
+      }
+      let plan = @lib.plan_submission_order(work, comps, today)
+      println(
+        "推荐顺序：\{plan.steps.length()}步；未可安排：\{plan.unavailable.length()}项",
+      )
+      for i in 0..<plan.steps.length() {
+        println(
+          "\{i + 1}. \{plan.steps[i].name} | 其后剩余可投 \{plan.steps[i].remaining}",
+        )
+      }
+      if plan.steps.is_empty() {
+        println(
+          "当前没有已满足资格和材料条件的路线，须先处理上列原因。",
+        )
+      }
+    }
+  } catch {
+    err => {
+      println("审计失败：" + err.to_string())
+      @env.exit(2)
+    }
+  }
 }
 
 ///|
@@ -388,7 +488,7 @@ fn cmd_preflight() -> Unit {
   }
   println("清单 SHA-256：\{report.manifest_hash}")
   println(
-    "说明：preflight 是纯本地单次运行，不联网、不重试；清单哈希由全部台账数据算出，数据一变哈希就变。",
+    "说明：preflight 是纯本地单次运行，不联网、不重试；清单哈希覆盖比赛与作品台账，不包含独立跟进事项。",
   )
 }
 

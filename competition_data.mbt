@@ -29,7 +29,7 @@ pub fn all_competitions() -> Array[Competition] {
         "提案文档（主题：重启 RESET）", "可体验原型链接（核心试玩 ≥1 分钟）",
         "队名 + 队员姓名与分工",
       ],
-      note: "报名只走小红书群（LinkLike 科创社区，8609354634），无 URL；完整格式清单须在群里问；2026-11-18 复核：提案截止 11-17 已过（提案已提交，用户 11-16 确认）；评审 11-18–11-22，30 队晋级 11-22 公布；11-27–29 杭州线下决赛（it168 11-17 报道）",
+      note: "报名只走小红书群（LinkLike 科创社区，8609354634），无 URL；格式清单跟进已过时（提案已提交）；2026-11-18 复核：提案截止 11-17 已过（提案已提交，用户 11-16 确认）；评审 11-18–11-22，30 队晋级 11-22 公布；11-27–29 杭州线下决赛（it168 11-17 报道）",
     },
     {
       name: "BayHack 大湾区黑客松",
@@ -159,7 +159,7 @@ pub fn all_competitions() -> Array[Competition] {
         "Qoder Sites 公开链接", "天池论坛帖（标题“[作品名称]+一句话介绍”，5 部分）",
         "天池实名 + 阿里云学生认证",
       ],
-      note: "镜像站一句“作品应在活动规定时间内创作并发布”——须在官方群确认是否影响黎明",
+      note: "镜像站发布时间条款已确认（2026-11-18）",
     },
     {
       name: "第二届 AIGC 青年大学生就业创业促进行动",
@@ -507,6 +507,48 @@ pub fn all_works() -> Array[Work] {
         "公开仓库链接", "Mooncakes 包", "可运行 CLI + 测试",
       ],
       note: "种子数据（20 条）曾在作者 2026-11-08 的 Lexmount 作品（20 工具定价核验）里出现过，那是另一件作品；作为 MoonBit CLI 的这件作品 2026-11-16 首次公开；MoonBit 第二份报名表尚未填，未投过任何比赛",
+    },
+  ]
+}
+
+///|
+pub fn all_pending_items() -> Array[PendingItem] {
+  [
+    {
+      id: "ai-play-format",
+      competition: "AI PLAY 72H 创作黑客松",
+      issue: "完整格式清单",
+      owner: "用户本人",
+      noted_at: "2026-11-13",
+      status: "已过时",
+      resolved_at: "2026-11-16",
+    },
+    {
+      id: "honor-engagement",
+      competition: "荣耀·英特尔 AI 智造创新赛",
+      issue: "转评赞达到10的确认",
+      owner: "用户本人",
+      noted_at: "2026-11-13",
+      status: "待确认",
+      resolved_at: "",
+    },
+    {
+      id: "huawei-materials",
+      competition: "华为小红书 Skill 创新赛",
+      issue: "晒单笔记、演示视频/GIF、200元券",
+      owner: "用户本人",
+      noted_at: "2026-11-13",
+      status: "待确认",
+      resolved_at: "",
+    },
+    {
+      id: "publication-window",
+      competition: "Qoder 高校创造力大赛",
+      issue: "镜像站发布时间条款",
+      owner: "用户本人",
+      noted_at: "2026-11-13",
+      status: "已确认",
+      resolved_at: "2026-11-18",
     },
   ]
 }

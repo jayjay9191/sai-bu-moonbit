@@ -143,6 +143,13 @@ def main() -> int:
     parts.append("  ]")
     parts.append("}")
     parts.append("")
+    parts.extend(["///|", "pub fn all_pending_items() -> Array[PendingItem] {", "  ["])
+    for item in data.get("followups", []):
+        parts.append("    {")
+        for field in ("id", "competition", "issue", "owner", "noted_at", "status", "resolved_at"):
+            parts.append(f"      {field}: {mbt_str(item[field])},")
+        parts.append("    },")
+    parts.extend(["  ]", "}", ""])
     OUT_PATH.write_text("\n".join(parts), encoding="utf-8")
     print(f"已生成 {OUT_PATH}：{len(comps)} 个比赛，{len(works)} 件作品")
     return 0

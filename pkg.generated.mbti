@@ -1,12 +1,24 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "jayjay9191/sai-bu-moonbit"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub const STALE_DAYS : Int32 = 30
 
 pub fn all_competitions() -> Array[Competition]
 
+pub fn all_pending_items() -> Array[PendingItem]
+
 pub fn all_works() -> Array[Work]
+
+pub fn audit_decision(DecisionTrace, Work, Int32) -> AuditedDecision
+
+pub fn audit_evidence(Array[Competition], Array[Work], Int32) -> EvidenceAuditReport
+
+pub fn audit_rule(RuleCitation, Int32) -> RuleAudit
 
 pub fn certify_pack(Work, Competition, Array[Conflict], RowVerdict) -> PackVerdict
 
@@ -26,6 +38,8 @@ pub fn date_to_days(String) -> Int32
 
 pub fn detect_conflicts(Work, Array[Competition]) -> Array[Conflict]
 
+pub fn fact_evidence_issues(Work, rule? : String) -> Array[EvidenceIssue]
+
 pub fn generate_pack(Work, Competition, Array[Conflict]) -> SubmissionPack
 
 pub fn has_p0_conflict(Array[Conflict], String) -> Bool
@@ -37,6 +51,10 @@ pub fn itch_zip_issues(Int64, Int64, Int64, Int64, Bool) -> Array[String]
 pub fn join_strings(Array[String], String) -> String
 
 pub fn manifest_canonical(Array[Competition], Array[Work]) -> String
+
+pub fn pending_age(PendingItem, Int32) -> Int32?
+
+pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder raise SequenceError
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
 
@@ -51,6 +69,8 @@ pub fn rule_citation_for(String, String) -> RuleCitation
 pub fn sha256_hex(String) -> String
 
 pub fn shortest_blocking_chain(Array[DecisionTrace]) -> Array[String]
+
+pub fn submission_options(Work, Array[Competition], Int32) -> Array[FirstSubmission] raise SequenceError
 
 pub fn today_days(UInt64) -> Int32
 
@@ -73,8 +93,26 @@ pub fn work_by_name(String) -> Work?
 pub fn work_evidence_for(String) -> WorkEvidence
 
 // Errors
+#derive(@debug.Debug)
+pub suberror SequenceError {
+  InvalidSequence(String)
+}
 
 // Types and methods
+pub(all) struct AuditedDecision {
+  work : String
+  competition : String
+  rule : String
+  grade : String
+  level : String
+  evidence_current : Bool
+}
+
+pub(all) struct BlockedTarget {
+  name : String
+  reasons : Array[String]
+}
+
 pub(all) struct Competition {
   name : String
   target_kind : String
@@ -113,10 +151,31 @@ pub struct DecisionTrace {
   level : String
 }
 
+pub(all) struct EvidenceAuditReport {
+  rules : Array[RuleAudit]
+  decisions : Array[AuditedDecision]
+  issues : Array[EvidenceIssue]
+}
+
+pub(all) struct EvidenceIssue {
+  kind : String
+  subject : String
+  detail : String
+}
+
 pub struct FactEvidence {
   fact : String
   evidence : String
   source : String
+}
+
+pub(all) struct FirstSubmission {
+  name : String
+  can_submit : Bool
+  reasons : Array[String]
+  remaining : Int32
+  blocked : Array[BlockedTarget]
+  deadline : String
 }
 
 pub struct PackVerdict {
@@ -125,6 +184,16 @@ pub struct PackVerdict {
   certifiable : Bool
   blocked : Bool
   reasons : Array[String]
+}
+
+pub(all) struct PendingItem {
+  id : String
+  competition : String
+  issue : String
+  owner : String
+  noted_at : String
+  status : String
+  resolved_at : String
 }
 
 pub struct PreflightReport {
@@ -144,12 +213,24 @@ pub struct RowVerdict {
   reason : String
 }
 
+pub(all) struct RuleAudit {
+  subject : String
+  grade : String
+  age : Int32?
+  issues : Array[EvidenceIssue]
+}
+
 pub struct RuleCitation {
   rule : String
   rule_text : String
   source : String
   source_note : String
   verified_at : String
+}
+
+pub(all) struct SubmissionOrder {
+  steps : Array[FirstSubmission]
+  unavailable : Array[FirstSubmission]
 }
 
 pub struct SubmissionPack {
