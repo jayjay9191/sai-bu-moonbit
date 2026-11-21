@@ -37,7 +37,7 @@ fn main {
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
     "audit-evidence" | "order" | "order-demo" => cmd_review(args)
-    "order-exact" | "order-replay" => cmd_order_exact(args)
+    "order-exact" | "order-replay" | "order-materials" => cmd_order_exact(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -168,7 +168,7 @@ fn print_usage() -> Unit {
     "order <作品名> [YYYY-MM-DD]：首选枚举与贪心投稿顺序（本地模拟）",
   )
   println(
-    "order-demo [--exact | --prefix 目标 ...]：重放合成案例，对照普通赛和首发赛两种开局",
+    "order-demo [--exact | --materials | --prefix 目标 ...]：重放合成案例，对照普通赛和首发赛两种开局",
   )
   println("用法：moon run cmd/main [子命令 ...]")
   println(
@@ -204,6 +204,9 @@ fn print_usage() -> Unit {
   )
   println(
     "order-replay <作品名> <日期> <目标1> [目标2 ...] --prefix <首项> [后续步骤 ...]：逐步模拟前缀并搜索余下路线",
+  )
+  println(
+    "order-materials <作品名> <日期> <预算0-3> <目标 ...>：同时规划共用材料和合法顺序",
   )
   println("help：显示本帮助")
 }
@@ -307,10 +310,12 @@ fn print_material_plan_items(plan : @lib.MaterialPlan) -> Unit {
 fn cmd_order_exact(args : Array[String]) -> Unit {
   try {
     let replay = args[0] == "order-replay"
+    let materials = args[0] == "order-materials"
+    let first_target = if materials { 4 } else { 3 }
     let separator = if replay { "--prefix" } else { "--must" }
-    if args.length() < 4 || !@lib.is_valid_date(args[2]) {
+    if args.length() <= first_target || !@lib.is_valid_date(args[2]) {
       fail(
-        "请填写作品名、YYYY-MM-DD 日期及 1 至 7 个短名单目标。order-exact 可用 --must，order-replay 须用 --prefix。",
+        "请填写作品名、YYYY-MM-DD 日期及 1 至 7 个短名单目标。order-materials 在日期后还需要预算 0 至 3。",
       )
     }
     guard @lib.work_by_name(args[1]) is Some(work) else {
@@ -319,12 +324,12 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
     let targets : Array[@lib.Competition] = []
     let selected : Array[String] = []
     let mut collecting_selected = false
-    for i in 3..<args.length() {
+    for i in first_target..<args.length() {
       if collecting_selected {
         selected.push(args[i])
         continue
       }
-      if args[i] == separator {
+      if !materials && args[i] == separator {
         collecting_selected = true
         continue
       }
@@ -340,7 +345,16 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
       )
     }
     let today = @lib.date_to_days(args[2])
-    let result = if replay {
+    let result = if materials {
+      Json(
+        @lib.plan_order_materials(
+          work,
+          targets,
+          today,
+          @string.parse_int(args[3]),
+        ),
+      )
+    } else if replay {
       Json(@lib.replay_submission_prefix(work, targets, today, selected))
     } else {
       Json(
@@ -361,15 +375,18 @@ fn cmd_review(args : Array[String]) -> Unit {
   try {
     if args[0] == "order-demo" {
       let exact = args.length() == 2 && args[1] == "--exact"
+      let materials = args.length() == 2 && args[1] == "--materials"
       let prefix = if args.length() > 2 && args[1] == "--prefix" {
         Some(args[2:].to_owned())
       } else {
         None
       }
-      if args.length() != 1 && !exact && prefix is None {
-        fail("用法：order-demo [--exact | --prefix 目标 ...]")
+      if args.length() != 1 && !exact && !materials && prefix is None {
+        fail(
+          "用法：order-demo [--exact | --materials | --prefix 目标 ...]",
+        )
       }
-      order_demo(exact, prefix)
+      order_demo(exact, prefix, materials)
       return
     }
     let offset = if args[0] == "order" { 2 } else { 1 }
@@ -472,7 +489,11 @@ fn print_order(
 }
 
 ///|
-fn order_demo(exact : Bool, prefix : Array[String]?) -> Unit raise {
+fn order_demo(
+  exact : Bool,
+  prefix : Array[String]?,
+  materials : Bool,
+) -> Unit raise {
   let a : @lib.Competition = {
     name: "普通赛 A",
     target_kind: "比赛",
@@ -520,7 +541,14 @@ fn order_demo(exact : Bool, prefix : Array[String]?) -> Unit raise {
     note: "",
   }
   let today = @lib.date_to_days("2026-11-20")
-  if prefix is Some(steps) {
+  if materials {
+    let poster = { ..a, materials: ["海报"], }
+    let video = { ..b, materials: ["视频"], }
+    let first = { ..c, materials: ["视频"], }
+    println(
+      Json(@lib.plan_order_materials(work, [poster, video, first], today, 3)).stringify(),
+    )
+  } else if prefix is Some(steps) {
     println(
       Json(@lib.replay_submission_prefix(work, [a, b, c], today, steps)).stringify(),
     )

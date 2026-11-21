@@ -300,3 +300,36 @@ test "review replays publication before a first-publish submission and rejects t
   assert_true(finished.continuation.unwrap().steps.is_empty())
   assert_eq(work.first_public_date, "")
 }
+
+///|
+test "review materials and valid order are optimized jointly" {
+  let (work, choices) = review_shortlist()
+  let today = @lib.date_to_days("2026-11-20")
+  let c = { ..choices[0], materials: ["fixture", "missing"], }
+  let b = { ..choices[3], materials: ["fixture", "missing"], }
+  let front = @lib.plan_order_materials(
+    work,
+    [c, choices[1], choices[2], b],
+    today,
+    2,
+  )
+  assert_eq(front.map(row => row.steps.length()), [1, 3, 3])
+  assert_eq(front[1].materials, ["missing"])
+  assert_eq(front[1].steps, ["B", "A", "D"])
+  let unpublished = { ..work, first_public_date: "", }
+  let platform = {
+    ..choices[2],
+    name: "平台",
+    target_kind: "平台上架",
+    materials: ["missing"],
+  }
+  let unlocked = @lib.plan_order_materials(
+    unpublished,
+    [choices[2], b, platform],
+    today,
+    1,
+  )
+  assert_eq(unlocked[1].steps, ["平台", "B", "A"])
+  assert_eq(unlocked[1].materials, ["missing"])
+  assert_eq(work.materials_ready, ["fixture"])
+}

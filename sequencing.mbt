@@ -238,12 +238,7 @@ pub fn material_eligibility(
 ) -> Array[MaterialEligibility] raise SequenceError {
   validate_planning_targets(comps)
   comps.map(comp => {
-    let missing : Array[String] = []
-    for material in comp.materials {
-      if !work.materials_ready.contains(material) && !missing.contains(material) {
-        missing.push(material)
-      }
-    }
+    let missing = required_material_gaps(work, comp)
     let simulated = { ..work, materials_ready: work.materials_ready + missing, }
     let blockers = sequence_reasons(simulated, comp, today)
     { name: comp.name, missing, blockers, }
@@ -347,4 +342,93 @@ fn search_material_bundles(
       possible_materials: possible,
     }
   })
+}
+
+///|
+fn required_material_gaps(work : Work, comp : Competition) -> Array[String] {
+  let missing : Array[String] = []
+  for material in comp.materials {
+    if !work.materials_ready.contains(material) && !missing.contains(material) {
+      missing.push(material)
+    }
+  }
+  missing
+}
+
+///|
+#derive(ToJson)
+pub(all) struct MaterialOrderPlan {
+  budget : Int32
+  materials : Array[String]
+  steps : Array[String]
+}
+
+///|
+/// Optimize route length, then number of new materials, then step names.
+/// Any optimal bundle is the union of the gaps on its route.
+/// ponytail: exact enumeration is bounded to 7 targets and 3 new materials.
+pub fn plan_order_materials(
+  work : Work,
+  targets : Array[Competition],
+  today : Int32,
+  max_budget : Int32,
+) -> Array[MaterialOrderPlan] raise SequenceError {
+  if max_budget < 0 || max_budget > 3 || targets.length() > 7 {
+    raise InvalidSequence(
+      "联合规划最多 7 个目标，材料预算须为 0 至 3 项",
+    )
+  }
+  validate_planning_targets(targets)
+  let gaps = targets.map(comp => required_material_gaps(work, comp))
+  let best : Array[MaterialOrderPlan] = Array::makei(max_budget + 1, budget => {
+    budget,
+    materials: [],
+    steps: [],
+  })
+  let path : Array[String] = []
+  fn visit(state : Work, used : Int32, bundle : Array[String]) -> Unit {
+    for budget in bundle.length()..<(max_budget + 1) {
+      let current = best[budget]
+      if path.length() > current.steps.length() ||
+        (
+          path.length() == current.steps.length() &&
+          (
+            bundle.length() < current.materials.length() ||
+            (
+              bundle.length() == current.materials.length() &&
+              path.compare(current.steps) < 0
+            )
+          )
+        ) {
+        let sorted = bundle.copy()
+        sorted.sort()
+        best[budget] = { budget, materials: sorted, steps: path.copy(), }
+      }
+    }
+    for i, comp in targets {
+      let bit = 1 << i
+      if (used & bit) != 0 {
+        continue
+      }
+      let extra = gaps[i].filter(item => !bundle.contains(item))
+      if bundle.length() + extra.length() > max_budget {
+        continue
+      }
+      let prepared = {
+        ..state,
+        materials_ready: state.materials_ready + extra,
+      }
+      if sequence_reasons(prepared, comp, today).is_empty() {
+        path.push(comp.name)
+        visit(
+          simulate_submission(prepared, comp, today),
+          used | bit,
+          bundle + extra,
+        )
+        ignore(path.pop())
+      }
+    }
+  }
+  visit(work, 0, [])
+  best
 }

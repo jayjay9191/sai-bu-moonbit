@@ -2,7 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 import json
-from itertools import permutations
+from itertools import combinations, permutations
 import re
 import subprocess
 
@@ -127,6 +127,24 @@ def main():
                 assert result["blocked"]["name"] == names[2] and result["blocked"]["reasons"]
                 assert result.get("continuation") is None
     print("PASS exact continuations and first blockers match all 15 fixed-rule prefixes")
+    resources = ("海报", "视频")
+    material_for = dict(zip(names, ("海报", "视频", "视频")))
+    candidates = []
+    for count in range(len(resources) + 1):
+        for bundle in combinations(resources, count):
+            for order in [(), *legal]:
+                if all(material_for[name] in bundle for name in order):
+                    candidates.append((-len(order), count, order, bundle))
+    front = json.loads(run("order-demo", "--materials"))
+    for budget, actual in enumerate(front):
+        _, _, steps, bundle = min(row for row in candidates if row[1] <= budget)
+        assert actual == dict(budget=budget, materials=sorted(bundle), steps=list(steps))
+    assert len(front) == 4 and len(front[1]["steps"]) == 2 and len(front[2]["steps"]) == 3
+    real = json.loads(run("order-materials", "第零次黎明", "2026-11-20", "3",
+                          "Qoder 高校创造力大赛", "AI PLAY 72H 创作黑客松"))
+    assert all(row["steps"] == [] and row["materials"] == [] for row in real)
+    assert run("order-materials", "第零次黎明", "2026-11-20", "4", "Qoder 高校创造力大赛", success=False) == ""
+    print("PASS joint budgets against independent material subsets and legal permutations")
     materials = run("materials-plan", "小店日结", "2026-11-20", "3")
     assert "已具备条件：1；补齐后新增：2" in materials
     assert [line for line in materials.splitlines() if line.startswith("待补材料")] == [

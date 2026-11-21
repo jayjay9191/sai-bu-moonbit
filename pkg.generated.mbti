@@ -69,6 +69,8 @@ pub fn plan_exact_shortlist(Work, Array[Competition], Int32, must_include? : Arr
 
 pub fn plan_materials(Work, Array[Competition], Int32, Int32) -> MaterialPlan raise SequenceError
 
+pub fn plan_order_materials(Work, Array[Competition], Int32, Int32) -> Array[MaterialOrderPlan] raise SequenceError
+
 pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder raise SequenceError
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
@@ -259,6 +261,13 @@ pub(all) struct MaterialEligibility {
   name : String
   missing : Array[String]
   blockers : Array[String]
+}
+
+#derive(@json.ToJson)
+pub(all) struct MaterialOrderPlan {
+  budget : Int32
+  materials : Array[String]
+  steps : Array[String]
 }
 
 #derive(@json.ToJson)
