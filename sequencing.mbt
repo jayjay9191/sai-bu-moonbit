@@ -388,6 +388,38 @@ pub fn plan_order_materials_after_prefix(
   max_budget : Int32,
   prefix : Array[String],
 ) -> Array[MaterialOrderPlan?] raise SequenceError {
+  plan_order_material_choices(work, targets, today, max_budget, prefix).map(row => {
+    row.map(choice => choice.plan)
+  })
+}
+
+///|
+#derive(ToJson)
+pub(all) struct MaterialOrderChoices {
+  plan : MaterialOrderPlan
+  optimal_order_count : Int32
+  required_materials : Array[String]
+  possible_materials : Array[String]
+  required_targets : Array[String]
+  possible_targets : Array[String]
+}
+
+///|
+fn union_sorted(left : Array[String], right : Array[String]) -> Array[String] {
+  let merged = left + right.filter(item => !left.contains(item))
+  merged.sort()
+  merged
+}
+
+///|
+/// Count routes that tie on both objectives, retaining intersections and unions.
+pub fn plan_order_material_choices(
+  work : Work,
+  targets : Array[Competition],
+  today : Int32,
+  max_budget : Int32,
+  prefix : Array[String],
+) -> Array[MaterialOrderChoices?] raise SequenceError {
   if max_budget < 0 ||
     max_budget > 3 ||
     targets.length() > 7 ||
@@ -412,30 +444,57 @@ pub fn plan_order_materials_after_prefix(
     prefix_indices.push(index)
   }
   let gaps = targets.map(comp => required_material_gaps(work, comp))
-  let best : Array[MaterialOrderPlan?] = Array::make(max_budget + 1, None)
+  let best : Array[MaterialOrderChoices?] = Array::make(max_budget + 1, None)
   let path : Array[String] = []
   fn visit(state : Work, used : Int32, bundle : Array[String]) -> Unit {
     let depth = path.length()
     if depth >= prefix_indices.length() {
       for budget in bundle.length()..<(max_budget + 1) {
-        if best[budget]
-          .map(current => {
-            depth > current.steps.length() ||
-            (
-              depth == current.steps.length() &&
-              (
-                bundle.length() < current.materials.length() ||
-                (
-                  bundle.length() == current.materials.length() &&
-                  path.compare(current.steps) < 0
-                )
-              )
-            )
+        let current = best[budget]
+        let comparison = current
+          .map(choice => {
+            let length_order = depth.compare(choice.plan.steps.length())
+            if length_order != 0 {
+              length_order
+            } else {
+              choice.plan.materials.length().compare(bundle.length())
+            }
           })
-          .unwrap_or(true) {
-          let sorted = bundle.copy()
-          sorted.sort()
-          best[budget] = Some({ budget, materials: sorted, steps: path.copy(), })
+          .unwrap_or(1)
+        if comparison > 0 {
+          let materials = bundle.copy()
+          materials.sort()
+          let steps = path.copy()
+          let names = steps.copy()
+          names.sort()
+          best[budget] = Some({
+            plan: { budget, materials, steps, },
+            optimal_order_count: 1,
+            required_materials: materials,
+            possible_materials: materials,
+            required_targets: names,
+            possible_targets: names,
+          })
+        } else if comparison == 0 && current is Some(tied) {
+          let plan = if path.compare(tied.plan.steps) < 0 {
+            let materials = bundle.copy()
+            materials.sort()
+            { budget, materials, steps: path.copy(), }
+          } else {
+            tied.plan
+          }
+          best[budget] = Some({
+            plan,
+            optimal_order_count: tied.optimal_order_count + 1,
+            required_materials: tied.required_materials.filter(item => {
+              bundle.contains(item)
+            }),
+            possible_materials: union_sorted(tied.possible_materials, bundle),
+            required_targets: tied.required_targets.filter(name => {
+              path.contains(name)
+            }),
+            possible_targets: union_sorted(tied.possible_targets, path),
+          })
         }
       }
     }

@@ -69,6 +69,8 @@ pub fn plan_exact_shortlist(Work, Array[Competition], Int32, must_include? : Arr
 
 pub fn plan_materials(Work, Array[Competition], Int32, Int32) -> MaterialPlan raise SequenceError
 
+pub fn plan_order_material_choices(Work, Array[Competition], Int32, Int32, Array[String]) -> Array[MaterialOrderChoices?] raise SequenceError
+
 pub fn plan_order_materials(Work, Array[Competition], Int32, Int32) -> Array[MaterialOrderPlan] raise SequenceError
 
 pub fn plan_order_materials_after_prefix(Work, Array[Competition], Int32, Int32, Array[String]) -> Array[MaterialOrderPlan?] raise SequenceError
@@ -263,6 +265,16 @@ pub(all) struct MaterialEligibility {
   name : String
   missing : Array[String]
   blockers : Array[String]
+}
+
+#derive(@json.ToJson)
+pub(all) struct MaterialOrderChoices {
+  plan : MaterialOrderPlan
+  optimal_order_count : Int32
+  required_materials : Array[String]
+  possible_materials : Array[String]
+  required_targets : Array[String]
+  possible_targets : Array[String]
 }
 
 #derive(@json.ToJson)

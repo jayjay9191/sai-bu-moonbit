@@ -370,3 +370,53 @@ test "review fixed prefixes distinguish unavailable budgets from legal continuat
   assert_eq(ordinary[3].unwrap().steps, ["A"])
   assert_eq(work.materials_ready, ["fixture"])
 }
+
+///|
+test "review real ledger loses both tied routes after the national deadline" {
+  let work = @lib.work_by_name("小店日结").unwrap()
+  let rokid = @lib.competition_by_name("Rokid Spatial Joy 2026").unwrap()
+  let youth = @lib.competition_by_name(
+    "第十一届全国青年人工智能创新创业大赛",
+  ).unwrap()
+  let zhihu = @lib.competition_by_name("知乎黑客松 S3").unwrap()
+  let targets = [rokid, youth, zhihu]
+  let last = @lib.plan_order_material_choices(
+    work,
+    targets,
+    @lib.date_to_days("2026-11-30"),
+    3,
+    [],
+  )[3].unwrap()
+  assert_eq(last.optimal_order_count, 2)
+  assert_eq(last.required_materials.length(), 3)
+  assert_true(
+    last.required_targets.contains(youth.name) &&
+    last.required_targets.contains(rokid.name),
+  )
+  assert_false(last.possible_targets.contains(zhihu.name))
+  let next = @lib.plan_order_material_choices(
+    work,
+    targets,
+    @lib.date_to_days("2026-12-01"),
+    3,
+    [],
+  )[3].unwrap()
+  assert_eq(next.optimal_order_count, 1)
+  assert_eq(next.plan.steps, [rokid.name])
+  assert_false(next.possible_materials.contains("PPT（发邮箱）"))
+  let (fixture, synthetic) = review_shortlist()
+  let alternate = { ..synthetic[2], materials: ["poster"], }
+  let both = @lib.plan_order_material_choices(
+    fixture,
+    [alternate, synthetic[1]],
+    @lib.date_to_days("2026-11-20"),
+    1,
+    [],
+  )[1].unwrap()
+  assert_eq(both.optimal_order_count, 2)
+  assert_true(
+    both.required_materials.is_empty() && both.required_targets.is_empty(),
+  )
+  assert_eq(both.possible_materials.length(), 2)
+  assert_eq(both.possible_targets.length(), 2)
+}

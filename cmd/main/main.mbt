@@ -37,7 +37,10 @@ fn main {
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
     "audit-evidence" | "order" | "order-demo" => cmd_review(args)
-    "order-exact" | "order-replay" | "order-materials" => cmd_order_exact(args)
+    "order-exact"
+    | "order-replay"
+    | "order-materials"
+    | "order-material-options" => cmd_order_exact(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -208,6 +211,9 @@ fn print_usage() -> Unit {
   println(
     "order-materials <作品名> <日期> <预算0-3> <目标 ...> [--prefix 前缀 ...]：同时规划共用材料和合法顺序",
   )
+  println(
+    "order-material-options <作品名> <日期> <预算0-3> <目标 ...> [--prefix ...]：返回并列路线和必需材料",
+  )
   println("help：显示本帮助")
 }
 
@@ -310,7 +316,8 @@ fn print_material_plan_items(plan : @lib.MaterialPlan) -> Unit {
 fn cmd_order_exact(args : Array[String]) -> Unit {
   try {
     let replay = args[0] == "order-replay"
-    let materials = args[0] == "order-materials"
+    let choices = args[0] == "order-material-options"
+    let materials = args[0] == "order-materials" || choices
     let first_target = if materials { 4 } else { 3 }
     let separator = if replay || materials { "--prefix" } else { "--must" }
     if args.length() <= first_target || !@lib.is_valid_date(args[2]) {
@@ -347,7 +354,14 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
     let today = @lib.date_to_days(args[2])
     let result = if materials {
       let budget = @string.parse_int(args[3])
-      if collecting_selected {
+      if choices {
+        let rows = @lib.plan_order_material_choices(
+          work, targets, today, budget, selected,
+        )
+        Json(
+          rows.map(row => row.map(plan => Json(plan)).unwrap_or(Json::null())),
+        )
+      } else if collecting_selected {
         material_prefix_json(work, targets, today, budget, selected)
       } else {
         Json(@lib.plan_order_materials(work, targets, today, budget))

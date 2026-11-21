@@ -6,7 +6,7 @@
 
 ## 初审核对
 
-在仓库根目录运行 `moon test review`。十二个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
+在仓库根目录运行 `moon test review`。十三个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
 
 运行 `moon run cmd/main -- materials-plan 小店日结 2026-11-20 3`。MoonBit 先模拟补齐每个目标的材料并复跑认证，再在预算内枚举缺项集合的去重并集，选出最多能新增多少可认证目标。并列时优先选材料较少的方案。预算为 0 至 3 项，同名材料按一项计。
 
@@ -76,6 +76,15 @@ moon run cmd/main -- order-demo --materials "普通赛 A" "首发赛 C"
 ```
 
 第一条在 0 项预算下输出 `null`，补 1 项视频可完成 C → B。第二条四档均为 `null`，因为普通赛先投会触发首发限制。API 用 `Option[MaterialOrderPlan]` 明确区分该预算无法走完前缀的情况。台账命令在候选目标之后添加 `--prefix <指定步骤 ...>` 即可复跑。独立脚本从材料子集和投稿排列枚举 15 个有序前缀 × 4 档预算。
+
+### 查找所有最优路线的共同材料
+
+```powershell
+moon run cmd/main -- order-material-options "小店日结" 2026-11-30 3 "Rokid Spatial Joy 2026" "第十一届全国青年人工智能创新创业大赛" "知乎黑客松 S3"
+moon run cmd/main -- order-material-options "小店日结" 2026-12-01 3 "Rokid Spatial Joy 2026" "第十一届全国青年人工智能创新创业大赛" "知乎黑客松 S3"
+```
+
+每档先比较可投目标数，再比较新增材料数。对所有并列路线计数，返回各自的必需与可选材料和目标。按仓库留存规则模拟，11 月 30 日当天 3 项预算有 **两条**可投两项的路线，三份材料均为必需。12 月 1 日只有 Rokid 可行，邮件 PPT 从材料清单移除。12 月 18 日刚满 30 天，Rokid 仍可用。次日核验证据过期。Python 从原始台账独立枚举 **48 组日期、前缀与预算**。这里的日期为固定测试输入。
 
 ## 重放指定投稿步骤
 

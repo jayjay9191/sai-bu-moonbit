@@ -1,5 +1,5 @@
 """Replay the second-review CLI and retained certification results."""
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 import json
 from itertools import combinations, permutations
@@ -46,7 +46,53 @@ def verify_calendar():
     print("PASS calendar: 12 verified date reminders, later stage retained, unique UIDs and UTF-8 folding")
 
 
+def verify_real_material_choices():
+    ledger = json.loads((ROOT / "data/competitions.json").read_text(encoding="utf-8"))
+    work = next(row for row in ledger["works"] if row["name"] == "小店日结")
+    rokid = "Rokid Spatial Joy 2026"
+    youth = "第十一届全国青年人工智能创新创业大赛"
+    zhihu = "知乎黑客松 S3"
+    names = (rokid, youth, zhihu)
+    selected = {row["name"]: row for row in ledger["competitions"] if row["name"] in names}
+    assert work["submitted_to"] and selected[zhihu]["requires_new_work"]
+    assert all(not selected[n]["requires_first_publish"] for n in names)
+    missing = {name: set(row["materials"]) - set(work["materials_ready"]) for name, row in selected.items()}
+    days = ("2026-11-30", "2026-12-01", "2026-12-18", "2026-12-19")
+    for day in days:
+        when = date.fromisoformat(day)
+        eligible = [name for name, row in selected.items()
+                    if when <= date.fromisoformat(row["deadline_date"])
+                    and 0 <= (when - date.fromisoformat(row["verified_at"])).days <= 30
+                    and not (work["submitted_to"] and row["requires_new_work"])]
+        for prefix in ((), (rokid,), (zhihu,)):
+            flags = ("--prefix", *prefix) if prefix else ()
+            actual = json.loads(run("order-material-options", work["name"], day, "3", *names, *flags))
+            assert len(actual) == 4
+            for budget, row in enumerate(actual):
+                possible = []
+                for length in range(len(eligible) + 1):
+                    for order in permutations(eligible, length):
+                        bundle = set().union(*(missing[name] for name in order))
+                        if len(bundle) <= budget and order[:len(prefix)] == prefix:
+                            possible.append((order, bundle))
+                if not possible:
+                    assert row is None
+                    continue
+                score = max((len(order), -len(bundle)) for order, bundle in possible)
+                best = [(order, bundle) for order, bundle in possible
+                        if (len(order), -len(bundle)) == score]
+                assert row["plan"]["budget"] == budget
+                assert (tuple(row["plan"]["steps"]), set(row["plan"]["materials"])) in best
+                assert row["optimal_order_count"] == len(best)
+                for label, sets in (("materials", [bundle for _, bundle in best]),
+                                    ("targets", [set(order) for order, _ in best])):
+                    assert set(row["required_" + label]) == set.intersection(*sets)
+                    assert set(row["possible_" + label]) == set.union(*sets)
+    print("PASS 48 actual ledger date/prefix/budget combinations recomputed from raw JSON")
+
+
 def main():
+    verify_real_material_choices()
     assert "用法" in run("help")
     verify_calendar()
     audit = run("audit-evidence", "2026-11-20")
