@@ -81,7 +81,11 @@ def main():
                                                 waiver_routes=[dict(waived=[names[0]], steps=[])])
     for required in ((), ("未知目标",), (names[0], names[0])):
         assert run("order-exact", "第零次黎明", "2026-11-20", *names, "--must", *required, success=False) == ""
-    print("PASS exact shortlist preserves recorded blockers even for required targets")
+    replay = json.loads(run("order-replay", "第零次黎明", "2026-11-20", *names, "--prefix", names[0], names[1]))
+    assert replay["applied"] == [] and replay.get("continuation") is None
+    assert replay["blocked"] == next(row for row in exact["remaining"] if row["name"] == names[0])
+    assert run("order-replay", "第零次黎明", "2026-11-20", *names, "--prefix", success=False) == ""
+    print("PASS exact shortlist and prefix replay preserve recorded blockers")
     demo = run("order-demo")
     assert "合成案例" in demo and "未投稿 | 材料齐备" in demo
     assert "普通赛 A | 当前可提交 true | 其后剩余可投 1" in demo
@@ -105,7 +109,24 @@ def main():
     without = {name: max(len(order) for order in legal if name not in order) for name in names}
     assert {row["name"]: row["completed"] for row in exact_demo["drop_impacts"]} == without
     assert all(row["lost_steps"] == longest - without[row["name"]] for row in exact_demo["drop_impacts"])
-    print("PASS first-choice and drop-one consequences match exhaustive fixed-rule replay")
+    for count in range(1, 4):
+        for prefix in permutations(names, count):
+            result = json.loads(run("order-demo", "--prefix", *prefix))
+            if prefix in legal:
+                assert [step["name"] for step in result["applied"]] == list(prefix)
+                assert all(step["records_entry"] for step in result["applied"])
+                assert result.get("blocked") is None
+                possible = [order[count:] for order in legal if order[:count] == prefix]
+                best = max(map(len, possible))
+                continuation = result["continuation"]
+                assert tuple(continuation["steps"]) in possible and len(continuation["steps"]) == best
+                assert continuation["optimal_order_count"] == sum(len(route) == best for route in possible)
+            else:
+                blocked_at = prefix.index(names[2])
+                assert [step["name"] for step in result["applied"]] == list(prefix[:blocked_at])
+                assert result["blocked"]["name"] == names[2] and result["blocked"]["reasons"]
+                assert result.get("continuation") is None
+    print("PASS exact continuations and first blockers match all 15 fixed-rule prefixes")
     materials = run("materials-plan", "小店日结", "2026-11-20", "3")
     assert "已具备条件：1；补齐后新增：2" in materials
     assert [line for line in materials.splitlines() if line.startswith("待补材料")] == [

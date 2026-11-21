@@ -311,3 +311,69 @@ pub fn plan_exact_shortlist(
     },
   }
 }
+
+///|
+#derive(ToJson)
+pub(all) struct ExactPrefixStep {
+  name : String
+  published_on : String
+  records_entry : Bool
+}
+
+///|
+#derive(ToJson)
+pub(all) struct ExactPrefixReplay {
+  applied : Array[ExactPrefixStep]
+  blocked : BlockedTarget?
+  continuation : ExactSubmissionOrder?
+}
+
+///|
+/// Replay a fixed prefix and solve only the remaining shortlist. No external submissions are made.
+pub fn replay_submission_prefix(
+  work : Work,
+  targets : Array[Competition],
+  today : Int32,
+  prefix : Array[String],
+) -> ExactPrefixReplay raise SequenceError {
+  if targets.length() > 7 || prefix.length() > 7 {
+    raise InvalidSequence(
+      "精确重放最多接受 7 个目标和 7 个前缀步骤",
+    )
+  }
+  validate_planning_targets(targets)
+  let applied : Array[ExactPrefixStep] = []
+  let mut remaining = targets.copy()
+  let mut current = work
+  for name in prefix {
+    guard targets.iter().find_first(comp => same_entry(name, comp.name))
+      is Some(comp) else {
+      raise InvalidSequence("前缀目标不在短名单中：" + name)
+    }
+    let reasons = if remaining.any(item => item.name == comp.name) {
+      sequence_reasons(current, comp, today)
+    } else {
+      ["前缀已执行该目标"]
+    }
+    if !reasons.is_empty() {
+      return {
+        applied,
+        blocked: Some({ name: comp.name, reasons, }),
+        continuation: None,
+      }
+    }
+    let next = simulate_submission(current, comp, today)
+    applied.push({
+      name: comp.name,
+      published_on: next.first_public_date,
+      records_entry: next.submitted_to.length() > current.submitted_to.length(),
+    })
+    current = next
+    remaining = remaining.filter(item => item.name != comp.name)
+  }
+  {
+    applied,
+    blocked: None,
+    continuation: Some(plan_exact_shortlist(current, remaining, today)),
+  }
+}

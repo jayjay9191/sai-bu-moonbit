@@ -37,7 +37,7 @@ fn main {
     "trace" => cmd_trace(args)
     "itch-zip" => cmd_itch_zip(args)
     "audit-evidence" | "order" | "order-demo" => cmd_review(args)
-    "order-exact" => cmd_order_exact(args)
+    "order-exact" | "order-replay" => cmd_order_exact(args)
     "help" | "-h" | "--help" => print_usage()
     other => {
       println("未知子命令：\{other}")
@@ -168,7 +168,7 @@ fn print_usage() -> Unit {
     "order <作品名> [YYYY-MM-DD]：首选枚举与贪心投稿顺序（本地模拟）",
   )
   println(
-    "order-demo [--exact]：重放合成案例，对照普通赛和首发赛两种开局",
+    "order-demo [--exact | --prefix 目标 ...]：重放合成案例，对照普通赛和首发赛两种开局",
   )
   println("用法：moon run cmd/main [子命令 ...]")
   println(
@@ -201,6 +201,9 @@ fn print_usage() -> Unit {
   )
   println(
     "order-exact <作品名> <日期> <目标1> [目标2 ...] [--must 必选目标 ...]：精确搜索 1 至 7 个目标的同日顺序",
+  )
+  println(
+    "order-replay <作品名> <日期> <目标1> [目标2 ...] --prefix <首项> [后续步骤 ...]：逐步模拟前缀并搜索余下路线",
   )
   println("help：显示本帮助")
 }
@@ -303,24 +306,26 @@ fn print_material_plan_items(plan : @lib.MaterialPlan) -> Unit {
 ///|
 fn cmd_order_exact(args : Array[String]) -> Unit {
   try {
+    let replay = args[0] == "order-replay"
+    let separator = if replay { "--prefix" } else { "--must" }
     if args.length() < 4 || !@lib.is_valid_date(args[2]) {
       fail(
-        "用法：order-exact <作品名> <YYYY-MM-DD> <目标1> [目标2 ...] [--must 必选目标 ...]，最多 7 个目标",
+        "请填写作品名、YYYY-MM-DD 日期及 1 至 7 个短名单目标。order-exact 可用 --must，order-replay 须用 --prefix。",
       )
     }
     guard @lib.work_by_name(args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
     let targets : Array[@lib.Competition] = []
-    let required : Array[String] = []
-    let mut collecting_required = false
+    let selected : Array[String] = []
+    let mut collecting_selected = false
     for i in 3..<args.length() {
-      if collecting_required {
-        required.push(args[i])
+      if collecting_selected {
+        selected.push(args[i])
         continue
       }
-      if args[i] == "--must" {
-        collecting_required = true
+      if args[i] == separator {
+        collecting_selected = true
         continue
       }
       guard @lib.competition_by_name(args[i]) is Some(comp) else {
@@ -328,21 +333,21 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
       }
       targets.push(comp)
     }
-    if targets.is_empty() || (collecting_required && required.is_empty()) {
+    if targets.is_empty() ||
+      ((collecting_selected || replay) && selected.is_empty()) {
       fail(
-        "请填写短名单。使用 --must 时须填写至少一个必选目标",
+        "请填写短名单，并为 --must 或 --prefix 填写至少一个目标",
       )
     }
-    println(
+    let today = @lib.date_to_days(args[2])
+    let result = if replay {
+      Json(@lib.replay_submission_prefix(work, targets, today, selected))
+    } else {
       Json(
-        @lib.plan_exact_shortlist(
-          work,
-          targets,
-          @lib.date_to_days(args[2]),
-          must_include=required,
-        ),
-      ).stringify(),
-    )
+        @lib.plan_exact_shortlist(work, targets, today, must_include=selected),
+      )
+    }
+    println(result.stringify())
   } catch {
     err => {
       eprintln("精确顺序规划失败：" + err.to_string())
@@ -356,10 +361,15 @@ fn cmd_review(args : Array[String]) -> Unit {
   try {
     if args[0] == "order-demo" {
       let exact = args.length() == 2 && args[1] == "--exact"
-      if args.length() != 1 && !exact {
-        fail("用法：order-demo [--exact]")
+      let prefix = if args.length() > 2 && args[1] == "--prefix" {
+        Some(args[2:].to_owned())
+      } else {
+        None
       }
-      order_demo(exact)
+      if args.length() != 1 && !exact && prefix is None {
+        fail("用法：order-demo [--exact | --prefix 目标 ...]")
+      }
+      order_demo(exact, prefix)
       return
     }
     let offset = if args[0] == "order" { 2 } else { 1 }
@@ -462,7 +472,7 @@ fn print_order(
 }
 
 ///|
-fn order_demo(exact : Bool) -> Unit raise {
+fn order_demo(exact : Bool, prefix : Array[String]?) -> Unit raise {
   let a : @lib.Competition = {
     name: "普通赛 A",
     target_kind: "比赛",
@@ -510,7 +520,11 @@ fn order_demo(exact : Bool) -> Unit raise {
     note: "",
   }
   let today = @lib.date_to_days("2026-11-20")
-  if exact {
+  if prefix is Some(steps) {
+    println(
+      Json(@lib.replay_submission_prefix(work, [a, b, c], today, steps)).stringify(),
+    )
+  } else if exact {
     println(Json(@lib.plan_exact_shortlist(work, [a, b, c], today)).stringify())
   } else {
     println(

@@ -77,6 +77,8 @@ pub fn render_blocking_chain(Array[String]) -> String
 
 pub fn render_trace(DecisionTrace) -> String
 
+pub fn replay_submission_prefix(Work, Array[Competition], Int32, Array[String]) -> ExactPrefixReplay raise SequenceError
+
 pub fn row_verdict(Competition, Int32) -> RowVerdict
 
 pub fn rule_citation_for(String, String) -> RuleCitation
@@ -193,6 +195,20 @@ pub(all) struct ExactFirstChoice {
   completed : Int32
   lost_steps : Int32?
   blockers : Array[String]
+}
+
+#derive(@json.ToJson)
+pub(all) struct ExactPrefixReplay {
+  applied : Array[ExactPrefixStep]
+  blocked : BlockedTarget?
+  continuation : ExactSubmissionOrder?
+}
+
+#derive(@json.ToJson)
+pub(all) struct ExactPrefixStep {
+  name : String
+  published_on : String
+  records_entry : Bool
 }
 
 #derive(@json.ToJson)

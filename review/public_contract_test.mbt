@@ -260,3 +260,43 @@ test "review every minimal waiver carries its longest route with stable ties" {
     assert_eq(checked.with_required.unwrap().steps, item.steps)
   }
 }
+
+///|
+test "review replays publication before a first-publish submission and rejects the reverse" {
+  let (base, choices) = review_shortlist()
+  let work = { ..base, first_public_date: "", }
+  let platform = {
+    ..choices[2],
+    name: "平台上架",
+    target_kind: "平台上架",
+  }
+  let targets = [choices[3], platform, choices[2]]
+  let today = @lib.date_to_days("2026-11-20")
+  let accepted = @lib.replay_submission_prefix(work, targets, today, [
+    "平台上架",
+  ])
+  assert_eq(accepted.applied[0].published_on, "2026-11-20")
+  assert_false(accepted.applied[0].records_entry)
+  assert_eq(accepted.continuation.unwrap().steps, ["B", "A"])
+  let blocked = @lib.replay_submission_prefix(work, targets, today, [
+    "B", "平台上架",
+  ])
+  assert_true(blocked.applied.is_empty())
+  assert_eq(blocked.blocked.unwrap().name, "B")
+  assert_true(!blocked.blocked.unwrap().reasons.is_empty())
+  assert_true(blocked.continuation is None)
+  let repeated = @lib.replay_submission_prefix(work, targets, today, [
+    "平台上架", "平台上架", "B",
+  ])
+  assert_eq(repeated.applied.length(), 1)
+  assert_eq(repeated.blocked.unwrap().name, "平台上架")
+  assert_true(repeated.continuation is None)
+  let finished = @lib.replay_submission_prefix(work, targets, today, [
+    "平台上架", "B", "A",
+  ])
+  assert_eq(finished.applied.map(step => step.records_entry), [
+    false, true, true,
+  ])
+  assert_true(finished.continuation.unwrap().steps.is_empty())
+  assert_eq(work.first_public_date, "")
+}
