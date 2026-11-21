@@ -181,6 +181,13 @@ pub(all) struct EvidenceIssue {
 }
 
 #derive(@json.ToJson)
+pub(all) struct ExactDropImpact {
+  name : String
+  completed : Int32
+  lost_steps : Int32
+}
+
+#derive(@json.ToJson)
 pub(all) struct ExactFirstChoice {
   name : String
   completed : Int32
@@ -196,6 +203,7 @@ pub(all) struct ExactSubmissionOrder {
   required_targets : Array[String]
   possible_targets : Array[String]
   first_choices : Array[ExactFirstChoice]
+  drop_impacts : Array[ExactDropImpact]
 }
 
 pub struct FactEvidence {

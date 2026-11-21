@@ -96,7 +96,10 @@ def main():
     assert all(row["lost_steps"] == longest - expected[row["name"]]
                and row["blockers"] == [] for row in exact_demo["first_choices"])
     assert exact_demo["optimal_order_count"] == sum(len(order) == longest for order in legal)
-    print("PASS best completion and cost of each first choice match exhaustive fixed-rule replay")
+    without = {name: max(len(order) for order in legal if name not in order) for name in names}
+    assert {row["name"]: row["completed"] for row in exact_demo["drop_impacts"]} == without
+    assert all(row["lost_steps"] == longest - without[row["name"]] for row in exact_demo["drop_impacts"])
+    print("PASS first-choice and drop-one consequences match exhaustive fixed-rule replay")
     materials = run("materials-plan", "小店日结", "2026-11-20", "3")
     assert "已具备条件：1；补齐后新增：2" in materials
     assert [line for line in materials.splitlines() if line.startswith("待补材料")] == [

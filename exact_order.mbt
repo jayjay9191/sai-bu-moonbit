@@ -9,6 +9,14 @@ pub(all) struct ExactFirstChoice {
 
 ///|
 #derive(ToJson)
+pub(all) struct ExactDropImpact {
+  name : String
+  completed : Int32
+  lost_steps : Int32
+}
+
+///|
+#derive(ToJson)
 pub(all) struct ExactSubmissionOrder {
   steps : Array[String]
   remaining : Array[BlockedTarget]
@@ -16,6 +24,7 @@ pub(all) struct ExactSubmissionOrder {
   required_targets : Array[String]
   possible_targets : Array[String]
   first_choices : Array[ExactFirstChoice]
+  drop_impacts : Array[ExactDropImpact]
 }
 
 ///|
@@ -57,6 +66,7 @@ pub fn plan_exact_shortlist(
   let mut required_mask = 0
   let mut possible_mask = 0
   let best_by_first = Array::make(pending.length(), 0)
+  let best_without = Array::make(pending.length(), 0)
   let first_blockers = pending.map(comp => sequence_reasons(work, comp, today))
   fn search(current : Work, used : Int32, first : Int32) -> Unit {
     if first >= 0 && path.length() > best_by_first[first] {
@@ -78,6 +88,10 @@ pub fn plan_exact_shortlist(
       let bit = 1 << i
       if (used & bit) != 0 {
         continue
+      }
+      // The current prefix remains valid in any shortlist excluding an unused target.
+      if path.length() > best_without[i] {
+        best_without[i] = path.length()
       }
       let blockers = if first < 0 {
         first_blockers[i]
@@ -114,6 +128,10 @@ pub fn plan_exact_shortlist(
       blockers: first_blockers[i],
     }
   })
+  let drop_impacts = Array::makei(pending.length(), i => {
+    let completed = best_without[i]
+    { name: pending[i].name, completed, lost_steps: best.length() - completed, }
+  })
   let remaining = pending
     .filter(comp => !best.contains(comp.name))
     .map(comp => {
@@ -138,5 +156,6 @@ pub fn plan_exact_shortlist(
     required_targets,
     possible_targets,
     first_choices,
+    drop_impacts,
   }
 }
