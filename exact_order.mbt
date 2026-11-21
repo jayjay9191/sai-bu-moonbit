@@ -1,11 +1,21 @@
 ///|
 #derive(ToJson)
+pub(all) struct ExactFirstChoice {
+  name : String
+  completed : Int32
+  lost_steps : Int32?
+  blockers : Array[String]
+}
+
+///|
+#derive(ToJson)
 pub(all) struct ExactSubmissionOrder {
   steps : Array[String]
   remaining : Array[BlockedTarget]
   optimal_order_count : Int32
   required_targets : Array[String]
   possible_targets : Array[String]
+  first_choices : Array[ExactFirstChoice]
 }
 
 ///|
@@ -46,7 +56,12 @@ pub fn plan_exact_shortlist(
   let mut optimal_order_count = 0
   let mut required_mask = 0
   let mut possible_mask = 0
-  fn search(current : Work, used : Int32) -> Unit {
+  let best_by_first = Array::make(pending.length(), 0)
+  let first_blockers = pending.map(comp => sequence_reasons(work, comp, today))
+  fn search(current : Work, used : Int32, first : Int32) -> Unit {
+    if first >= 0 && path.length() > best_by_first[first] {
+      best_by_first[first] = path.length()
+    }
     if path.length() > best.length() {
       best = path.copy()
       best_state = current
@@ -61,15 +76,44 @@ pub fn plan_exact_shortlist(
     }
     for i, comp in pending {
       let bit = 1 << i
-      if (used & bit) != 0 || !sequence_reasons(current, comp, today).is_empty() {
+      if (used & bit) != 0 {
+        continue
+      }
+      let blockers = if first < 0 {
+        first_blockers[i]
+      } else {
+        sequence_reasons(current, comp, today)
+      }
+      if !blockers.is_empty() {
         continue
       }
       path.push(comp.name)
-      search(simulate_submission(current, comp, today), used | bit)
+      search(
+        simulate_submission(current, comp, today),
+        used | bit,
+        if first < 0 {
+          i
+        } else {
+          first
+        },
+      )
       ignore(path.pop())
     }
   }
-  search(work, 0)
+  search(work, 0, -1)
+  let first_choices = Array::makei(pending.length(), i => {
+    let completed = best_by_first[i]
+    {
+      name: pending[i].name,
+      completed,
+      lost_steps: if completed == 0 {
+        None
+      } else {
+        Some(best.length() - completed)
+      },
+      blockers: first_blockers[i],
+    }
+  })
   let remaining = pending
     .filter(comp => !best.contains(comp.name))
     .map(comp => {
@@ -93,5 +137,6 @@ pub fn plan_exact_shortlist(
     optimal_order_count,
     required_targets,
     possible_targets,
+    first_choices,
   }
 }

@@ -181,12 +181,21 @@ pub(all) struct EvidenceIssue {
 }
 
 #derive(@json.ToJson)
+pub(all) struct ExactFirstChoice {
+  name : String
+  completed : Int32
+  lost_steps : Int32?
+  blockers : Array[String]
+}
+
+#derive(@json.ToJson)
 pub(all) struct ExactSubmissionOrder {
   steps : Array[String]
   remaining : Array[BlockedTarget]
   optimal_order_count : Int32
   required_targets : Array[String]
   possible_targets : Array[String]
+  first_choices : Array[ExactFirstChoice]
 }
 
 pub struct FactEvidence {

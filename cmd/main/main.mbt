@@ -168,7 +168,7 @@ fn print_usage() -> Unit {
     "order <作品名> [YYYY-MM-DD]：首选枚举与贪心投稿顺序（本地模拟）",
   )
   println(
-    "order-demo：重放合成案例，对照普通赛和首发赛两种开局",
+    "order-demo [--exact]：重放合成案例，对照普通赛和首发赛两种开局",
   )
   println("用法：moon run cmd/main [子命令 ...]")
   println(
@@ -333,10 +333,11 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
 fn cmd_review(args : Array[String]) -> Unit {
   try {
     if args[0] == "order-demo" {
-      if args.length() != 1 {
-        fail("用法：order-demo")
+      let exact = args.length() == 2 && args[1] == "--exact"
+      if args.length() != 1 && !exact {
+        fail("用法：order-demo [--exact]")
       }
-      order_demo()
+      order_demo(exact)
       return
     }
     let offset = if args[0] == "order" { 2 } else { 1 }
@@ -439,7 +440,7 @@ fn print_order(
 }
 
 ///|
-fn order_demo() -> Unit raise {
+fn order_demo(exact : Bool) -> Unit raise {
   let a : @lib.Competition = {
     name: "普通赛 A",
     target_kind: "比赛",
@@ -486,10 +487,15 @@ fn order_demo() -> Unit raise {
     materials_ready: ["演示链接"],
     note: "",
   }
-  println(
-    "合成案例 | 审计日 2026-11-20 | 首次公开 2026-11-20 | 未投稿 | 材料齐备",
-  )
-  print_order(work, [a, b, c], @lib.date_to_days("2026-11-20"))
+  let today = @lib.date_to_days("2026-11-20")
+  if exact {
+    println(Json(@lib.plan_exact_shortlist(work, [a, b, c], today)).stringify())
+  } else {
+    println(
+      "合成案例 | 审计日 2026-11-20 | 首次公开 2026-11-20 | 未投稿 | 材料齐备",
+    )
+    print_order(work, [a, b, c], today)
+  }
 }
 
 ///|

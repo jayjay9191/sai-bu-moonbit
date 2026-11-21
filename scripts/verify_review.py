@@ -2,6 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 import json
+from itertools import permutations
 import re
 import subprocess
 
@@ -68,6 +69,10 @@ def main():
     assert exact["steps"] == [] and {row["name"] for row in exact["remaining"]} == set(names)
     assert exact["optimal_order_count"] == 1
     assert exact["required_targets"] == exact["possible_targets"] == []
+    first_choices = {row["name"]: row for row in exact["first_choices"]}
+    assert set(first_choices) == set(names)
+    assert all(row["completed"] == 0 and row.get("lost_steps") is None and row["blockers"]
+               for row in first_choices.values())
     assert any("首次发布冲突" in reason for row in exact["remaining"] for reason in row["reasons"])
     assert run("order-exact", "第零次黎明", "2026-11-20", names[0], names[0], success=False) == ""
     print("PASS exact shortlist preserves the three recorded blockers for Dawn")
@@ -79,6 +84,19 @@ def main():
     assert "推荐顺序：3步；未可安排：0项" in demo
     assert [line.split(" |")[0] for line in demo.splitlines() if re.match(r"[1-3]\. ", line)] == [
         "1. 首发赛 C", "2. 普通赛 B", "3. 普通赛 A"]
+    # Independent fixed-rule oracle: any prefix containing C must start with C.
+    names = ("普通赛 A", "普通赛 B", "首发赛 C")
+    legal = [order for n in range(1, 4) for order in permutations(names, n)
+             if names[2] not in order or order[0] == names[2]]
+    exact_demo = json.loads(run("order-demo", "--exact"))
+    longest = max(map(len, legal))
+    expected = {name: max(len(order) for order in legal if order[0] == name)
+                for name in names}
+    assert {row["name"]: row["completed"] for row in exact_demo["first_choices"]} == expected
+    assert all(row["lost_steps"] == longest - expected[row["name"]]
+               and row["blockers"] == [] for row in exact_demo["first_choices"])
+    assert exact_demo["optimal_order_count"] == sum(len(order) == longest for order in legal)
+    print("PASS best completion and cost of each first choice match exhaustive fixed-rule replay")
     materials = run("materials-plan", "小店日结", "2026-11-20", "3")
     assert "已具备条件：1；补齐后新增：2" in materials
     assert [line for line in materials.splitlines() if line.startswith("待补材料")] == [

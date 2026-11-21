@@ -6,7 +6,7 @@
 
 ## 初审核对
 
-在仓库根目录运行 `moon test review`。三个 [公开接口案例](review/public_contract_test.mbt) 分别核对材料预算、补齐后仍存在的投稿阻断，以及并列最优路线中的必选目标。
+在仓库根目录运行 `moon test review`。四个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
 
 运行 `moon run cmd/main -- materials-plan 小店日结 2026-11-20 3`。MoonBit 先模拟补齐每个目标的材料并复跑认证，再在预算内枚举缺项集合的去重并集，选出最多能新增多少可认证目标。并列时优先选材料较少的方案。预算为 0 至 3 项，同名材料按一项计。
 
@@ -47,6 +47,8 @@ moon run cmd/main -- order-exact 第零次黎明 2026-11-20 'Qoder 高校创造�
 `plan_exact_shortlist(work, targets, today)` 在同一审计日精确搜索最多 7 个目标的可行顺序。每一步按当前模拟状态重跑资格和材料认证。以位集合跟踪已执行目标，枚举各条可行路线。输出 `steps` 和代表方案完成后其余目标的阻断原因 `remaining`，并提供 `optimal_order_count`、所有最优路线的目标交集 `required_targets` 及并集 `possible_targets`。目标并集中的赛事可能只能择一。没有目标可完成时计为一条空路线。结果只针对本次所选短名单及台账条件。
 
 三个合成目标都能独立作为首次提交。若先提交普通赛，两个首发赛都随之不可投；若先提交其中一个首发赛，可以再提交普通赛，最长为 2 步。两条最优路线为 B → A 和 C → A，普通赛 A 必选，首发赛 B 与 C 可互换。另有先上架后才满足首发窗口的合成场景，以及七个无冲突目标的 5,040 条最优路线边界测试。上述真实「第零次黎明」短名单仍为 0 步，已登记的冲突继续保留。运行 `moon test -f 'exact shortlist*'` 可核对合成结果。
+
+运行 `moon run cmd/main -- order-demo --exact` 可比较每个开局。输出 `first_choices` 在同一次搜索中记录固定首个目标后最多完成的数量 `completed`，以及相对全局最优少完成多少项 `lost_steps`。首项当前不可执行时会列出 `blockers` 并省略 `lost_steps`。演示中普通赛 A 或 B 先投最多完成 2 项，首发赛 C 先投可完成 3 项。Python 按该案例的首发规则枚举排列核对每个开局。
 
 ## v0.1.4：审证据，算顺序（2026-11-20）
 
