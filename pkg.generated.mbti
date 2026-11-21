@@ -200,6 +200,7 @@ pub(all) struct ExactRequiredOrder {
   requested : Array[String]
   conflict_cores : Array[Array[String]]
   minimal_waivers : Array[Array[String]]
+  waiver_routes : Array[ExactWaiverRoute]
   steps : Array[String]
   optimal_order_count : Int32
 }
@@ -214,6 +215,12 @@ pub(all) struct ExactSubmissionOrder {
   first_choices : Array[ExactFirstChoice]
   drop_impacts : Array[ExactDropImpact]
   with_required : ExactRequiredOrder?
+}
+
+#derive(@json.ToJson)
+pub(all) struct ExactWaiverRoute {
+  waived : Array[String]
+  steps : Array[String]
 }
 
 pub struct FactEvidence {

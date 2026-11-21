@@ -17,10 +17,24 @@ pub(all) struct ExactDropImpact {
 
 ///|
 #derive(ToJson)
+pub(all) struct ExactWaiverRoute {
+  waived : Array[String]
+  steps : Array[String]
+}
+
+///|
+priv struct ReachedRoute {
+  steps : Array[String]
+  discovery : Int32
+}
+
+///|
+#derive(ToJson)
 pub(all) struct ExactRequiredOrder {
   requested : Array[String]
   conflict_cores : Array[Array[String]]
   minimal_waivers : Array[Array[String]]
+  waiver_routes : Array[ExactWaiverRoute]
   steps : Array[String]
   optimal_order_count : Int32
 }
@@ -89,7 +103,8 @@ pub fn plan_exact_shortlist(
     }
     must_mask = must_mask | bit
   }
-  let attainable = Array::make(1 << pending.length(), false)
+  let routes : Array[ReachedRoute?] = Array::make(1 << pending.length(), None)
+  let mut discovery = 0
   let mut best_required : Array[String] = []
   let mut required_count = 0
   let path : Array[String] = []
@@ -105,7 +120,15 @@ pub fn plan_exact_shortlist(
     if first >= 0 && path.length() > best_by_first[first] {
       best_by_first[first] = path.length()
     }
-    attainable[used & must_mask] = true
+    if must_mask != 0 {
+      let projection = used & must_mask
+      if routes[projection]
+        .map(route => route.steps.length() < path.length())
+        .unwrap_or(true) {
+        discovery += 1
+        routes[projection] = Some({ steps: path.copy(), discovery, })
+      }
+    }
     if must_mask != 0 && (used & must_mask) == must_mask {
       if path.length() > best_required.length() {
         best_required = path.copy()
@@ -182,19 +205,33 @@ pub fn plan_exact_shortlist(
       reasons: sequence_reasons(best_state, comp, today),
     })
   let conflict_cores : Array[Array[String]] = []
-  let minimal_waivers : Array[Array[String]] = []
+  let waiver_routes : Array[ExactWaiverRoute] = []
   if must_mask != 0 && required_count == 0 {
     // A set of required targets is feasible if any reached mask contains it.
     for i in 0..<pending.length() {
       let bit = 1 << i
-      for mask in 0..<attainable.length() {
-        if (mask & bit) == 0 && attainable[mask | bit] {
-          attainable[mask] = true
+      for mask in 0..<routes.length() {
+        if (mask & bit) != 0 {
+          continue
+        }
+        if routes[mask | bit] is Some(candidate) {
+          let better = routes[mask]
+            .map(current => {
+              candidate.steps.length() > current.steps.length() ||
+              (
+                candidate.steps.length() == current.steps.length() &&
+                candidate.discovery < current.discovery
+              )
+            })
+            .unwrap_or(true)
+          if better {
+            routes[mask] = Some(candidate)
+          }
         }
       }
     }
-    for mask in 1..<attainable.length() {
-      if (mask & must_mask) != mask || attainable[mask] {
+    for mask in 1..<routes.length() {
+      if (mask & must_mask) != mask || routes[mask] is Some(_) {
         continue
       }
       let core = []
@@ -202,7 +239,7 @@ pub fn plan_exact_shortlist(
       for i, comp in pending {
         let bit = 1 << i
         if (mask & bit) != 0 {
-          if !attainable[mask ^ bit] {
+          if routes[mask ^ bit] is None {
             minimal = false
             break
           }
@@ -213,21 +250,19 @@ pub fn plan_exact_shortlist(
         conflict_cores.push(core)
       }
     }
-    for removed in 1..<attainable.length() {
+    for removed in 1..<routes.length() {
       if (removed & must_mask) != removed {
         continue
       }
       let retained = must_mask ^ removed
-      if !attainable[retained] {
-        continue
-      }
+      guard routes[retained] is Some(route) else { continue }
       let waiver = []
       let mut minimal = true
       for i, comp in pending {
         let bit = 1 << i
         if (removed & bit) != 0 {
           // Restoring any one waived requirement must make this set infeasible.
-          if attainable[retained | bit] {
+          if routes[retained | bit] is Some(_) {
             minimal = false
             break
           }
@@ -235,7 +270,7 @@ pub fn plan_exact_shortlist(
         }
       }
       if minimal {
-        minimal_waivers.push(waiver)
+        waiver_routes.push({ waived: waiver, steps: route.steps.copy(), })
       }
     }
   }
@@ -268,7 +303,8 @@ pub fn plan_exact_shortlist(
       Some({
         requested,
         conflict_cores,
-        minimal_waivers,
+        minimal_waivers: waiver_routes.map(route => route.waived.copy()),
+        waiver_routes,
         steps: best_required,
         optimal_order_count: required_count,
       })

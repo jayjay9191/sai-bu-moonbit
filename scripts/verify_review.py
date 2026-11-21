@@ -77,7 +77,8 @@ def main():
     assert run("order-exact", "第零次黎明", "2026-11-20", names[0], names[0], success=False) == ""
     constrained = json.loads(run("order-exact", "第零次黎明", "2026-11-20", *names, "--must", names[0]))
     assert constrained["with_required"] == dict(requested=[names[0]], steps=[], optimal_order_count=0,
-                                                conflict_cores=[[names[0]]], minimal_waivers=[[names[0]]])
+                                                conflict_cores=[[names[0]]], minimal_waivers=[[names[0]]],
+                                                waiver_routes=[dict(waived=[names[0]], steps=[])])
     for required in ((), ("未知目标",), (names[0], names[0])):
         assert run("order-exact", "第零次黎明", "2026-11-20", *names, "--must", *required, success=False) == ""
     print("PASS exact shortlist preserves recorded blockers even for required targets")

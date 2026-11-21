@@ -228,3 +228,35 @@ test "review enumerates minimal waivers and checks that every removed requiremen
     }
   }
 }
+
+///|
+test "review every minimal waiver carries its longest route with stable ties" {
+  let (work, choices) = review_shortlist()
+  let today = @lib.date_to_days("2026-11-20")
+  let required = ["D", "B", "C", "A"]
+  let ordinary = { ..choices[2], name: "E", }
+  let targets = choices + [ordinary]
+  let plan = @lib.plan_exact_shortlist(
+    work,
+    targets,
+    today,
+    must_include=required,
+  )
+  guard plan.with_required is Some(audit) else {
+    abort("expected waiver routes")
+  }
+  assert_eq(audit.waiver_routes.map(item => (item.waived, item.steps)), [
+    (["B", "D"], ["C", "A", "E"]),
+    (["C", "D"], ["B", "A", "E"]),
+  ])
+  for item in audit.waiver_routes {
+    let retained = required.filter(name => !item.waived.contains(name))
+    let checked = @lib.plan_exact_shortlist(
+      work,
+      targets.rev(),
+      today,
+      must_include=retained,
+    )
+    assert_eq(checked.with_required.unwrap().steps, item.steps)
+  }
+}
