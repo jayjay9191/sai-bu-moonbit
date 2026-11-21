@@ -192,3 +192,39 @@ test "review returns each inclusion-minimal conflict including different sizes" 
     }
   }
 }
+
+///|
+test "review enumerates minimal waivers and checks that every removed requirement matters" {
+  let (work, choices) = review_shortlist()
+  let today = @lib.date_to_days("2026-11-20")
+  let required = ["A", "B", "C", "D"]
+  let audit = @lib.plan_exact_shortlist(
+    work,
+    choices,
+    today,
+    must_include=required,
+  )
+  guard audit.with_required is Some(plan) else {
+    abort("expected required audit")
+  }
+  assert_eq(plan.minimal_waivers, [["B", "D"], ["C", "D"]])
+  for waived in plan.minimal_waivers {
+    let retained = required.filter(name => !waived.contains(name))
+    let repaired = @lib.plan_exact_shortlist(
+      work,
+      choices,
+      today,
+      must_include=retained,
+    )
+    assert_true(repaired.with_required.unwrap().optimal_order_count > 0)
+    for restored in waived {
+      let invalid = @lib.plan_exact_shortlist(
+        work,
+        choices,
+        today,
+        must_include=retained + [restored],
+      )
+      assert_eq(invalid.with_required.unwrap().optimal_order_count, 0)
+    }
+  }
+}

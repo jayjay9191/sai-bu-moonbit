@@ -20,6 +20,7 @@ pub(all) struct ExactDropImpact {
 pub(all) struct ExactRequiredOrder {
   requested : Array[String]
   conflict_cores : Array[Array[String]]
+  minimal_waivers : Array[Array[String]]
   steps : Array[String]
   optimal_order_count : Int32
 }
@@ -181,6 +182,7 @@ pub fn plan_exact_shortlist(
       reasons: sequence_reasons(best_state, comp, today),
     })
   let conflict_cores : Array[Array[String]] = []
+  let minimal_waivers : Array[Array[String]] = []
   if must_mask != 0 && required_count == 0 {
     // A set of required targets is feasible if any reached mask contains it.
     for i in 0..<pending.length() {
@@ -209,6 +211,31 @@ pub fn plan_exact_shortlist(
       }
       if minimal {
         conflict_cores.push(core)
+      }
+    }
+    for removed in 1..<attainable.length() {
+      if (removed & must_mask) != removed {
+        continue
+      }
+      let retained = must_mask ^ removed
+      if !attainable[retained] {
+        continue
+      }
+      let waiver = []
+      let mut minimal = true
+      for i, comp in pending {
+        let bit = 1 << i
+        if (removed & bit) != 0 {
+          // Restoring any one waived requirement must make this set infeasible.
+          if attainable[retained | bit] {
+            minimal = false
+            break
+          }
+          waiver.push(comp.name)
+        }
+      }
+      if minimal {
+        minimal_waivers.push(waiver)
       }
     }
   }
@@ -241,6 +268,7 @@ pub fn plan_exact_shortlist(
       Some({
         requested,
         conflict_cores,
+        minimal_waivers,
         steps: best_required,
         optimal_order_count: required_count,
       })
