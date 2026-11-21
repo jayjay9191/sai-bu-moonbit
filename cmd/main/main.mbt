@@ -168,7 +168,7 @@ fn print_usage() -> Unit {
     "order <作品名> [YYYY-MM-DD]：首选枚举与贪心投稿顺序（本地模拟）",
   )
   println(
-    "order-demo [--exact | --materials | --prefix 目标 ...]：重放合成案例，对照普通赛和首发赛两种开局",
+    "order-demo [--exact | --materials [目标 ...] | --prefix 目标 ...]：重放合成案例，对照普通赛和首发赛两种开局",
   )
   println("用法：moon run cmd/main [子命令 ...]")
   println(
@@ -206,7 +206,7 @@ fn print_usage() -> Unit {
     "order-replay <作品名> <日期> <目标1> [目标2 ...] --prefix <首项> [后续步骤 ...]：逐步模拟前缀并搜索余下路线",
   )
   println(
-    "order-materials <作品名> <日期> <预算0-3> <目标 ...>：同时规划共用材料和合法顺序",
+    "order-materials <作品名> <日期> <预算0-3> <目标 ...> [--prefix 前缀 ...]：同时规划共用材料和合法顺序",
   )
   println("help：显示本帮助")
 }
@@ -312,7 +312,7 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
     let replay = args[0] == "order-replay"
     let materials = args[0] == "order-materials"
     let first_target = if materials { 4 } else { 3 }
-    let separator = if replay { "--prefix" } else { "--must" }
+    let separator = if replay || materials { "--prefix" } else { "--must" }
     if args.length() <= first_target || !@lib.is_valid_date(args[2]) {
       fail(
         "请填写作品名、YYYY-MM-DD 日期及 1 至 7 个短名单目标。order-materials 在日期后还需要预算 0 至 3。",
@@ -329,7 +329,7 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
         selected.push(args[i])
         continue
       }
-      if !materials && args[i] == separator {
+      if args[i] == separator {
         collecting_selected = true
         continue
       }
@@ -346,14 +346,12 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
     }
     let today = @lib.date_to_days(args[2])
     let result = if materials {
-      Json(
-        @lib.plan_order_materials(
-          work,
-          targets,
-          today,
-          @string.parse_int(args[3]),
-        ),
-      )
+      let budget = @string.parse_int(args[3])
+      if collecting_selected {
+        material_prefix_json(work, targets, today, budget, selected)
+      } else {
+        Json(@lib.plan_order_materials(work, targets, today, budget))
+      }
     } else if replay {
       Json(@lib.replay_submission_prefix(work, targets, today, selected))
     } else {
@@ -371,19 +369,40 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
 }
 
 ///|
+fn material_prefix_json(
+  work : @lib.Work,
+  targets : Array[@lib.Competition],
+  today : Int32,
+  budget : Int32,
+  prefix : Array[String],
+) -> Json raise @lib.SequenceError {
+  let plans = @lib.plan_order_materials_after_prefix(
+    work, targets, today, budget, prefix,
+  )
+  Json(
+    plans.map(plan => {
+      match plan {
+        Some(row) => Json(row)
+        None => Json::null()
+      }
+    }),
+  )
+}
+
+///|
 fn cmd_review(args : Array[String]) -> Unit {
   try {
     if args[0] == "order-demo" {
       let exact = args.length() == 2 && args[1] == "--exact"
-      let materials = args.length() == 2 && args[1] == "--materials"
-      let prefix = if args.length() > 2 && args[1] == "--prefix" {
+      let materials = args.length() >= 2 && args[1] == "--materials"
+      let prefix = if args.length() > 2 && (args[1] == "--prefix" || materials) {
         Some(args[2:].to_owned())
       } else {
         None
       }
       if args.length() != 1 && !exact && !materials && prefix is None {
         fail(
-          "用法：order-demo [--exact | --materials | --prefix 目标 ...]",
+          "用法：order-demo [--exact | --materials [目标 ...] | --prefix 目标 ...]",
         )
       }
       order_demo(exact, prefix, materials)
@@ -545,9 +564,13 @@ fn order_demo(
     let poster = { ..a, materials: ["海报"], }
     let video = { ..b, materials: ["视频"], }
     let first = { ..c, materials: ["视频"], }
-    println(
-      Json(@lib.plan_order_materials(work, [poster, video, first], today, 3)).stringify(),
-    )
+    let targets = [poster, video, first]
+    let result = if prefix is Some(steps) {
+      material_prefix_json(work, targets, today, 3, steps)
+    } else {
+      Json(@lib.plan_order_materials(work, targets, today, 3))
+    }
+    println(result.stringify())
   } else if prefix is Some(steps) {
     println(
       Json(@lib.replay_submission_prefix(work, [a, b, c], today, steps)).stringify(),

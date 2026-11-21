@@ -333,3 +333,40 @@ test "review materials and valid order are optimized jointly" {
   assert_eq(unlocked[1].materials, ["missing"])
   assert_eq(work.materials_ready, ["fixture"])
 }
+
+///|
+test "review fixed prefixes distinguish unavailable budgets from legal continuations" {
+  let (work, choices) = review_shortlist()
+  let today = @lib.date_to_days("2026-11-20")
+  let a = { ..choices[2], materials: ["poster"], }
+  let b = { ..choices[3], materials: ["videos"], }
+  let targets = [a, b]
+  let preferred = @lib.plan_order_materials_after_prefix(
+    work,
+    targets,
+    today,
+    3,
+    ["B"],
+  )
+  assert_true(preferred[0] is None)
+  assert_eq(preferred[1].unwrap().steps, ["B"])
+  assert_eq(preferred[2].unwrap().steps, ["B", "A"])
+  assert_eq(preferred[3].unwrap().materials, ["poster", "videos"])
+  let blocked = @lib.plan_order_materials_after_prefix(
+    work,
+    targets,
+    today,
+    3,
+    ["A", "B"],
+  )
+  assert_true(blocked.all(row => row is None))
+  let ordinary = @lib.plan_order_materials_after_prefix(
+    work,
+    targets,
+    today,
+    3,
+    ["A"],
+  )
+  assert_eq(ordinary[3].unwrap().steps, ["A"])
+  assert_eq(work.materials_ready, ["fixture"])
+}

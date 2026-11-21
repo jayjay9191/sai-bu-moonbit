@@ -373,41 +373,76 @@ pub fn plan_order_materials(
   today : Int32,
   max_budget : Int32,
 ) -> Array[MaterialOrderPlan] raise SequenceError {
-  if max_budget < 0 || max_budget > 3 || targets.length() > 7 {
+  plan_order_materials_after_prefix(work, targets, today, max_budget, []).map(row => {
+    row.unwrap()
+  })
+}
+
+///|
+/// Each index is a material budget. None means the entire prefix cannot be
+/// carried out within that budget and the current eligibility rules.
+pub fn plan_order_materials_after_prefix(
+  work : Work,
+  targets : Array[Competition],
+  today : Int32,
+  max_budget : Int32,
+  prefix : Array[String],
+) -> Array[MaterialOrderPlan?] raise SequenceError {
+  if max_budget < 0 ||
+    max_budget > 3 ||
+    targets.length() > 7 ||
+    prefix.length() > targets.length() {
     raise InvalidSequence(
-      "联合规划最多 7 个目标，材料预算须为 0 至 3 项",
+      "联合规划最多 7 个目标，材料预算须为 0 至 3 项，前缀不能超过短名单",
     )
   }
   validate_planning_targets(targets)
+  let prefix_indices : Array[Int32] = []
+  for name in prefix {
+    let mut index = -1
+    for i, comp in targets {
+      if same_entry(name, comp.name) {
+        index = i
+        break
+      }
+    }
+    if index < 0 || prefix_indices.contains(index) {
+      raise InvalidSequence("前缀目标不在短名单内或重复：" + name)
+    }
+    prefix_indices.push(index)
+  }
   let gaps = targets.map(comp => required_material_gaps(work, comp))
-  let best : Array[MaterialOrderPlan] = Array::makei(max_budget + 1, budget => {
-    budget,
-    materials: [],
-    steps: [],
-  })
+  let best : Array[MaterialOrderPlan?] = Array::make(max_budget + 1, None)
   let path : Array[String] = []
   fn visit(state : Work, used : Int32, bundle : Array[String]) -> Unit {
-    for budget in bundle.length()..<(max_budget + 1) {
-      let current = best[budget]
-      if path.length() > current.steps.length() ||
-        (
-          path.length() == current.steps.length() &&
-          (
-            bundle.length() < current.materials.length() ||
+    let depth = path.length()
+    if depth >= prefix_indices.length() {
+      for budget in bundle.length()..<(max_budget + 1) {
+        if best[budget]
+          .map(current => {
+            depth > current.steps.length() ||
             (
-              bundle.length() == current.materials.length() &&
-              path.compare(current.steps) < 0
+              depth == current.steps.length() &&
+              (
+                bundle.length() < current.materials.length() ||
+                (
+                  bundle.length() == current.materials.length() &&
+                  path.compare(current.steps) < 0
+                )
+              )
             )
-          )
-        ) {
-        let sorted = bundle.copy()
-        sorted.sort()
-        best[budget] = { budget, materials: sorted, steps: path.copy(), }
+          })
+          .unwrap_or(true) {
+          let sorted = bundle.copy()
+          sorted.sort()
+          best[budget] = Some({ budget, materials: sorted, steps: path.copy(), })
+        }
       }
     }
     for i, comp in targets {
       let bit = 1 << i
-      if (used & bit) != 0 {
+      if (used & bit) != 0 ||
+        (depth < prefix_indices.length() && i != prefix_indices[depth]) {
         continue
       }
       let extra = gaps[i].filter(item => !bundle.contains(item))

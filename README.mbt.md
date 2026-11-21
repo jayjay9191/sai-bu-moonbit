@@ -6,7 +6,7 @@
 
 ## 初审核对
 
-在仓库根目录运行 `moon test review`。十一个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
+在仓库根目录运行 `moon test review`。十二个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
 
 运行 `moon run cmd/main -- materials-plan 小店日结 2026-11-20 3`。MoonBit 先模拟补齐每个目标的材料并复跑认证，再在预算内枚举缺项集合的去重并集，选出最多能新增多少可认证目标。并列时优先选材料较少的方案。预算为 0 至 3 项，同名材料按一项计。
 
@@ -67,6 +67,15 @@ moon run cmd/main -- order-demo --materials
 ```
 
 从 0 到 3 逐档计算，先最大化当天可按序完成的目标数，再最小化新增材料数，并列按目标名顺序取代表路线。合成案例中，一份共用视频支持「首发赛 C → 普通赛 B」两步，再补一份海报可完成第三步。若先投普通赛，首发赛仍会被阻断。MoonBit 在搜索中复用已有和已加入的材料，同时模拟每一步对公开日期及投稿历史的影响。本地台账入口是 `order-materials <作品名> <日期> <预算 0-3> <目标 ...>`，最多 7 个目标。
+
+### 已经选好开局时的预算
+
+```powershell
+moon run cmd/main -- order-demo --materials "首发赛 C"
+moon run cmd/main -- order-demo --materials "普通赛 A" "首发赛 C"
+```
+
+第一条在 0 项预算下输出 `null`，补 1 项视频可完成 C → B。第二条四档均为 `null`，因为普通赛先投会触发首发限制。API 用 `Option[MaterialOrderPlan]` 明确区分该预算无法走完前缀的情况。台账命令在候选目标之后添加 `--prefix <指定步骤 ...>` 即可复跑。独立脚本从材料子集和投稿排列枚举 15 个有序前缀 × 4 档预算。
 
 ## 重放指定投稿步骤
 

@@ -140,9 +140,25 @@ def main():
         _, _, steps, bundle = min(row for row in candidates if row[1] <= budget)
         assert actual == dict(budget=budget, materials=sorted(bundle), steps=list(steps))
     assert len(front) == 4 and len(front[1]["steps"]) == 2 and len(front[2]["steps"]) == 3
+    for count in range(1, 4):
+        for prefix in permutations(names, count):
+            actual = json.loads(run("order-demo", "--materials", *prefix))
+            expected = []
+            for budget in range(4):
+                pick = min((row for row in candidates
+                            if row[1] <= budget and row[2][:count] == prefix), default=None)
+                expected.append(None if pick is None else
+                                dict(budget=budget, materials=sorted(pick[3]), steps=list(pick[2])))
+            assert actual == expected, (prefix, actual, expected)
+    for invalid in (("不存在",), (names[0], names[0])):
+        assert "InvalidSequence" in run("order-demo", "--materials", *invalid, success=False)
+    print("PASS 60 prefix-budget decisions match independent material subsets and permutations")
     real = json.loads(run("order-materials", "第零次黎明", "2026-11-20", "3",
                           "Qoder 高校创造力大赛", "AI PLAY 72H 创作黑客松"))
     assert all(row["steps"] == [] and row["materials"] == [] for row in real)
+    blocked = json.loads(run("order-materials", "第零次黎明", "2026-11-20", "3",
+                             "Qoder 高校创造力大赛", "--prefix", "Qoder 高校创造力大赛"))
+    assert blocked == [None] * 4
     assert run("order-materials", "第零次黎明", "2026-11-20", "4", "Qoder 高校创造力大赛", success=False) == ""
     print("PASS joint budgets against independent material subsets and legal permutations")
     materials = run("materials-plan", "小店日结", "2026-11-20", "3")

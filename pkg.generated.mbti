@@ -71,6 +71,8 @@ pub fn plan_materials(Work, Array[Competition], Int32, Int32) -> MaterialPlan ra
 
 pub fn plan_order_materials(Work, Array[Competition], Int32, Int32) -> Array[MaterialOrderPlan] raise SequenceError
 
+pub fn plan_order_materials_after_prefix(Work, Array[Competition], Int32, Int32, Array[String]) -> Array[MaterialOrderPlan?] raise SequenceError
+
 pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder raise SequenceError
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
