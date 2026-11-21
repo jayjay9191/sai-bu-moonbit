@@ -75,7 +75,11 @@ def main():
                for row in first_choices.values())
     assert any("首次发布冲突" in reason for row in exact["remaining"] for reason in row["reasons"])
     assert run("order-exact", "第零次黎明", "2026-11-20", names[0], names[0], success=False) == ""
-    print("PASS exact shortlist preserves the three recorded blockers for Dawn")
+    constrained = json.loads(run("order-exact", "第零次黎明", "2026-11-20", *names, "--must", names[0]))
+    assert constrained["with_required"] == dict(requested=[names[0]], steps=[], optimal_order_count=0)
+    for required in ((), ("未知目标",), (names[0], names[0])):
+        assert run("order-exact", "第零次黎明", "2026-11-20", *names, "--must", *required, success=False) == ""
+    print("PASS exact shortlist preserves recorded blockers even for required targets")
     demo = run("order-demo")
     assert "合成案例" in demo and "未投稿 | 材料齐备" in demo
     assert "普通赛 A | 当前可提交 true | 其后剩余可投 1" in demo

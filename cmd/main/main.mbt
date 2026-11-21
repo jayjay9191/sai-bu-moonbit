@@ -200,7 +200,7 @@ fn print_usage() -> Unit {
     "materials-plan <作品名> <日期> <材料预算0-3|frontier|frontier-json|explain|explain-json>：优先补齐可复用材料",
   )
   println(
-    "order-exact <作品名> <日期> <目标1> [目标2 ...]：精确搜索 1 至 7 个目标的同日顺序",
+    "order-exact <作品名> <日期> <目标1> [目标2 ...] [--must 必选目标 ...]：精确搜索 1 至 7 个目标的同日顺序",
   )
   println("help：显示本帮助")
 }
@@ -303,23 +303,45 @@ fn print_material_plan_items(plan : @lib.MaterialPlan) -> Unit {
 ///|
 fn cmd_order_exact(args : Array[String]) -> Unit {
   try {
-    if args.length() < 4 || args.length() > 10 || !@lib.is_valid_date(args[2]) {
+    if args.length() < 4 || !@lib.is_valid_date(args[2]) {
       fail(
-        "用法：order-exact <作品名> <YYYY-MM-DD> <目标1> [目标2 ...]，最多 7 个目标",
+        "用法：order-exact <作品名> <YYYY-MM-DD> <目标1> [目标2 ...] [--must 必选目标 ...]，最多 7 个目标",
       )
     }
     guard @lib.work_by_name(args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
     let targets : Array[@lib.Competition] = []
+    let required : Array[String] = []
+    let mut collecting_required = false
     for i in 3..<args.length() {
+      if collecting_required {
+        required.push(args[i])
+        continue
+      }
+      if args[i] == "--must" {
+        collecting_required = true
+        continue
+      }
       guard @lib.competition_by_name(args[i]) is Some(comp) else {
         fail("未找到目标：" + args[i])
       }
       targets.push(comp)
     }
+    if targets.is_empty() || (collecting_required && required.is_empty()) {
+      fail(
+        "请填写短名单。使用 --must 时须填写至少一个必选目标",
+      )
+    }
     println(
-      Json(@lib.plan_exact_shortlist(work, targets, @lib.date_to_days(args[2]))).stringify(),
+      Json(
+        @lib.plan_exact_shortlist(
+          work,
+          targets,
+          @lib.date_to_days(args[2]),
+          must_include=required,
+        ),
+      ).stringify(),
     )
   } catch {
     err => {

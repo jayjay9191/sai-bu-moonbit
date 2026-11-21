@@ -17,6 +17,14 @@ pub(all) struct ExactDropImpact {
 
 ///|
 #derive(ToJson)
+pub(all) struct ExactRequiredOrder {
+  requested : Array[String]
+  steps : Array[String]
+  optimal_order_count : Int32
+}
+
+///|
+#derive(ToJson)
 pub(all) struct ExactSubmissionOrder {
   steps : Array[String]
   remaining : Array[BlockedTarget]
@@ -25,6 +33,7 @@ pub(all) struct ExactSubmissionOrder {
   possible_targets : Array[String]
   first_choices : Array[ExactFirstChoice]
   drop_impacts : Array[ExactDropImpact]
+  with_required : ExactRequiredOrder?
 }
 
 ///|
@@ -35,6 +44,7 @@ pub fn plan_exact_shortlist(
   work : Work,
   comps : Array[Competition],
   today : Int32,
+  must_include~ : Array[String] = [],
 ) -> ExactSubmissionOrder raise SequenceError {
   if comps.length() > 7 {
     raise InvalidSequence("精确顺序规划最多接受 7 个目标")
@@ -59,6 +69,26 @@ pub fn plan_exact_shortlist(
       date_order
     }
   })
+  let mut must_mask = 0
+  for name in must_include {
+    let mut index = -1
+    for i, comp in pending {
+      if same_entry(name, comp.name) {
+        index = i
+        break
+      }
+    }
+    if index < 0 {
+      raise InvalidSequence("必选目标不在短名单中：" + name)
+    }
+    let bit = 1 << index
+    if (must_mask & bit) != 0 {
+      raise InvalidSequence("必选目标重复：" + name)
+    }
+    must_mask = must_mask | bit
+  }
+  let mut best_required : Array[String] = []
+  let mut required_count = 0
   let path : Array[String] = []
   let mut best : Array[String] = []
   let mut best_state = work
@@ -71,6 +101,15 @@ pub fn plan_exact_shortlist(
   fn search(current : Work, used : Int32, first : Int32) -> Unit {
     if first >= 0 && path.length() > best_by_first[first] {
       best_by_first[first] = path.length()
+    }
+    if must_mask != 0 && (used & must_mask) == must_mask {
+      if path.length() > best_required.length() {
+        best_required = path.copy()
+        required_count = 0
+      }
+      if path.length() == best_required.length() {
+        required_count += 1
+      }
     }
     if path.length() > best.length() {
       best = path.copy()
@@ -140,10 +179,14 @@ pub fn plan_exact_shortlist(
     })
   let required_targets = []
   let possible_targets = []
+  let requested = []
   for i, comp in pending {
     let bit = 1 << i
     if (required_mask & bit) != 0 {
       required_targets.push(comp.name)
+    }
+    if (must_mask & bit) != 0 {
+      requested.push(comp.name)
     }
     if (possible_mask & bit) != 0 {
       possible_targets.push(comp.name)
@@ -157,5 +200,14 @@ pub fn plan_exact_shortlist(
     possible_targets,
     first_choices,
     drop_impacts,
+    with_required: if requested.is_empty() {
+      None
+    } else {
+      Some({
+        requested,
+        steps: best_required,
+        optimal_order_count: required_count,
+      })
+    },
   }
 }

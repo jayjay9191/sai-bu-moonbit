@@ -131,3 +131,26 @@ test "review dropping the platform blocks a second otherwise reachable target" {
     assert_eq(row.completed, rerun.steps.length())
   }
 }
+
+///|
+test "review requires targets jointly and distinguishes incompatible choices" {
+  let (work, choices) = review_shortlist()
+  let today = @lib.date_to_days("2026-11-20")
+  let forced = @lib.plan_exact_shortlist(work, choices, today, must_include=[
+    "C",
+  ])
+  guard forced.with_required is Some(plan) else {
+    abort("expected required-target result")
+  }
+  assert_eq(plan.steps, ["C", "A"])
+  assert_eq(plan.optimal_order_count, 1)
+  let incompatible = @lib.plan_exact_shortlist(work, choices, today, must_include=[
+    "B", "C",
+  ])
+  guard incompatible.with_required is Some(none) else {
+    abort("expected infeasibility result")
+  }
+  assert_eq(none.optimal_order_count, 0)
+  assert_true(none.steps.is_empty())
+  assert_eq(incompatible.steps, ["B", "A"])
+}
