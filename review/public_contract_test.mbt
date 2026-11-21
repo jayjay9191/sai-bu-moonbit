@@ -154,3 +154,41 @@ test "review requires targets jointly and distinguishes incompatible choices" {
   assert_true(none.steps.is_empty())
   assert_eq(incompatible.steps, ["B", "A"])
 }
+
+///|
+test "review returns each inclusion-minimal conflict including different sizes" {
+  let (work, choices) = review_shortlist()
+  let today = @lib.date_to_days("2026-11-20")
+  let full = @lib.plan_exact_shortlist(work, choices, today, must_include=[
+    "D", "C", "A", "B",
+  ])
+  guard full.with_required is Some(plan) else {
+    abort("expected infeasibility result")
+  }
+  assert_eq(plan.conflict_cores, [["B", "C"], ["D"]])
+  for group in plan.conflict_cores {
+    let blocked = @lib.plan_exact_shortlist(
+      work,
+      choices,
+      today,
+      must_include=group,
+    )
+    guard blocked.with_required is Some(reason) else {
+      abort("expected conflict")
+    }
+    assert_eq(reason.optimal_order_count, 0)
+    for removed in group {
+      let subset = group.filter(name => name != removed)
+      let shortened = @lib.plan_exact_shortlist(
+        work,
+        choices,
+        today,
+        must_include=subset,
+      )
+      assert_true(
+        shortened.with_required is None ||
+        shortened.with_required.unwrap().optimal_order_count > 0,
+      )
+    }
+  }
+}

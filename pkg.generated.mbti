@@ -198,6 +198,7 @@ pub(all) struct ExactFirstChoice {
 #derive(@json.ToJson)
 pub(all) struct ExactRequiredOrder {
   requested : Array[String]
+  conflict_cores : Array[Array[String]]
   steps : Array[String]
   optimal_order_count : Int32
 }

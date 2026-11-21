@@ -19,6 +19,7 @@ pub(all) struct ExactDropImpact {
 #derive(ToJson)
 pub(all) struct ExactRequiredOrder {
   requested : Array[String]
+  conflict_cores : Array[Array[String]]
   steps : Array[String]
   optimal_order_count : Int32
 }
@@ -87,6 +88,7 @@ pub fn plan_exact_shortlist(
     }
     must_mask = must_mask | bit
   }
+  let attainable = Array::make(1 << pending.length(), false)
   let mut best_required : Array[String] = []
   let mut required_count = 0
   let path : Array[String] = []
@@ -102,6 +104,7 @@ pub fn plan_exact_shortlist(
     if first >= 0 && path.length() > best_by_first[first] {
       best_by_first[first] = path.length()
     }
+    attainable[used & must_mask] = true
     if must_mask != 0 && (used & must_mask) == must_mask {
       if path.length() > best_required.length() {
         best_required = path.copy()
@@ -177,6 +180,38 @@ pub fn plan_exact_shortlist(
       name: comp.name,
       reasons: sequence_reasons(best_state, comp, today),
     })
+  let conflict_cores : Array[Array[String]] = []
+  if must_mask != 0 && required_count == 0 {
+    // A set of required targets is feasible if any reached mask contains it.
+    for i in 0..<pending.length() {
+      let bit = 1 << i
+      for mask in 0..<attainable.length() {
+        if (mask & bit) == 0 && attainable[mask | bit] {
+          attainable[mask] = true
+        }
+      }
+    }
+    for mask in 1..<attainable.length() {
+      if (mask & must_mask) != mask || attainable[mask] {
+        continue
+      }
+      let core = []
+      let mut minimal = true
+      for i, comp in pending {
+        let bit = 1 << i
+        if (mask & bit) != 0 {
+          if !attainable[mask ^ bit] {
+            minimal = false
+            break
+          }
+          core.push(comp.name)
+        }
+      }
+      if minimal {
+        conflict_cores.push(core)
+      }
+    }
+  }
   let required_targets = []
   let possible_targets = []
   let requested = []
@@ -205,6 +240,7 @@ pub fn plan_exact_shortlist(
     } else {
       Some({
         requested,
+        conflict_cores,
         steps: best_required,
         optimal_order_count: required_count,
       })
