@@ -746,11 +746,39 @@ fn cmd_preflight(args : Array[String]) -> Unit {
   } else {
     @env.now() + 28800000UL
   }
-  let comps = @lib.all_competitions()
-  let works = @lib.all_works()
+  let replay = if args.length() == 2 {
+    let date = args[1]
+    Some(@lib.recorded_ledger_at(date)) catch {
+      @lib.NoLedgerCheckpoint(_) => {
+        eprintln("没有覆盖 \{date} 的台账快照")
+        @env.exit(2)
+      }
+      @lib.InvalidLedgerEvidence(message) => {
+        eprintln("台账回放证据无效：\{message}")
+        @env.exit(1)
+      }
+    }
+  } else {
+    None
+  }
+  let (comps, works) = match replay {
+    Some(ledger) => (ledger.competitions, ledger.works)
+    None => (@lib.all_competitions(), @lib.all_works())
+  }
   let report = @lib.preflight(comps, works, now)
   println("== preflight 全链路预检 ==")
   println("今天：\{report.today}")
+  if replay is Some(ledger) {
+    println(
+      "台账快照：\{ledger.checkpoint.known_on} · \{ledger.checkpoint.source}",
+    )
+    for event in ledger.applied {
+      let effective = event.effective_on.unwrap_or("未知")
+      println(
+        "证据收录：\{event.known_on} · 发生日：\{effective} · \{event.source}",
+      )
+    }
+  }
   if report.validate_issues.length() > 0 {
     println(
       "数据校验失败：\{report.validate_issues.length()} 个问题：",

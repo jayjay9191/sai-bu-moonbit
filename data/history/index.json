@@ -1,0 +1,29 @@
+{
+  "checkpoints": [
+    {
+      "known_on": "2026-11-15",
+      "file": "history/2026-11-15.json",
+      "source": "Git 6d20bc3, 2026-11-15 20:09 CST"
+    },
+    {
+      "known_on": "2026-11-20",
+      "file": "history/2026-11-20.json",
+      "source": "Git fbc7575, 2026-11-20 23:46 CST"
+    },
+    {
+      "known_on": "2026-11-23",
+      "file": "history/2026-11-23.json",
+      "source": "Git 534d1fb, 2026-11-23 月度验收台账"
+    }
+  ],
+  "observations": [
+    {
+      "known_on": "2026-11-23",
+      "effective_on": null,
+      "source": "参赛者记录的组委会初审通知，投稿发生日未收录",
+      "action": "record",
+      "work": "验价尺",
+      "competition": "MoonBit 黑客松"
+    }
+  ]
+}

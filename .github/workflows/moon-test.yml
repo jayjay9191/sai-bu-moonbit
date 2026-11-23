@@ -24,7 +24,7 @@ jobs:
           python3 scripts/generate_data.py
           export PATH="$HOME/.moon/bin:$PATH"
           moon fmt
-          git diff --exit-code -- competition_data.mbt
+          git diff --exit-code -- competition_data.mbt ledger_history_data.mbt
       - name: Validate data
         run: |
           export PATH="$HOME/.moon/bin:$PATH"

@@ -1,10 +1,13 @@
 """Replay the second-review CLI and retained certification results."""
 from datetime import date, datetime
+import hashlib
 from pathlib import Path
 import json
 from itertools import combinations, permutations
 import re
 import subprocess
+
+from generate_data import COMP_FIELDS, WORK_FIELDS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -89,6 +92,19 @@ def verify_real_material_choices():
                     assert set(row["required_" + label]) == set.intersection(*sets)
                     assert set(row["possible_" + label]) == set.union(*sets)
     print("PASS 48 actual ledger date/prefix/budget combinations recomputed from raw JSON")
+
+
+def verify_archived_manifests(reports):
+    for day, report in reports.items():
+        path = ROOT / "data" / "history" / f"{day}.json"
+        archive = json.loads(path.read_bytes())
+        defaults = dict(target_kind="比赛", required_work_kind="", publish_start="", publish_end="")
+        comps = [{field: (defaults | row)[field] for field in COMP_FIELDS}
+                 for row in archive["competitions"]]
+        works = [{field: row[field] for field in WORK_FIELDS} for row in archive["works"]]
+        payload = json.dumps(["sai-bu-ledger-v2", comps, works], ensure_ascii=False,
+                             separators=(",", ":")).encode("utf-8")
+        assert f"清单 SHA-256：{hashlib.sha256(payload).hexdigest()}" in report, day
 
 
 def main():
@@ -265,17 +281,24 @@ def main():
     assert "认证结论：不可提交" in trace
     preflight = run("preflight", "2026-11-23")
     assert "投稿包认证：84 个，可提交 2 个，P0 挡住 4 个" in preflight
+    prior = run("preflight", "2026-11-20")
+    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 3 个" in prior
+    assert "验价尺 → 魔搭" not in prior and "验价尺 → 魔搭" in preflight
     trial = run("pack", "小店日结", "支付宝智能体涌现奖")
     assert "缺口（0 项）" in trial
     assert re.search(r"可提交：\n(?:  - .*\n)*  - 小店日结 → 支付宝智能体涌现奖", preflight), preflight
     digest = re.search(r"清单 SHA-256：([0-9a-f]{64})", preflight).group(1)
     historical = run("preflight", "2026-11-15")
     assert "今天：2026-11-15" in historical
-    assert "可提交 0 个" in historical and "核验日期晚于审计日" in historical
+    assert "台账快照：2026-11-15 · Git 6d20bc3" in historical
+    assert "投稿包认证：57 个，可提交 2 个，P0 挡住 3 个" in historical
+    assert "证据收录：2026-11-23 · 发生日：未知" in preflight
+    verify_archived_manifests({"2026-11-15": historical, "2026-11-20": prior, "2026-11-23": preflight})
+    print("PASS three independent archived ledger digests")
     assert "12-01 提交前务必" not in run()
     for args in (("unknown-review-command",), ("order",), ("order-demo", "extra"), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),
-                 ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra"),
+                 ("preflight", "2026-02-30"), ("preflight", "2026-11-20", "extra"), ("preflight", "2026-11-14"),
                  ("calendar", "2026-02-30"), ("calendar", "2026-11-20", "extra")):
         run(*args, success=False)
     data = json.loads((ROOT / "data/competitions.json").read_text(encoding="utf-8"))

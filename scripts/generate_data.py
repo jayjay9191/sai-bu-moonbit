@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 JSON_PATH = ROOT / "data" / "competitions.json"
 OUT_PATH = ROOT / "competition_data.mbt"
+HISTORY_OUT = ROOT / "ledger_history_data.mbt"
 
 HEADER = """///|
 /// 由 scripts/generate_data.py 从 data/competitions.json 生成，不要手改。
@@ -123,6 +124,30 @@ def emit_work(w: dict) -> str:
     return "\n".join(lines)
 
 
+def emit_ledger_history() -> list[str]:
+    timeline = json.loads((ROOT / "data" / "history" / "index.json").read_text(encoding="utf-8"))
+    lines = ["///|", "fn ledger_checkpoints() -> Array[LedgerCheckpoint] {", "  ["]
+    for row in timeline["checkpoints"]:
+        lines.append(f"    {{ known_on: {mbt_str(row['known_on'])}, source: {mbt_str(row['source'])},")
+        raw = json.loads((ROOT / "data" / row["file"]).read_text(encoding="utf-8"))
+        # The archived November 15 schema stored only competitions and no window.
+        legacy = dict(target_kind="比赛", required_work_kind="", publish_start="", publish_end="")
+        lines.extend(["      competitions: [",
+                      *(emit_competition(legacy | c) for c in raw["competitions"]), "      ],"])
+        lines.extend(["      works: [", *(emit_work(w) for w in raw["works"]), "      ],"])
+        lines.append("    },")
+    lines.extend(["  ]", "}", "", "///|",
+                  "fn recorded_ledger_observations() -> Array[LedgerObservation] {", "  ["])
+    for row in timeline["observations"]:
+        kind = {"record": "RecordSubmission", "correct": "CorrectSubmission"}[row["action"]]
+        day = "None" if row["effective_on"] is None else f"Some({mbt_str(row['effective_on'])})"
+        lines.append(f"    {{ known_on: {mbt_str(row['known_on'])}, effective_on: {day},")
+        lines.append(f"      source: {mbt_str(row['source'])}, "
+                     f"change: {kind}({mbt_str(row['work'])}, {mbt_str(row['competition'])}), }},")
+    lines.extend(["  ]", "}", ""])
+    return lines
+
+
 def main() -> int:
     with open(JSON_PATH, encoding="utf-8") as f:
         data = json.load(f)
@@ -151,6 +176,8 @@ def main() -> int:
         parts.append("    },")
     parts.extend(["  ]", "}", ""])
     OUT_PATH.write_text("\n".join(parts), encoding="utf-8")
+    header = "///|\n/// Generated from data/history by scripts/generate_data.py.\n\n"
+    HISTORY_OUT.write_text(header + "\n".join(emit_ledger_history()), encoding="utf-8")
     print(f"已生成 {OUT_PATH}：{len(comps)} 个比赛，{len(works)} 件作品")
     return 0
 

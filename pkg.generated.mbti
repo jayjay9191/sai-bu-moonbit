@@ -79,9 +79,13 @@ pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
 
+pub fn recorded_ledger_at(String) -> LedgerReplay raise LedgerReplayError
+
 pub fn render_blocking_chain(Array[String]) -> String
 
 pub fn render_trace(DecisionTrace) -> String
+
+pub fn replay_ledger(Array[LedgerCheckpoint], Array[LedgerObservation], String) -> LedgerReplay raise LedgerReplayError
 
 pub fn replay_submission_prefix(Work, Array[Competition], Int32, Array[String]) -> ExactPrefixReplay raise SequenceError
 
@@ -116,6 +120,11 @@ pub fn work_by_name(String) -> Work?
 pub fn work_evidence_for(String) -> WorkEvidence
 
 // Errors
+pub suberror LedgerReplayError {
+  InvalidLedgerEvidence(String)
+  NoLedgerCheckpoint(String)
+}
+
 #derive(@debug.Debug)
 pub suberror SequenceError {
   InvalidSequence(String)
@@ -258,6 +267,33 @@ pub(all) struct FirstSubmission {
   remaining : Int32
   blocked : Array[BlockedTarget]
   deadline : String
+}
+
+pub(all) enum LedgerChange {
+  UpdateRule(Competition)
+  RecordSubmission(String, String)
+  CorrectSubmission(String, String)
+}
+
+pub(all) struct LedgerCheckpoint {
+  known_on : String
+  source : String
+  competitions : Array[Competition]
+  works : Array[Work]
+}
+
+pub(all) struct LedgerObservation {
+  known_on : String
+  effective_on : String?
+  source : String
+  change : LedgerChange
+}
+
+pub(all) struct LedgerReplay {
+  checkpoint : LedgerCheckpoint
+  competitions : Array[Competition]
+  works : Array[Work]
+  applied : Array[LedgerObservation]
 }
 
 #derive(@json.ToJson)
