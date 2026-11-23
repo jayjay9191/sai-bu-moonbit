@@ -14,6 +14,8 @@ import sys
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -84,20 +86,16 @@ class TestMbtEmit(unittest.TestCase):
         注意：不要断言“跑完与提交的文件字节一致”——提交的文件还经过
         moon fmt 格式化（CI 里是 generate + fmt 后再 diff），生成器
         本身只保证确定性输出。"""
-        out_path = ROOT / "competition_data.mbt"
-        saved = out_path.read_bytes()
-        try:
-            buf = io.StringIO()
-            with redirect_stdout(buf):
+        with TemporaryDirectory() as directory:
+            out_path = Path(directory) / "competition_data.mbt"
+            history_path = Path(directory) / "ledger_history_data.mbt"
+            with patch.multiple(generate_data, OUT_PATH=out_path, HISTORY_OUT=history_path), redirect_stdout(io.StringIO()):
                 self.assertEqual(generate_data.main(), 0)
-            first = hashlib.sha256(out_path.read_bytes()).hexdigest()
-            with redirect_stdout(buf):
+                first = out_path.read_bytes(), history_path.read_bytes()
                 self.assertEqual(generate_data.main(), 0)
-            second = hashlib.sha256(out_path.read_bytes()).hexdigest()
-            self.assertEqual(first, second)
-        finally:
-            out_path.write_bytes(saved)
-        text = out_path.read_text(encoding="utf-8")
+                second = out_path.read_bytes(), history_path.read_bytes()
+                self.assertEqual(first, second)
+            text = out_path.read_text(encoding="utf-8")
         data = json.loads((ROOT / "data" / "competitions.json").read_text(encoding="utf-8"))
         self.assertEqual(len(data["competitions"]), 21)
         self.assertEqual(len(data["works"]), 4)
