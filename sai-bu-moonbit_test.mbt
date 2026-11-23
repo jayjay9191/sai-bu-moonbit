@@ -287,8 +287,8 @@ test "pack xiaodianjie to moda is blocked" {
 ///|
 test "benchmark sweep counts" {
   // 全量扫描的计数与 benchmark 子命令打印的数字一致：
-  // 4 作品 × 21 目标，冲突 19 个（P0 7 个，P1 12 个），投稿包 84 个，
-  // 其中 P0 挡住 7 个，撞期 3 个日期。
+  // 4 作品 × 21 目标，冲突 22 个（P0 4 个，P1 18 个），投稿包 84 个，
+  // 其中 P0 挡住 4 个，撞期 3 个日期。
   let comps = @sai-bu-moonbit.all_competitions()
   let works = @sai-bu-moonbit.all_works()
   let mut total_conflicts = 0
@@ -315,11 +315,11 @@ test "benchmark sweep counts" {
       }
     }
   }
-  assert_eq(total_conflicts, 20)
-  assert_eq(p0, 3)
-  assert_eq(p1, 17)
+  assert_eq(total_conflicts, 22)
+  assert_eq(p0, 4)
+  assert_eq(p1, 18)
   assert_eq(total_packs, 84)
-  assert_eq(blocked_packs, 3)
+  assert_eq(blocked_packs, 4)
   assert_eq(@sai-bu-moonbit.collision_dates(comps).length(), 3)
 }
 
@@ -694,9 +694,7 @@ test "no-prior-entry rule fires on submitted_to only" {
 ///|
 test "software innovation pending for submitted works only" {
   // 软件创新大赛原创条款（规则 3）：只看 submitted_to，不看
-  // first_public_date。已投过其他比赛的三件作品应报 P1；AI 工具
-  // 定价核验只公开、未投过任何比赛，应为 0 个冲突——它是规则 3
-  // 不读公开日期的直接证据。
+  // first_public_date。缺少既往赛事层级证据时，已投稿作品应报 P1。
   let comps = @sai-bu-moonbit.all_competitions()
   let works = @sai-bu-moonbit.all_works()
   for wi in 0..<works.length() {

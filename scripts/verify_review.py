@@ -263,8 +263,11 @@ def main():
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")
     assert "最短阻断链：首次发布 → 不可提交（P0）" in trace
     assert "认证结论：不可提交" in trace
-    preflight = run("preflight", "2026-11-20")
-    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 3 个" in preflight
+    preflight = run("preflight", "2026-11-23")
+    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 4 个" in preflight
+    trial = run("pack", "小店日结", "支付宝智能体涌现奖")
+    assert "缺口（0 项）" in trial
+    assert re.search(r"可提交：\n(?:  - .*\n)*  - 小店日结 → 支付宝智能体涌现奖", preflight), preflight
     digest = re.search(r"清单 SHA-256：([0-9a-f]{64})", preflight).group(1)
     historical = run("preflight", "2026-11-15")
     assert "今天：2026-11-15" in historical
@@ -279,7 +282,7 @@ def main():
     assert len(data["competitions"]) == 21 and len(data["works"]) == 4
     assert len(data["followups"]) == 4
     print("PASS six citations, 84 decisions, eight missing proofs, four follow-ups, expired evidence and CLI input checks")
-    print("PASS original 84 packs / 2 certifiable / 3 P0; real Dawn has no eligible route")
+    print("PASS 84 packs / 2 certifiable / 4 P0; real Dawn has no eligible route")
     print("Manifest SHA-256:", digest)
 
 

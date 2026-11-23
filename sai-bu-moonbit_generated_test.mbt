@@ -1773,9 +1773,10 @@ test "cell: 验价尺 × 魔搭 AI+∞ 第三期「AI 造游戏」" {
           let list = @sai-bu-moonbit.conflicts_for_competition(
             conflicts, "魔搭 AI+∞ 第三期「AI 造游戏」",
           )
-          assert_eq(list.length(), 0)
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P0")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
-          assert_eq(pack.blocked, false)
+          assert_eq(pack.blocked, true)
         }
         None => assert_true(false)
       }
@@ -1969,7 +1970,8 @@ test "cell: 验价尺 × 第二十届全国大学生软件创新大赛" {
           let list = @sai-bu-moonbit.conflicts_for_competition(
             conflicts, "第二十届全国大学生软件创新大赛",
           )
-          assert_eq(list.length(), 0)
+          assert_eq(list.length(), 1)
+          assert_eq(list[0].level, "P1")
           let pack = @sai-bu-moonbit.generate_pack(w, c, conflicts)
           assert_eq(pack.blocked, false)
         }
@@ -2555,7 +2557,10 @@ test "work: 验价尺" {
   match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) => {
       assert_eq(w.first_public_date, "2026-11-16")
-      assert_eq(w.submitted_to.length(), 0)
+      assert_eq(w.submitted_to.length(), 1)
+      assert_true(
+        @sai-bu-moonbit.contains_string(w.submitted_to, "MoonBit 黑客松"),
+      )
       assert_true(w.oneliner != "")
       assert_true(w.materials_ready.length() > 0)
     }

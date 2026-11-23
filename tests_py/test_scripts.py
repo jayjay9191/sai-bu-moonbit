@@ -285,12 +285,12 @@ class TestSyncHelpers(unittest.TestCase):
 
 class TestCellTestGenerator(unittest.TestCase):
     def test_cell_table_counts_conflicts_and_window_pass(self):
-        self.assertEqual(len(generate_tests.CELL_EXPECT), 19)
+        self.assertEqual(len(generate_tests.CELL_EXPECT), 22)
         p0 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P0"])
         p1 = sum(1 for (levels, _) in generate_tests.CELL_EXPECT.values()
                  if levels == ["P1"])
-        self.assertEqual((p0, p1), (3, 15))
+        self.assertEqual((p0, p1), (4, 18))
 
     def test_row_table_covers_all_competitions(self):
         self.assertEqual(len(generate_tests.ROW_EXPECT), 21)

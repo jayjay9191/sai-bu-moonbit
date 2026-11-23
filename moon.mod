@@ -11,7 +11,7 @@
 
 name = "jayjay9191/sai-bu-moonbit"
 
-version = "0.1.4"
+version = "0.1.5"
 
 readme = "README.mbt.md"
 
@@ -19,7 +19,7 @@ repository = "https://github.com/jayjay9191/sai-bu-moonbit"
 
 license = "Apache-2.0"
 
-keywords = [ ]
+keywords = [ "competition", "submission", "rules", "planning" ]
 
 preferred_target = "native"
 

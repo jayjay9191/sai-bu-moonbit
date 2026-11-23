@@ -121,7 +121,7 @@ pub fn rule_citation_for(rule : String, competition : String) -> RuleCitation {
 /// 按作品名查事实证据。只收录台账里已有记录的事实：
 /// 《第零次黎明》首次公开于 2026-11-02 之前、已投 Qoder 与 AI PLAY；
 /// 小店日结、诉求整理台已投涌现奖；验价尺 2026-11-16 首次公开、
-/// 未投过任何比赛。查不到的作品返回空证据包，trace 只写台账记录。
+/// 已登记 MoonBit 投稿。查不到的作品返回空证据包，trace 只写台账记录。
 pub fn work_evidence_for(name : String) -> WorkEvidence {
   if name == "第零次黎明" {
     {
@@ -176,7 +176,13 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
         evidence: "GitHub 公开仓库 https://github.com/jayjay9191/yan-jia-chi-moonbit",
         source: "GitHub 公开记录",
       }),
-      submitted: [],
+      submitted: [
+        {
+          fact: "MoonBit 黑客松",
+          evidence: "2026-11-23 通过报名初审，待月度验收",
+          source: "参赛者记录的组委会通知",
+        },
+      ],
     }
   } else {
     { first_public_date: "", first_public: None, submitted: [], }
@@ -375,8 +381,7 @@ pub fn trace_new_work(work : Work, comp : Competition) -> DecisionTrace {
 
 ///|
 /// 规则 3（原创条款）追踪：只读 submitted_to，不读首次公开日期。
-/// 这条要单独写清：只公开、没投过任何比赛的作品不违反本规则——
-/// 验价尺对软件创新大赛 0 冲突就是直接证据。
+/// 已投稿时，须核对既往赛事的级别和公开范围。
 pub fn trace_no_prior_entry(work : Work, comp : Competition) -> DecisionTrace {
   let citation = rule_citation_for("未参加过其他比赛", comp.name)
   if !comp.requires_no_prior_entry {

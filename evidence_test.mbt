@@ -106,9 +106,7 @@ test "trace no prior entry pending for dawn to software innovation" {
 }
 
 ///|
-test "trace no prior entry passes for yan-jia-chi" {
-  // 验价尺只公开、未投过任何比赛：规则 3 不触发——它是“只读
-  // submitted_to、不读首次公开日期”的直接证据。
+test "trace records the MoonBit submission without assuming national scope" {
   match @sai-bu-moonbit.work_by_name("验价尺") {
     Some(w) =>
       match
@@ -117,11 +115,11 @@ test "trace no prior entry passes for yan-jia-chi" {
         ) {
         Some(comp) => {
           let t = @sai-bu-moonbit.trace_no_prior_entry(w, comp)
-          assert_true(!t.violated)
-          assert_eq(t.level, "通过")
+          assert_true(t.violated)
+          assert_eq(t.level, "P1")
           let text = @sai-bu-moonbit.render_trace(t)
-          assert_true(text.contains("不读公开日期"))
-          assert_true(text.contains("未投过其他比赛"))
+          assert_true(text.contains("MoonBit"))
+          assert_true(text.contains("2026-11-23"))
         }
         None => assert_true(false)
       }

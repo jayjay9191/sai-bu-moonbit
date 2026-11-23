@@ -273,14 +273,14 @@ test "manifest hash changes when data changes" {
 ///|
 /// 2026-11-15 00:00 UTC = 20772 天 × 86400000 毫秒。
 /// 真实数据在这一天的预期：validate 0 个问题；19 行中 11 行已核实；
-/// 76 个包可提交 2 个、P0 挡住 7 个；撞期 3 个日期。
-test "preflight on real data at 2026-11-15" {
+/// 当前台账有 84 个投稿包、2 个可提交、4 个 P0。
+test "preflight on real data at 2026-11-23" {
   let report = @sai-bu-moonbit.preflight(
     @sai-bu-moonbit.all_competitions(),
     @sai-bu-moonbit.all_works(),
-    1794700800000UL,
+    1795392000000UL,
   )
-  assert_eq(report.today, "2026-11-15")
+  assert_eq(report.today, "2026-11-23")
   assert_eq(report.validate_issues.length(), 0)
   assert_eq(report.rows.length(), 21)
   let mut verified_rows = 0
@@ -289,12 +289,10 @@ test "preflight on real data at 2026-11-15" {
       verified_rows = verified_rows + 1
     }
   }
-  // 按 11-15 回放时，11-16/18 核实的行尚不能作为当时的证据。
-  // 符合条件的只有 AI PLAY、Qoder、魔搭、知乎、造化五行。
-  assert_eq(verified_rows, 5)
+  assert_eq(verified_rows, 13)
   assert_eq(report.packs.length(), 84)
-  assert_eq(report.certifiable_count, 0)
-  assert_eq(report.blocked_count, 3)
+  assert_eq(report.certifiable_count, 2)
+  assert_eq(report.blocked_count, 4)
   assert_eq(report.collisions.length(), 3)
   assert_eq(report.manifest_hash.length(), 64)
 }
@@ -407,7 +405,7 @@ test "in-window tool with a complete pack cannot enter a game-only target" {
     })[0]
   let verified = { ..comp, note: "", }
   let tool = @sai-bu-moonbit.all_works().filter(w => w.name == "验价尺")[0]
-  let complete = { ..tool, materials_ready: comp.materials, }
+  let complete = { ..tool, materials_ready: comp.materials, submitted_to: [], }
   let row = @sai-bu-moonbit.row_verdict(
     verified,
     @sai-bu-moonbit.date_to_days("2026-11-18"),
