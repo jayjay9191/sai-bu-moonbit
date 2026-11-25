@@ -29,6 +29,8 @@ pub fn collision_conflicts(Array[Competition]) -> Array[Conflict]
 
 pub fn collision_dates(Array[Competition]) -> Array[String]
 
+pub fn compare_preflight_reports(PreflightReport, PreflightReport) -> PreflightComparison raise PreflightComparisonError
+
 pub fn competition_by_name(String) -> Competition?
 
 pub fn conflicts_for_competition(Array[Conflict], String) -> Array[Conflict]
@@ -127,6 +129,10 @@ pub fn work_evidence_for(String) -> WorkEvidence
 pub suberror LedgerReplayError {
   InvalidLedgerEvidence(String)
   NoLedgerCheckpoint(String)
+}
+
+pub suberror PreflightComparisonError {
+  InvalidReport(String)
 }
 
 #derive(@debug.Debug)
@@ -338,6 +344,7 @@ pub(all) struct MaterialTradeoff {
   possible_materials : Array[String]
 }
 
+#derive(@json.ToJson)
 pub struct PackVerdict {
   work : String
   competition : String
@@ -354,6 +361,23 @@ pub(all) struct PendingItem {
   noted_at : String
   status : String
   resolved_at : String
+}
+
+#derive(@json.ToJson)
+pub(all) struct PreflightComparison {
+  before_date : String
+  after_date : String
+  before_manifest : String
+  after_manifest : String
+  changes : Array[PreflightPackChange]
+}
+
+#derive(@json.ToJson)
+pub(all) struct PreflightPackChange {
+  work : String
+  competition : String
+  before : PackVerdict?
+  after : PackVerdict?
 }
 
 pub struct PreflightReport {

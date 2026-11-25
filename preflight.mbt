@@ -113,6 +113,7 @@ pub struct RowVerdict {
 
 ///|
 /// 一个投稿包的认证结论。
+#derive(ToJson)
 pub struct PackVerdict {
   work : String
   competition : String
@@ -316,5 +317,85 @@ pub fn preflight(
     certifiable_count: certifiable,
     blocked_count: blocked,
     manifest_hash: sha256_hex(manifest_canonical(comps, works)),
+  }
+}
+
+///|
+#derive(ToJson)
+pub(all) struct PreflightPackChange {
+  work : String
+  competition : String
+  before : PackVerdict?
+  after : PackVerdict?
+}
+
+///|
+#derive(ToJson)
+pub(all) struct PreflightComparison {
+  before_date : String
+  after_date : String
+  before_manifest : String
+  after_manifest : String
+  changes : Array[PreflightPackChange]
+}
+
+///|
+pub suberror PreflightComparisonError {
+  InvalidReport(String)
+}
+
+///|
+/// Compare valid reports by work and competition, preserving removals and
+/// additions. Changes include a new reason even if the status is unchanged.
+/// Both manifest hashes are retained to identify the compared snapshots.
+pub fn compare_preflight_reports(
+  before : PreflightReport,
+  after : PreflightReport,
+) -> PreflightComparison raise PreflightComparisonError {
+  for report in [before, after] {
+    if !report.validate_issues.is_empty() {
+      raise InvalidReport("invalid ledger on " + report.today)
+    }
+  }
+  let previous = Map([])
+  let next = Map([])
+  for row in before.packs {
+    previous[(row.work, row.competition)] = row
+  }
+  for row in after.packs {
+    next[(row.work, row.competition)] = row
+  }
+  let changes : Array[PreflightPackChange] = []
+  for row in before.packs {
+    let after_row = next.get((row.work, row.competition))
+    if after_row is Some(current) &&
+      current.blocked == row.blocked &&
+      current.certifiable == row.certifiable &&
+      current.reasons == row.reasons {
+      continue
+    }
+    changes.push({
+      work: row.work,
+      competition: row.competition,
+      before: Some(row),
+      after: after_row,
+    })
+  }
+  for row in after.packs {
+    if !previous.contains((row.work, row.competition)) {
+      changes.push({
+        work: row.work,
+        competition: row.competition,
+        before: None,
+        after: Some(row),
+      })
+    }
+  }
+  {
+    before_date: before.today,
+    after_date: after.today,
+    before_manifest: before.manifest_hash,
+    after_manifest: after.manifest_hash,
+    changes,
   }
 }

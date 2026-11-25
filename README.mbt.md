@@ -21,7 +21,7 @@ python scripts/verify_review.py
 
 [规则、证据与投稿包完整案例](docs/worked-example-moda-dawn.md) · [可提交的投稿包复跑命令](#验收用投稿包样例)
 
-作为依赖可用 `moon add jayjay9191/sai-bu-moonbit`，公开接口见 [Mooncakes](https://mooncakes.io/docs/jayjay9191/sai-bu-moonbit)。
+作为依赖可用 `moon add jayjay9191/sai-bu-moonbit@0.3.0`，公开接口见 [Mooncakes](https://mooncakes.io/docs/jayjay9191/sai-bu-moonbit)。
 
 ### 验收用投稿包样例
 
@@ -174,6 +174,21 @@ python scripts/verify_review.py
 复跑 `moon test ledger_replay_test.mbt`。合成案例把三条修订放入真实快照的副本，
 检验早公布、晚生效的新规则，晚收录的旧规则和同生效日的更正。断言覆盖
 生效日前后、证据截止日变化、已归档规则，以及预检使用的原创条款冲突判断。
+
+#### 比较两次历史预检
+
+```sh
+moon run cmd/main -- preflight-diff 2026-11-20 2026-11-23
+moon run cmd/main -- preflight-diff 2026-11-20 2026-11-23 --audit-on 2026-11-20
+python scripts/verify_review.py
+```
+
+公开接口 `compare_preflight_reports` 按「作品 × 赛事」匹配，输出新增、移除，以及
+认证状态或理由有变化的组合。JSON 保留两次清单的 SHA-256 和前后理由。
+第一条命令比较各日当时的预检，发现 **6 个**变化的投稿包，其中「验价尺 → 魔搭」
+新增 **1 个 P0**。11 月 15 日到 20 日的比较另以归档数据验证了 **27 个**新增组合。
+第二条命令固定审计日，只改变证据截止日。11 月 23 日收录的记录发生日未知，
+因此回看 11 月 20 日的清单、资格和理由均无变化。
 
 ## 重放指定投稿步骤
 

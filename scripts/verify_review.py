@@ -107,6 +107,56 @@ def verify_archived_manifests(reports):
         assert f"清单 SHA-256：{hashlib.sha256(payload).hexdigest()}" in report, day
 
 
+def verify_preflight_diff(prior, current):
+    def dated_pairs(day):
+        data = json.loads((ROOT / "data" / "history" / f"{day}.json").read_bytes())
+        return {(work["name"], comp["name"]) for work in data["works"] for comp in data["competitions"]}
+
+    def p0_pairs(report):
+        blocked_section = report.split("P0 挡住：\n", 1)[1].split("其余 ", 1)[0]
+        return {tuple(line.split("：", 1)[0].strip()[2:].split(" → ", 1))
+                for line in blocked_section.splitlines() if line.startswith("  - ")}
+
+    result = json.loads(run("preflight-diff", "2026-11-20", "2026-11-23"))
+    assert (result["before_date"], result["after_date"]) == ("2026-11-20", "2026-11-23")
+    assert result["before_manifest"] in prior and result["after_manifest"] in current
+    keys, p0_before, p0_after = set(), set(), set()
+    for row in result["changes"]:
+        key = row["work"], row["competition"]
+        assert key not in keys
+        keys.add(key)
+        old, new = row.get("before") or {}, row.get("after") or {}
+        if old.get("blocked") and not new.get("blocked"):
+            p0_before.add(key)
+        if new.get("blocked") and not old.get("blocked"):
+            p0_after.add(key)
+        assert old != new
+    assert p0_before == p0_pairs(prior) - p0_pairs(current)
+    assert p0_after == p0_pairs(current) - p0_pairs(prior) == {
+        ("验价尺", "魔搭 AI+∞ 第三期「AI 造游戏」")}
+    growth = json.loads(run("preflight-diff", "2026-11-15", "2026-11-20"))
+    added = {(row["work"], row["competition"]) for row in growth["changes"]
+             if row.get("before") is None}
+    removed = {(row["work"], row["competition"]) for row in growth["changes"]
+               if row.get("after") is None}
+    assert added == dated_pairs("2026-11-20") - dated_pairs("2026-11-15")
+    assert removed == dated_pairs("2026-11-15") - dated_pairs("2026-11-20")
+    assert json.loads(run("preflight-diff", "2026-11-20", "2026-11-20"))["changes"] == []
+    fixed = json.loads(run("preflight-diff", "2026-11-20", "2026-11-23",
+                           "--audit-on", "2026-11-20"))
+    assert fixed["before_date"] == fixed["after_date"] == "2026-11-20"
+    assert (fixed["before_known_on"], fixed["after_known_on"]) == ("2026-11-20", "2026-11-23")
+    assert fixed["before_manifest"] == fixed["after_manifest"] and fixed["changes"] == []
+    assert run("preflight-diff", "2026-11-20", "2026-11-23", "--audit-on", "2026-11-21",
+               success=False) == ""
+
+    for dates in (("2026-11-23", "2026-11-20"), ("2026-02-30", "2026-11-20"),
+                  ("2026-11-14", "2026-11-20")):
+        assert run("preflight-diff", *dates, success=False) == ""
+    print(f"PASS preflight diff: {len(added)} additions, {len(removed)} removals, "
+          f"{len(result['changes'])} changed pairs in the latest comparison, one new P0")
+
+
 def main():
     verify_real_material_choices()
     assert "用法" in run("help")
@@ -305,6 +355,7 @@ def main():
                  ("2026-11-20", "--known-on")):
         assert "日期必须有效" in run("preflight", *args, success=False)
     print("PASS archived ledger digests and two-date replay without backdating unknown events")
+    verify_preflight_diff(prior, preflight)
     assert "12-01 提交前务必" not in run()
     for args in (("unknown-review-command",), ("order",), ("order-demo", "extra"), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),

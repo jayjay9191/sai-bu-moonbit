@@ -188,3 +188,71 @@ test "late historical amendments cannot override a newer effective rule" {
   assert_true(replayed.competitions[0].requires_no_prior_entry)
   assert_true(replayed.applied.is_empty())
 }
+
+///|
+test "historical preflight comparison includes added pairs and the late P0" {
+  let baseline = @sai-bu-moonbit.recorded_ledger_at("2026-11-20")
+  let next = @sai-bu-moonbit.recorded_ledger_at("2026-11-23")
+  let before = @sai-bu-moonbit.preflight(
+    baseline.competitions,
+    baseline.works,
+    @sai-bu-moonbit.date_to_days("2026-11-20").to_uint64() * 86400000UL,
+  )
+  let after = @sai-bu-moonbit.preflight(
+    next.competitions,
+    next.works,
+    @sai-bu-moonbit.date_to_days("2026-11-23").to_uint64() * 86400000UL,
+  )
+  let result = @sai-bu-moonbit.compare_preflight_reports(before, after)
+  let i = result.changes
+    .search_by(row => {
+      row.work == "验价尺" && row.competition.contains("魔搭")
+    })
+    .unwrap()
+  let entry = result.changes[i]
+  assert_true(!entry.before.unwrap().blocked)
+  assert_true(entry.after.unwrap().blocked)
+  assert_eq(result.after_manifest, after.manifest_hash)
+  assert_true(
+    @sai-bu-moonbit.compare_preflight_reports(before, before).changes.is_empty(),
+  )
+  let early = @sai-bu-moonbit.recorded_ledger_at("2026-11-15")
+  let early_report = @sai-bu-moonbit.preflight(
+    early.competitions,
+    early.works,
+    @sai-bu-moonbit.date_to_days("2026-11-15").to_uint64() * 86400000UL,
+  )
+  let additions = @sai-bu-moonbit.compare_preflight_reports(
+    early_report, before,
+  )
+  let removals = @sai-bu-moonbit.compare_preflight_reports(before, early_report)
+  assert_true(
+    additions.changes
+    .iter()
+    .any(row => row.before is None && row.after is Some(_)),
+  )
+  assert_true(
+    removals.changes
+    .iter()
+    .any(row => row.after is None && row.before is Some(_)),
+  )
+}
+
+///|
+test "preflight comparison refuses to certify invalid source data" {
+  let ledger = @sai-bu-moonbit.recorded_ledger_at("2026-11-20")
+  let now = @sai-bu-moonbit.date_to_days("2026-11-20").to_uint64() * 86400000UL
+  let valid = @sai-bu-moonbit.preflight(ledger.competitions, ledger.works, now)
+  let duplicate = ledger.works.copy()
+  duplicate.push(duplicate[0])
+  let invalid = @sai-bu-moonbit.preflight(ledger.competitions, duplicate, now)
+  assert_true(!invalid.validate_issues.is_empty())
+  assert_true(
+    try {
+      ignore(@sai-bu-moonbit.compare_preflight_reports(valid, invalid))
+      false
+    } catch {
+      @sai-bu-moonbit.InvalidReport(message) => message.contains("2026-11-20")
+    },
+  )
+}

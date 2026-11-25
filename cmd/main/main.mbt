@@ -32,6 +32,7 @@ fn main {
     "benchmark" => cmd_benchmark()
     "validate" => cmd_validate()
     "preflight" => cmd_preflight(args)
+    "preflight-diff" => cmd_preflight_diff(args)
     "calendar" => cmd_calendar(args)
     "materials-plan" => cmd_materials_plan(args)
     "trace" => cmd_trace(args)
@@ -192,6 +193,9 @@ fn print_usage() -> Unit {
   )
   println(
     "preflight [YYYY-MM-DD [--known-on YYYY-MM-DD]]：全链路预检（默认北京时间当天），支持按指定审计日复跑，输出清单 SHA-256",
+  )
+  println(
+    "preflight-diff <起始日> <结束日> [--audit-on 审计日]：按作品和赛事列出历次预检差异（JSON）",
   )
   println(
     "trace <作品名> <目标名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
@@ -1035,4 +1039,62 @@ fn cmd_itch_zip(args : Array[String]) -> Unit {
     println("包体认证失败")
     @env.exit(2)
   }
+}
+
+///|
+fn cmd_preflight_diff(args : Array[String]) -> Unit {
+  let fixed = args.length() == 5 && args[3] == "--audit-on"
+  if (args.length() != 3 && !fixed) ||
+    !@lib.is_valid_date(args[1]) ||
+    !@lib.is_valid_date(args[2]) ||
+    @lib.date_to_days(args[1]) < 0 ||
+    @lib.date_to_days(args[2]) < @lib.date_to_days(args[1]) ||
+    (
+      fixed &&
+      (
+        !@lib.is_valid_date(args[4]) ||
+        @lib.date_to_days(args[4]) < 0 ||
+        @lib.date_to_days(args[4]) > @lib.date_to_days(args[1])
+      )
+    ) {
+    eprintln(
+      "用法：preflight-diff <起始日> <结束日> [--audit-on 审计日]，日期须有效且按先后顺序",
+    )
+    @env.exit(2)
+  }
+  try {
+    let before_day = if fixed { args[4] } else { args[1] }
+    let after_day = if fixed { args[4] } else { args[2] }
+    let before = preflight_on(before_day, args[1])
+    let after = preflight_on(after_day, args[2])
+    let result = Json(@lib.compare_preflight_reports(before, after))
+    if result is Object(fields) {
+      fields["before_known_on"] = Json(args[1])
+      fields["after_known_on"] = Json(args[2])
+    }
+    println(result.stringify())
+  } catch {
+    @lib.NoLedgerCheckpoint(day) => {
+      eprintln("没有覆盖 \{day} 的台账快照")
+      @env.exit(2)
+    }
+    @lib.InvalidLedgerEvidence(message) | @lib.InvalidReport(message) => {
+      eprintln("无法比较台账：\{message}")
+      @env.exit(1)
+    }
+    error => {
+      eprintln("无法比较台账：\{error}")
+      @env.exit(1)
+    }
+  }
+}
+
+///|
+fn preflight_on(
+  day : String,
+  known_on : String,
+) -> @lib.PreflightReport raise @lib.LedgerReplayError {
+  let replay = @lib.recorded_ledger_as_of(day, known_on)
+  let now = @lib.date_to_days(day).to_uint64() * 86400000UL
+  @lib.preflight(replay.competitions, replay.works, now)
 }
