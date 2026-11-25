@@ -66,6 +66,27 @@ fn contains_fact(evidence : Array[FactEvidence], fact : String) -> Bool {
 }
 
 ///|
+fn fact_visible(item : FactEvidence, today : Int32) -> Bool {
+  match item.known_on {
+    Some(date) => {
+      let day = date_to_days(date)
+      day >= 0 && day <= today
+    }
+    None => true
+  }
+}
+
+///|
+fn visible_work_evidence(work : Work, today : Int32) -> WorkEvidence {
+  let evidence = evidence_for_work(work)
+  {
+    ..evidence,
+    first_public: evidence.first_public.filter(item => fact_visible(item, today)),
+    submitted: evidence.submitted.filter(item => fact_visible(item, today)),
+  }
+}
+
+///|
 /// Limit decision checks to facts read by that rule; the full audit checks all facts.
 pub fn fact_evidence_issues(
   work : Work,
@@ -129,11 +150,20 @@ pub fn audit_decision(
   today : Int32,
 ) -> AuditedDecision {
   let citation = audit_rule(trace.rule, today)
+  let evidence = visible_work_evidence(work, today)
+  let missing_prior = trace.violated &&
+    trace.rule.rule == "须新做" &&
+    work.first_public_date.trim().is_empty() &&
+    trace.rule.rule_text.contains("不得一稿多投") &&
+    other_competition_entries(work, trace.competition).any(name => {
+      !contains_fact(evidence.submitted, name)
+    })
   let grade = if trace.work != work.name {
     "待核对"
   } else if trace.rule.rule == "" {
     "无适用规则"
-  } else if !fact_evidence_issues(work, rule=trace.rule.rule).is_empty() {
+  } else if missing_prior ||
+    !audit_work_facts(work, evidence, trace.rule.rule).is_empty() {
     "待核对"
   } else {
     citation.grade
@@ -170,6 +200,24 @@ pub(all) struct PendingItem {
 }
 
 ///|
+/// Project one follow-up using its recorded observation and resolution dates.
+pub fn pending_item_on(item : PendingItem, today : Int32) -> PendingItem? {
+  let start = date_to_days(item.noted_at)
+  if start < 0 || start > today {
+    return None
+  }
+  if item.status == "已确认" || item.status == "已过时" {
+    let end = date_to_days(item.resolved_at)
+    if end < start || end > today {
+      return Some({ ..item, status: "待确认", resolved_at: "", })
+    }
+  } else if item.status == "待确认" {
+    return Some({ ..item, resolved_at: "", })
+  }
+  Some(item)
+}
+
+///|
 /// Age starts at the ledger's observation date, not a guessed creation date.
 pub fn pending_age(item : PendingItem, today : Int32) -> Int32? {
   let start = date_to_days(item.noted_at)
@@ -203,7 +251,7 @@ pub fn audit_evidence(
   let issues = []
   let seen = []
   for work in works {
-    for issue in fact_evidence_issues(work) {
+    for issue in audit_work_facts(work, visible_work_evidence(work, today), "") {
       issues.push(issue)
     }
     for comp in comps {

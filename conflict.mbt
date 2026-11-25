@@ -54,9 +54,9 @@ fn known_platform_entry(name : String) -> Bool {
 }
 
 ///|
-fn other_competition_entries(work : Work, comp : Competition) -> Array[String] {
+fn other_competition_entries(work : Work, target : String) -> Array[String] {
   work.submitted_to.filter(name => {
-    !same_entry(name, comp.name) && !known_platform_entry(name)
+    !same_entry(name, target) && !known_platform_entry(name)
   })
 }
 
@@ -91,7 +91,7 @@ fn first_publish_decision(work : Work, comp : Competition) -> (String, String) {
         "）"
     }
   }
-  let other_entries = other_competition_entries(work, comp)
+  let other_entries = other_competition_entries(work, comp.name)
   if other_entries.length() > 0 {
     conflicts.push("已投 " + join_strings(other_entries, "、"))
   }
@@ -167,7 +167,7 @@ fn new_work_issue(work : Work, comp : Competition) -> String {
       "），不能直接交"
   }
   let citation = rule_citation_for("须新做", comp.name)
-  let prior = other_competition_entries(work, comp)
+  let prior = other_competition_entries(work, comp.name)
   if prior.is_empty() || !citation.rule_text.contains("不得一稿多投") {
     ""
   } else {

@@ -26,6 +26,7 @@ pub struct FactEvidence {
   fact : String // 事实名，与台账字段里的写法一致，如 "Qoder"、"涌现奖"
   evidence : String // 证据，如 "天池队伍 奶龙奶龙队，队号 1390261"
   source : String // 证据来源说明，如 "用户 2026-11-15 确认已提交"
+  known_on : String? // 证据收录或确认日，有明确日期才填写
 }
 
 ///|
@@ -130,17 +131,20 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
         fact: "首次公开",
         evidence: "Combos 分享页 https://share.combos.game/p/1737054",
         source: "Combos 平台公开记录",
+        known_on: None,
       }),
       submitted: [
         {
           fact: "Qoder",
           evidence: "天池队伍 奶龙奶龙队，队号 1390261",
           source: "用户 2026-11-15 确认已提交",
+          known_on: Some("2026-11-15"),
         },
         {
           fact: "AI PLAY",
           evidence: "提案已提交",
           source: "用户 2026-11-16 确认",
+          known_on: Some("2026-11-16"),
         },
       ],
     }
@@ -153,6 +157,7 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
           fact: "涌现奖",
           evidence: "2026-11-13 提交，个人中心显示审核中",
           source: "用户确认",
+          known_on: None,
         },
       ],
     }
@@ -165,6 +170,7 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
           fact: "涌现奖",
           evidence: "2026-11-13 提交，个人中心显示审核中",
           source: "用户确认",
+          known_on: None,
         },
       ],
     }
@@ -175,12 +181,14 @@ pub fn work_evidence_for(name : String) -> WorkEvidence {
         fact: "首次公开",
         evidence: "GitHub 公开仓库 https://github.com/jayjay9191/yan-jia-chi-moonbit",
         source: "GitHub 公开记录",
+        known_on: None,
       }),
       submitted: [
         {
           fact: "MoonBit 黑客松",
           evidence: "2026-11-23 通过报名初审，待月度验收",
           source: "参赛者记录的组委会通知",
+          known_on: Some("2026-11-23"),
         },
       ],
     }
@@ -260,7 +268,7 @@ pub fn trace_first_publish(work : Work, comp : Competition) -> DecisionTrace {
         "事实 1：作品首次公开于 " + work.first_public_date + "。" + e,
       )
     }
-    let other_entries = other_competition_entries(work, comp)
+    let other_entries = other_competition_entries(work, comp.name)
     if other_entries.is_empty() {
       steps.push("事实 2：台账未登记其他比赛投稿。")
     } else {

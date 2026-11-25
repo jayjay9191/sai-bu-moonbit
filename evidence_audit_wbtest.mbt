@@ -168,6 +168,22 @@ test "pending item aging freezes on resolution and invalid start dates stay unkn
 }
 
 ///|
+test "follow-up projection includes the day noted and freezes on the day resolved" {
+  let item = all_pending_items()[0]
+  let noted = date_to_days(item.noted_at)
+  let resolved = date_to_days(item.resolved_at)
+  assert_true(pending_item_on(item, noted - 1) is None)
+  let open = pending_item_on(item, noted).unwrap()
+  assert_eq(open.status, "待确认")
+  assert_eq(open.resolved_at, "")
+  assert_eq(pending_age(open, noted), Some(0))
+  let closed = pending_item_on(item, resolved).unwrap()
+  assert_eq(closed.status, "已过时")
+  assert_eq(closed.resolved_at, item.resolved_at)
+  assert_eq(pending_age(closed, resolved + 2), Some(resolved - noted))
+}
+
+///|
 test "structured follow-ups retain four cases and explicit unresolved ownership" {
   let items = all_pending_items()
   assert_eq(items.length(), 4)
@@ -199,7 +215,12 @@ test "blank fact evidence or source cannot support a first-public claim" {
   for (evidence, source) in [("", "source"), ("proof", " ")] {
     let facts : WorkEvidence = {
       first_public_date: work.first_public_date,
-      first_public: Some({ fact: "首次公开", evidence, source, }),
+      first_public: Some({
+        fact: "首次公开",
+        evidence,
+        source,
+        known_on: None,
+      }),
       submitted: [],
     }
     assert_true(
@@ -291,4 +312,37 @@ test "pack certification cannot reuse a verdict from another target" {
   )
   assert_false(result.certifiable)
   assert_true(result.reasons.any(reason => reason.contains("不匹配")))
+}
+
+///|
+test "future source proof cannot validate a historical submission" {
+  let archive = recorded_ledger_at("2026-11-15")
+  let work = archive.works[0]
+  let target = archive.competitions
+    .iter()
+    .find_first(comp => comp.name == "魔搭 AI+∞ 第三期「AI 造游戏」")
+    .unwrap()
+  assert_true(work.submitted_to.contains("AI PLAY"))
+  let trace = trace_first_publish(work, target)
+  let before_proof = audit_decision(trace, work, date_to_days("2026-11-15"))
+  let on_proof = audit_decision(trace, work, date_to_days("2026-11-16"))
+  assert_eq(before_proof.level, "P0（证据待复核）")
+  assert_false(before_proof.evidence_current)
+  assert_eq(on_proof.level, "P0")
+  assert_true(on_proof.evidence_current)
+}
+
+///|
+test "new-work checks require proof of prior contests when repeat submission is barred" {
+  let work = work_by_name("小店日结").unwrap()
+  let competition = competition_by_name("知乎黑客松 S3").unwrap()
+  let today = date_to_days("2026-11-20")
+  let recorded = audit_decision(trace_new_work(work, competition), work, today)
+  assert_eq(recorded.level, "P1")
+  let edited = { ..work, submitted_to: ["未附证明的其他比赛"], }
+  let trace = trace_new_work(edited, competition)
+  assert_eq(trace.level, "P1")
+  let audit = audit_decision(trace, edited, today)
+  assert_eq(audit.level, "P1（证据待复核）")
+  assert_false(audit.evidence_current)
 }

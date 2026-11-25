@@ -131,6 +131,37 @@ def verify_historical_planning():
     print("PASS six dated planners use recorded work, target and submission evidence")
 
 
+def verify_historical_evidence():
+    folder = ROOT / "data/history"
+    checkpoints = json.loads((folder / "index.json").read_bytes())["checkpoints"]
+    followups = {item["id"]: item for item in
+                 json.loads((ROOT / "data/competitions.json").read_bytes())["followups"]}
+    for day in ("2026-11-15", "2026-11-16", "2026-11-18", "2026-11-20", "2026-11-23"):
+        checkpoint = max((item for item in checkpoints if item["known_on"] <= day),
+                         key=lambda item: item["known_on"])
+        archive = json.loads((ROOT / "data" / checkpoint["file"]).read_bytes())
+        report = run("audit-evidence", day)
+        assert f"结论：{len(archive['works']) * len(archive['competitions'])}项" in report
+        if not any(row["name"] == "验价尺" for row in archive["works"]):
+            assert "验价尺 |" not in report and "验价尺 →" not in report
+        assert ("缺事实证据 | 第零次黎明 | 已投：AI PLAY" in report) == (day < "2026-11-16")
+        item_lines = {cells[0]: cells for line in report.splitlines()
+                      if (cells := line.split(" | "))[0] in followups}
+        expected = {name: item for name, item in followups.items() if item["noted_at"] <= day}
+        assert item_lines.keys() == expected.keys()
+        for name, item in expected.items():
+            end = item["resolved_at"]
+            closed = bool(end) and end <= day
+            days = (date.fromisoformat(end if closed else day) -
+                    date.fromisoformat(item["noted_at"])).days
+            assert item_lines[name][3] == (item["status"] if closed else "待确认"), (day, name)
+            assert item_lines[name][5] == f"{days}天", (day, name)
+            resolution = item_lines[name][6].removeprefix("确认/结束日 ").strip()
+            assert resolution == (end if closed else ""), (day, name)
+    assert "没有覆盖 2026-11-14 的台账快照" in run("audit-evidence", "2026-11-14", success=False)
+    print("PASS dated evidence audits enforce checkpoint, proof and resolution cutoffs")
+
+
 def verify_archived_manifests(reports):
     for day, report in reports.items():
         path = ROOT / "data" / "history" / f"{day}.json"
@@ -272,6 +303,7 @@ def main():
     if not __debug__:
         parser.error("enable Python assertions (remove -O or PYTHONOPTIMIZE)")
     verify_historical_planning()
+    verify_historical_evidence()
     if args.quick:
         print("Manifest SHA-256:", verify_historical_preflight())
         return

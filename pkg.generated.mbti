@@ -67,6 +67,8 @@ pub fn material_tradeoffs(Work, Array[Competition], Int32) -> Array[MaterialTrad
 
 pub fn pending_age(PendingItem, Int32) -> Int32?
 
+pub fn pending_item_on(PendingItem, Int32) -> PendingItem?
+
 pub fn plan_exact_shortlist(Work, Array[Competition], Int32, must_include? : Array[String]) -> ExactSubmissionOrder raise SequenceError
 
 pub fn plan_materials(Work, Array[Competition], Int32, Int32) -> MaterialPlan raise SequenceError
@@ -268,6 +270,7 @@ pub struct FactEvidence {
   fact : String
   evidence : String
   source : String
+  known_on : String?
 }
 
 pub(all) struct FirstSubmission {

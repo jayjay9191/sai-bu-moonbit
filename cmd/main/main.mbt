@@ -222,7 +222,7 @@ fn print_usage() -> Unit {
 }
 
 ///|
-fn planning_ledger(
+fn ledger_visible_on(
   day : String?,
 ) -> (Array[@lib.Competition], Array[@lib.Work]) raise {
   guard day is Some(date) else {
@@ -245,7 +245,7 @@ fn cmd_materials_plan(args : Array[String]) -> Unit {
         "用法：materials-plan <作品名> <YYYY-MM-DD> <材料预算0-3|frontier|frontier-json|explain|explain-json>",
       )
     }
-    let (comps, works) = planning_ledger(Some(args[2]))
+    let (comps, works) = ledger_visible_on(Some(args[2]))
     guard works.iter().find_first(row => row.name == args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
@@ -345,7 +345,7 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
         "请填写作品名、YYYY-MM-DD 日期及 1 至 7 个短名单目标。order-materials 在日期后还需要预算 0 至 3。",
       )
     }
-    let (comps, works) = planning_ledger(Some(args[2]))
+    let (comps, works) = ledger_visible_on(Some(args[2]))
     guard works.iter().find_first(row => row.name == args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
@@ -455,12 +455,9 @@ fn cmd_review(args : Array[String]) -> Unit {
     } else {
       @lib.today_days(@env.now() + 28800000UL)
     }
+    let (comps, works) = ledger_visible_on(args.get(offset))
     if args[0] == "audit-evidence" {
-      let report = @lib.audit_evidence(
-        @lib.all_competitions(),
-        @lib.all_works(),
-        today,
-      )
+      let report = @lib.audit_evidence(comps, works, today)
       println(
         "规则证据：\{report.rules.length()}条；结论：\{report.decisions.length()}项；完整性问题：\{report.issues.length()}项",
       )
@@ -484,7 +481,10 @@ fn cmd_review(args : Array[String]) -> Unit {
       println(
         "跟进事项（账龄从台账观察日计，已解决事项冻结）：",
       )
-      for item in @lib.all_pending_items() {
+      for recorded in @lib.all_pending_items() {
+        guard @lib.pending_item_on(recorded, today) is Some(item) else {
+          continue
+        }
         let age = match @lib.pending_age(item, today) {
           Some(days) => "\{days}天"
           None => "账龄未知"
@@ -494,8 +494,6 @@ fn cmd_review(args : Array[String]) -> Unit {
         )
       }
     } else {
-      let day = args.get(offset)
-      let (comps, works) = planning_ledger(day)
       guard works.iter().find_first(row => row.name == args[1]) is Some(work) else {
         fail("未找到作品：" + args[1])
       }
