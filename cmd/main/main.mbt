@@ -222,6 +222,22 @@ fn print_usage() -> Unit {
 }
 
 ///|
+fn planning_ledger(
+  day : String?,
+) -> (Array[@lib.Competition], Array[@lib.Work]) raise {
+  guard day is Some(date) else {
+    return (@lib.all_competitions(), @lib.all_works())
+  }
+  let replay = @lib.recorded_ledger_at(date) catch {
+    @lib.NoLedgerCheckpoint(_) =>
+      fail("没有覆盖 " + date + " 的台账快照")
+    @lib.InvalidLedgerEvidence(message) =>
+      fail("台账回放证据无效：" + message)
+  }
+  (replay.competitions, replay.works)
+}
+
+///|
 fn cmd_materials_plan(args : Array[String]) -> Unit {
   try {
     if args.length() != 4 || !@lib.is_valid_date(args[2]) {
@@ -229,10 +245,10 @@ fn cmd_materials_plan(args : Array[String]) -> Unit {
         "用法：materials-plan <作品名> <YYYY-MM-DD> <材料预算0-3|frontier|frontier-json|explain|explain-json>",
       )
     }
-    guard @lib.work_by_name(args[1]) is Some(work) else {
+    let (comps, works) = planning_ledger(Some(args[2]))
+    guard works.iter().find_first(row => row.name == args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
-    let comps = @lib.all_competitions()
     let today = @lib.date_to_days(args[2])
     if args[3] == "explain-json" {
       println(Json(@lib.material_eligibility(work, comps, today)).stringify())
@@ -329,7 +345,8 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
         "请填写作品名、YYYY-MM-DD 日期及 1 至 7 个短名单目标。order-materials 在日期后还需要预算 0 至 3。",
       )
     }
-    guard @lib.work_by_name(args[1]) is Some(work) else {
+    let (comps, works) = planning_ledger(Some(args[2]))
+    guard works.iter().find_first(row => row.name == args[1]) is Some(work) else {
       fail("未找到作品：" + args[1])
     }
     let targets : Array[@lib.Competition] = []
@@ -344,7 +361,7 @@ fn cmd_order_exact(args : Array[String]) -> Unit {
         collecting_selected = true
         continue
       }
-      guard @lib.competition_by_name(args[i]) is Some(comp) else {
+      guard comps.iter().find_first(row => row.name == args[i]) is Some(comp) else {
         fail("未找到目标：" + args[i])
       }
       targets.push(comp)
@@ -438,9 +455,12 @@ fn cmd_review(args : Array[String]) -> Unit {
     } else {
       @lib.today_days(@env.now() + 28800000UL)
     }
-    let comps = @lib.all_competitions()
     if args[0] == "audit-evidence" {
-      let report = @lib.audit_evidence(comps, @lib.all_works(), today)
+      let report = @lib.audit_evidence(
+        @lib.all_competitions(),
+        @lib.all_works(),
+        today,
+      )
       println(
         "规则证据：\{report.rules.length()}条；结论：\{report.decisions.length()}项；完整性问题：\{report.issues.length()}项",
       )
@@ -474,7 +494,9 @@ fn cmd_review(args : Array[String]) -> Unit {
         )
       }
     } else {
-      guard @lib.work_by_name(args[1]) is Some(work) else {
+      let day = args.get(offset)
+      let (comps, works) = planning_ledger(day)
+      guard works.iter().find_first(row => row.name == args[1]) is Some(work) else {
         fail("未找到作品：" + args[1])
       }
       print_order(work, comps, today)

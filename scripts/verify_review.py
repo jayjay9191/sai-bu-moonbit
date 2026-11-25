@@ -95,6 +95,42 @@ def verify_real_material_choices():
     print("PASS 48 actual ledger date/prefix/budget combinations recomputed from raw JSON")
 
 
+def verify_historical_planning():
+    work = "验价尺"
+    target = "魔搭 AI+∞ 第三期「AI 造游戏」"
+    for day in ("2026-11-20", "2026-11-23"):
+        archive = json.loads((ROOT / "data" / "history" / f"{day}.json").read_bytes())
+        row = next(row for row in archive["works"] if row["name"] == work)
+        festival = next(row for row in archive["competitions"] if row["name"] == target)
+        assert festival["requires_first_publish"]
+        prior_entry_blocks_first_release = any("MoonBit" in name for name in row["submitted_to"])
+
+        exact = json.loads(run("order-exact", work, day, target))
+        replay = json.loads(run("order-replay", work, day, target, "--prefix", target))
+        explanation = json.loads(run("materials-plan", work, day, "explain-json"))
+        material_blockers = next(row["blockers"] for row in explanation if row["name"] == target)
+        plan_text = run("order", work, day)
+        for reasons in (exact["first_choices"][0]["blockers"], replay["blocked"]["reasons"],
+                        material_blockers, plan_text.splitlines()):
+            assert any("已投 MoonBit" in reason for reason in reasons) == prior_entry_blocks_first_release, day
+
+    for args in (("order", work, "2026-11-14"),
+                 ("order-exact", work, "2026-11-14", target),
+                 ("materials-plan", work, "2026-11-14", "explain-json")):
+        assert "steps" not in run(*args, success=False)
+
+    early_archive = json.loads((ROOT / "data/history/2026-11-15.json").read_bytes())
+    assert work not in {row["name"] for row in early_archive["works"]}
+    platform = "itch.io 游戏上架"
+    assert platform not in {row["name"] for row in early_archive["competitions"]}
+    assert run("order-exact", work, "2026-11-15", target, success=False) == ""
+    for command in ("order-materials", "order-material-options"):
+        assert run(command, "第零次黎明", "2026-11-15", "3", platform, success=False) == ""
+        assert len(json.loads(run(command, "第零次黎明", "2026-11-20", "3", platform))) == 4
+
+    print("PASS six dated planners use recorded work, target and submission evidence")
+
+
 def verify_archived_manifests(reports):
     for day, report in reports.items():
         path = ROOT / "data" / "history" / f"{day}.json"
@@ -238,6 +274,7 @@ def main():
     if args.quick:
         print("Manifest SHA-256:", verify_historical_preflight())
         return
+    verify_historical_planning()
     verify_real_material_choices()
     assert "用法" in run("help")
     verify_calendar()
