@@ -54,7 +54,24 @@ pub fn replay_ledger(
   observations : Array[LedgerObservation],
   audit_on : String,
 ) -> LedgerReplay raise LedgerReplayError {
+  replay_ledger_as_of(checkpoints, observations, audit_on, audit_on)
+}
+
+///|
+/// Reconstruct a historical audit using evidence recorded by a later date.
+/// A checkpoint cannot supply facts from after the audit day. Evidence with
+/// no effective date is treated as effective when recorded.
+pub fn replay_ledger_as_of(
+  checkpoints : Array[LedgerCheckpoint],
+  observations : Array[LedgerObservation],
+  audit_on : String,
+  known_on : String,
+) -> LedgerReplay raise LedgerReplayError {
   let day = replay_date(audit_on)
+  let known_cutoff = replay_date(known_on)
+  if known_cutoff < day {
+    raise InvalidLedgerEvidence("evidence cutoff precedes audit day")
+  }
   let mut selected : LedgerCheckpoint? = None
   let mut selected_day = -2147483648
   let checkpoint_days : Map[Int32, Bool] = Map([])
@@ -86,7 +103,9 @@ pub fn replay_ledger(
     if event.source.trim().is_empty() {
       raise InvalidLedgerEvidence("ledger observations require a source")
     }
-    if known.max(effective) >= selected_day && known <= day && effective <= day {
+    if known.max(effective) >= selected_day &&
+      known <= known_cutoff &&
+      effective <= day {
       order.push((known, i))
     }
   }
@@ -139,4 +158,17 @@ pub fn replay_ledger(
 ///|
 pub fn recorded_ledger_at(day : String) -> LedgerReplay raise LedgerReplayError {
   replay_ledger(ledger_checkpoints(), recorded_ledger_observations(), day)
+}
+
+///|
+pub fn recorded_ledger_as_of(
+  audit_on : String,
+  known_on : String,
+) -> LedgerReplay raise LedgerReplayError {
+  replay_ledger_as_of(
+    ledger_checkpoints(),
+    recorded_ledger_observations(),
+    audit_on,
+    known_on,
+  )
 }

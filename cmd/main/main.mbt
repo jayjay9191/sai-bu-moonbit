@@ -191,7 +191,7 @@ fn print_usage() -> Unit {
     "calendar [YYYY-MM-DD] [--days 天数]：输出已核实的未过期截止日期提醒（iCalendar）",
   )
   println(
-    "preflight [YYYY-MM-DD]：全链路预检（默认北京时间当天），支持按指定审计日复跑，输出清单 SHA-256",
+    "preflight [YYYY-MM-DD [--known-on YYYY-MM-DD]]：全链路预检（默认北京时间当天），支持按指定审计日复跑，输出清单 SHA-256",
   )
   println(
     "trace <作品名> <目标名>：引用校验追踪（规则适用条件 → 来源证据 → 结论）+ 该对组合的投稿包认证",
@@ -732,11 +732,22 @@ fn cmd_validate() -> Unit {
 /// 数据未核实或已过期拒绝认证；不自动重试；失败原因逐项写清。
 /// 单个包的拒绝是结论，不是进程失败——只在 validate 有问题时返回码 1。
 fn cmd_preflight(args : Array[String]) -> Unit {
-  if args.length() > 2 || (args.length() == 2 && !@lib.is_valid_date(args[1])) {
-    println("用法：preflight [YYYY-MM-DD]，日期必须有效")
+  let retrospective = args.length() == 4 && args[2] == "--known-on"
+  if (args.length() > 2 && !retrospective) ||
+    (args.length() >= 2 && !@lib.is_valid_date(args[1])) ||
+    (
+      retrospective &&
+      (
+        !@lib.is_valid_date(args[3]) ||
+        @lib.date_to_days(args[3]) < @lib.date_to_days(args[1])
+      )
+    ) {
+    println(
+      "用法：preflight [YYYY-MM-DD [--known-on YYYY-MM-DD]]，日期必须有效",
+    )
     @env.exit(2)
   }
-  let now = if args.length() == 2 {
+  let now = if args.length() >= 2 {
     let day = @lib.date_to_days(args[1])
     if day < 0 {
       println("审计日期须为 1970-01-01 或以后")
@@ -746,9 +757,10 @@ fn cmd_preflight(args : Array[String]) -> Unit {
   } else {
     @env.now() + 28800000UL
   }
-  let replay = if args.length() == 2 {
+  let replay = if args.length() >= 2 {
     let date = args[1]
-    Some(@lib.recorded_ledger_at(date)) catch {
+    let known_on = if retrospective { args[3] } else { date }
+    Some(@lib.recorded_ledger_as_of(date, known_on)) catch {
       @lib.NoLedgerCheckpoint(_) => {
         eprintln("没有覆盖 \{date} 的台账快照")
         @env.exit(2)
@@ -768,6 +780,9 @@ fn cmd_preflight(args : Array[String]) -> Unit {
   let report = @lib.preflight(comps, works, now)
   println("== preflight 全链路预检 ==")
   println("今天：\{report.today}")
+  if retrospective {
+    println("事后复盘 · 证据截止：\{args[3]}")
+  }
   if replay is Some(ledger) {
     println(
       "台账快照：\{ledger.checkpoint.known_on} · \{ledger.checkpoint.source}",

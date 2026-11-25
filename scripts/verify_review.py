@@ -294,7 +294,17 @@ def main():
     assert "投稿包认证：57 个，可提交 2 个，P0 挡住 3 个" in historical
     assert "证据收录：2026-11-23 · 发生日：未知" in preflight
     verify_archived_manifests({"2026-11-15": historical, "2026-11-20": prior, "2026-11-23": preflight})
-    print("PASS three independent archived ledger digests")
+    retrospective = run("preflight", "2026-11-20", "--known-on", "2026-11-23")
+    assert "证据截止：2026-11-23" in retrospective
+    assert "验价尺 → 魔搭" not in retrospective and "证据收录：2026-11-23" not in retrospective
+    same_day = run("preflight", "2026-11-23", "--known-on", "2026-11-23")
+    assert "验价尺 → 魔搭" in same_day and "发生日：未知" in same_day
+    verify_archived_manifests({"2026-11-20": retrospective, "2026-11-23": same_day})
+    for args in (("2026-11-20", "--known-on", "2026-11-19"),
+                 ("2026-11-20", "--known-on", "2026-02-30"),
+                 ("2026-11-20", "--known-on")):
+        assert "日期必须有效" in run("preflight", *args, success=False)
+    print("PASS archived ledger digests and two-date replay without backdating unknown events")
     assert "12-01 提交前务必" not in run()
     for args in (("unknown-review-command",), ("order",), ("order-demo", "extra"), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),

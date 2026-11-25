@@ -79,6 +79,8 @@ pub fn plan_submission_order(Work, Array[Competition], Int32) -> SubmissionOrder
 
 pub fn preflight(Array[Competition], Array[Work], UInt64) -> PreflightReport
 
+pub fn recorded_ledger_as_of(String, String) -> LedgerReplay raise LedgerReplayError
+
 pub fn recorded_ledger_at(String) -> LedgerReplay raise LedgerReplayError
 
 pub fn render_blocking_chain(Array[String]) -> String
@@ -86,6 +88,8 @@ pub fn render_blocking_chain(Array[String]) -> String
 pub fn render_trace(DecisionTrace) -> String
 
 pub fn replay_ledger(Array[LedgerCheckpoint], Array[LedgerObservation], String) -> LedgerReplay raise LedgerReplayError
+
+pub fn replay_ledger_as_of(Array[LedgerCheckpoint], Array[LedgerObservation], String, String) -> LedgerReplay raise LedgerReplayError
 
 pub fn replay_submission_prefix(Work, Array[Competition], Int32, Array[String]) -> ExactPrefixReplay raise SequenceError
 
