@@ -236,6 +236,20 @@ test "historical preflight comparison includes added pairs and the late P0" {
     .iter()
     .any(row => row.after is None && row.before is Some(_)),
   )
+  let prior_count = entry.before.unwrap().reasons.length()
+  let next_count = entry.after.unwrap().reasons.length()
+  for row in before.packs {
+    if row.work == entry.work && row.competition == entry.competition {
+      row.reasons.push("external edit to before")
+    }
+  }
+  for row in after.packs {
+    if row.work == entry.work && row.competition == entry.competition {
+      row.reasons.push("external edit to after")
+    }
+  }
+  assert_eq(entry.before.unwrap().reasons.length(), prior_count)
+  assert_eq(entry.after.unwrap().reasons.length(), next_count)
 }
 
 ///|

@@ -160,6 +160,34 @@ def verify_preflight_diff(prior, current):
                    for reason in row["after"]["reasons"]) for row in elapsed["changes"])
     print(f"PASS unchanged manifest still reports {len(expected)} date-driven reason changes")
 
+
+    def endpoints(diff):
+        return {(row["work"], row["competition"]): (row.get("before"), row.get("after"))
+                for row in diff["changes"]}
+
+    dates = ("2026-11-15", "2026-11-20", "2026-11-23", "2026-11-30")
+    edges = {(dates[0], dates[1]): growth, (dates[1], dates[2]): result, (dates[2], dates[3]): elapsed}
+    for a, b in combinations(dates, 2):
+        if (a, b) not in edges:
+            edges[a, b] = json.loads(run("preflight-diff", a, b))
+    for a, b, c in combinations(dates, 3):
+        ab, bc, ac = (edges[edge] for edge in ((a, b), (b, c), (a, c)))
+        assert ab["after_manifest"] == bc["before_manifest"]
+        assert (ab["before_manifest"], bc["after_manifest"]) == (ac["before_manifest"], ac["after_manifest"])
+        first, second = endpoints(ab), endpoints(bc)
+        composed = {}
+        for key in first.keys() | second.keys():
+            if key in first and key in second:
+                start, middle = first[key]
+                assert middle == second[key][0], (a, b, c, key)
+                end = second[key][1]
+            else:
+                start, end = first[key] if key in first else second[key]
+            if start != end:
+                composed[key] = (start, end)
+        assert composed == endpoints(ac), (a, b, c)
+    print("PASS four archived date triples: composed changes equal direct comparisons")
+
     assert run("preflight-diff", "2026-11-20", "2026-11-23", "--audit-on", "2026-11-21",
                success=False) == ""
 

@@ -345,6 +345,11 @@ pub suberror PreflightComparisonError {
 }
 
 ///|
+fn snapshot_pack(row : PackVerdict) -> PackVerdict {
+  { ..row, reasons: row.reasons.copy(), }
+}
+
+///|
 /// Compare valid reports by work and competition, preserving removals and
 /// additions. Changes include a new reason even if the status is unchanged.
 /// Both manifest hashes are retained to identify the compared snapshots.
@@ -377,8 +382,8 @@ pub fn compare_preflight_reports(
     changes.push({
       work: row.work,
       competition: row.competition,
-      before: Some(row),
-      after: after_row,
+      before: Some(snapshot_pack(row)),
+      after: after_row.map(snapshot_pack),
     })
   }
   for row in after.packs {
@@ -387,7 +392,7 @@ pub fn compare_preflight_reports(
         work: row.work,
         competition: row.competition,
         before: None,
-        after: Some(row),
+        after: Some(snapshot_pack(row)),
       })
     }
   }
