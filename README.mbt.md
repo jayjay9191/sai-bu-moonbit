@@ -4,7 +4,24 @@
 
 > 曾用名：参赛管家（2026-11-16 改名）。
 
-## 验收快速入口
+## 十一月验收复跑
+
+从源码仓库根目录运行，使用 MoonBit CLI 和 Python 3.10+。
+
+```sh
+python scripts/verify_review.py --quick
+```
+
+命令从仓库中的真实台账独立重算 11 月 15 日、20 日和 23 日的清单 SHA-256，
+并与 MoonBit 的预检结果逐一对照。11 月 20 日至 23 日，**6 个投稿包的判断或理由变化，
+其中 1 个新增 P0**。固定在 11 月 20 日复盘时，发生日不明的记录不回填。
+同一快照推进到 11 月 30 日，还会检验 **12 个**因截止而改变的理由。
+
+v0.3.0 本期新增双日期回放、规则生效顺序修正和预检差异。
+去掉 `--quick` 可复跑材料组合、投稿顺序和日历回归。
+[发布记录](https://github.com/jayjay9191/sai-bu-moonbit/releases/tag/v0.3.0) · [台账验证](https://github.com/jayjay9191/sai-bu-moonbit/actions/workflows/moon-test.yml) · [快照来源](data/history/index.json) · [许可证](LICENSE)
+
+## 投稿判断示例
 
 下面使用台账里实际记录的《第零次黎明》与魔搭大赛规则。命令在本地执行，输入为仓库内的台账和作品。
 

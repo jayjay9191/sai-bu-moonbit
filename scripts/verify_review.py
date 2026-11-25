@@ -1,4 +1,5 @@
 """Replay the second-review CLI and retained certification results."""
+import argparse
 from datetime import date, datetime
 import hashlib
 from pathlib import Path
@@ -169,7 +170,46 @@ def verify_preflight_diff(prior, current):
           f"{len(result['changes'])} changed pairs in the latest comparison, one new P0")
 
 
+def verify_historical_preflight():
+    preflight = run("preflight", "2026-11-23")
+    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 4 个" in preflight
+    prior = run("preflight", "2026-11-20")
+    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 3 个" in prior
+    assert "验价尺 → 魔搭" not in prior and "验价尺 → 魔搭" in preflight
+    trial = run("pack", "小店日结", "支付宝智能体涌现奖")
+    assert "缺口（0 项）" in trial
+    assert re.search(r"可提交：\n(?:  - .*\n)*  - 小店日结 → 支付宝智能体涌现奖", preflight), preflight
+    digest = re.search(r"清单 SHA-256：([0-9a-f]{64})", preflight).group(1)
+    historical = run("preflight", "2026-11-15")
+    assert "今天：2026-11-15" in historical
+    assert "台账快照：2026-11-15 · Git 6d20bc3" in historical
+    assert "投稿包认证：57 个，可提交 2 个，P0 挡住 3 个" in historical
+    assert "证据收录：2026-11-23 · 发生日：未知" in preflight
+    verify_archived_manifests({"2026-11-15": historical, "2026-11-20": prior, "2026-11-23": preflight})
+    retrospective = run("preflight", "2026-11-20", "--known-on", "2026-11-23")
+    assert "证据截止：2026-11-23" in retrospective
+    assert "验价尺 → 魔搭" not in retrospective and "证据收录：2026-11-23" not in retrospective
+    same_day = run("preflight", "2026-11-23", "--known-on", "2026-11-23")
+    assert "验价尺 → 魔搭" in same_day and "发生日：未知" in same_day
+    verify_archived_manifests({"2026-11-20": retrospective, "2026-11-23": same_day})
+    for args in (("2026-11-20", "--known-on", "2026-11-19"),
+                 ("2026-11-20", "--known-on", "2026-02-30"),
+                 ("2026-11-20", "--known-on")):
+        assert "日期必须有效" in run("preflight", *args, success=False)
+    print("PASS archived ledger digests and two-date replay without backdating unknown events")
+    verify_preflight_diff(prior, preflight)
+    return digest
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--quick", action="store_true", help="verify three archived preflights and their differences")
+    args = parser.parse_args()
+    if not __debug__:
+        parser.error("enable Python assertions (remove -O or PYTHONOPTIMIZE)")
+    if args.quick:
+        print("Manifest SHA-256:", verify_historical_preflight())
+        return
     verify_real_material_choices()
     assert "用法" in run("help")
     verify_calendar()
@@ -341,33 +381,7 @@ def main():
     trace = run("trace", "第零次黎明", "魔搭 AI+∞ 第三期「AI 造游戏」")
     assert "最短阻断链：首次发布 → 不可提交（P0）" in trace
     assert "认证结论：不可提交" in trace
-    preflight = run("preflight", "2026-11-23")
-    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 4 个" in preflight
-    prior = run("preflight", "2026-11-20")
-    assert "投稿包认证：84 个，可提交 2 个，P0 挡住 3 个" in prior
-    assert "验价尺 → 魔搭" not in prior and "验价尺 → 魔搭" in preflight
-    trial = run("pack", "小店日结", "支付宝智能体涌现奖")
-    assert "缺口（0 项）" in trial
-    assert re.search(r"可提交：\n(?:  - .*\n)*  - 小店日结 → 支付宝智能体涌现奖", preflight), preflight
-    digest = re.search(r"清单 SHA-256：([0-9a-f]{64})", preflight).group(1)
-    historical = run("preflight", "2026-11-15")
-    assert "今天：2026-11-15" in historical
-    assert "台账快照：2026-11-15 · Git 6d20bc3" in historical
-    assert "投稿包认证：57 个，可提交 2 个，P0 挡住 3 个" in historical
-    assert "证据收录：2026-11-23 · 发生日：未知" in preflight
-    verify_archived_manifests({"2026-11-15": historical, "2026-11-20": prior, "2026-11-23": preflight})
-    retrospective = run("preflight", "2026-11-20", "--known-on", "2026-11-23")
-    assert "证据截止：2026-11-23" in retrospective
-    assert "验价尺 → 魔搭" not in retrospective and "证据收录：2026-11-23" not in retrospective
-    same_day = run("preflight", "2026-11-23", "--known-on", "2026-11-23")
-    assert "验价尺 → 魔搭" in same_day and "发生日：未知" in same_day
-    verify_archived_manifests({"2026-11-20": retrospective, "2026-11-23": same_day})
-    for args in (("2026-11-20", "--known-on", "2026-11-19"),
-                 ("2026-11-20", "--known-on", "2026-02-30"),
-                 ("2026-11-20", "--known-on")):
-        assert "日期必须有效" in run("preflight", *args, success=False)
-    print("PASS archived ledger digests and two-date replay without backdating unknown events")
-    verify_preflight_diff(prior, preflight)
+    digest = verify_historical_preflight()
     assert "12-01 提交前务必" not in run()
     for args in (("unknown-review-command",), ("order",), ("order-demo", "extra"), ("order", "missing"), ("order", "第零次黎明", "2026-02-30"),
                  ("audit-evidence", "2026-02-30"), ("audit-evidence", "2026-11-20", "extra"),
