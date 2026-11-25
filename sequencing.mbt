@@ -66,9 +66,7 @@ fn validate_planning_targets(
   for comp in comps {
     let name = comp.name.trim().to_owned()
     if name == "" ||
-      names.any(previous => {
-        same_entry(previous, name) || same_entry(name, previous)
-      }) ||
+      names.any(previous => same_entry(previous, name)) ||
       (comp.target_kind != "比赛" && comp.target_kind != "平台上架") ||
       (comp.deadline_date != "" && !is_valid_date(comp.deadline_date)) {
       raise InvalidSequence(

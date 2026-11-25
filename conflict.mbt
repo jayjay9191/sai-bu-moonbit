@@ -35,10 +35,17 @@ pub fn contains_string(items : Array[String], target : String) -> Bool {
 
 ///|
 // Old ledger rows contain short aliases for exactly these two competition names.
-fn same_entry(recorded : String, target : String) -> Bool {
-  recorded == target ||
-  (recorded == "Qoder" && target == "Qoder 高校创造力大赛") ||
-  (recorded == "AI PLAY" && target == "AI PLAY 72H 创作黑客松")
+fn canonical_entry(name : String) -> String {
+  match name {
+    "Qoder" => "Qoder 高校创造力大赛"
+    "AI PLAY" => "AI PLAY 72H 创作黑客松"
+    _ => name
+  }
+}
+
+///|
+fn same_entry(left : String, right : String) -> Bool {
+  canonical_entry(left) == canonical_entry(right)
 }
 
 ///|

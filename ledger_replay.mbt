@@ -150,7 +150,7 @@ pub fn replay_ledger_as_of(
         }
         let row = works[index]
         let submitted_to = if event.change is RecordSubmission(_, _) {
-          if contains_string(row.submitted_to, competition) {
+          if row.submitted_to.any(item => same_entry(item, competition)) {
             row.submitted_to.copy()
           } else {
             let submissions = row.submitted_to.copy()
@@ -158,7 +158,7 @@ pub fn replay_ledger_as_of(
             submissions
           }
         } else {
-          row.submitted_to.filter(item => item != competition)
+          row.submitted_to.filter(item => !same_entry(item, competition))
         }
         works[index] = { ..row, submitted_to, }
       }

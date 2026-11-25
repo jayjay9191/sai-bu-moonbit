@@ -270,3 +270,36 @@ test "preflight comparison refuses to certify invalid source data" {
     },
   )
 }
+
+///|
+test "historical contest aliases are preserved on record and removed on correction" {
+  let anchor = @sai-bu-moonbit.recorded_ledger_at("2026-11-20").checkpoint
+  let work = "第零次黎明"
+  let index = anchor.works.search_by(row => row.name == work).unwrap()
+  assert_eq(anchor.works[index].submitted_to, ["Qoder", "AI PLAY"])
+  let duplicate : @sai-bu-moonbit.LedgerObservation = {
+    known_on: "2026-11-21",
+    effective_on: None,
+    source: "test matching long name with archived short name",
+    change: RecordSubmission(work, "Qoder 高校创造力大赛"),
+  }
+  let correction = {
+    ..duplicate,
+    known_on: "2026-11-22",
+    source: "test removing archived short name using its canonical target",
+    change: CorrectSubmission(work, "Qoder 高校创造力大赛"),
+  }
+  let recorded = @sai-bu-moonbit.replay_ledger(
+    [anchor],
+    [duplicate],
+    "2026-11-21",
+  )
+  let corrected = @sai-bu-moonbit.replay_ledger(
+    [anchor],
+    [duplicate, correction],
+    "2026-11-22",
+  )
+  assert_eq(recorded.works[index].submitted_to, ["Qoder", "AI PLAY"])
+  assert_eq(corrected.works[index].submitted_to, ["AI PLAY"])
+  assert_eq(anchor.works[index].submitted_to, ["Qoder", "AI PLAY"])
+}
