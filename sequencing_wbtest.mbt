@@ -778,3 +778,97 @@ test "exact shortlist counts every permutation at the seven-target boundary" {
   assert_eq(route.possible_targets, targets)
   assert_true(route.remaining.is_empty())
 }
+
+///|
+test "exact shortlist matches a mixed seven-target oracle" {
+  let archived_platform = "itch.io 游戏上架"
+  let names = ["A", "B", "C", "D", "E", "F", archived_platform]
+  let work = {
+    ..order_work(),
+    first_public_date: "",
+    submitted_to: [archived_platform],
+  }
+  let targets = names.map(name => {
+    let target = order_fixture(name, first=name == "C" || name == "D")
+    if name == "A" || name == "B" || name == archived_platform {
+      { ..target, target_kind: "平台上架", }
+    } else {
+      target
+    }
+  })
+  // Generate prefixes independently. C or D needs a preceding publication
+  // and must be the first competition. The archived platform cannot repeat.
+  let legal : Array[Array[String]] = []
+  fn enumerate(path : Array[String]) -> Unit {
+    if path.contains(archived_platform) {
+      return
+    }
+    for i, name in path {
+      if (name == "C" || name == "D") &&
+        (i == 0 || !path[:i].iter().all(item => item == "A" || item == "B")) {
+        return
+      }
+    }
+    legal.push(path)
+    for name in names {
+      if !path.contains(name) {
+        enumerate(path + [name])
+      }
+    }
+  }
+  enumerate([])
+  let longest = legal.fold(init=0, (acc, row) => acc.max(row.length()))
+  let best = legal.filter(row => row.length() == longest)
+  best.sort()
+  let today = date_to_days("2026-11-20")
+  let actual = plan_exact_shortlist(work, targets.rev(), today, must_include=[
+    "C", "D", archived_platform,
+  ])
+  assert_eq(actual.steps, best[0])
+  assert_eq(actual.optimal_order_count, best.length())
+  assert_eq(
+    actual.required_targets,
+    names.filter(name => best.all(row => row.contains(name))),
+  )
+  assert_eq(
+    actual.possible_targets,
+    names.filter(name => best.any(row => row.contains(name))),
+  )
+  for i, name in names {
+    let first = legal.filter(row => row.get(0) == Some(name))
+    let without = legal.filter(row => !row.contains(name))
+    assert_eq(
+      actual.first_choices[i].completed,
+      first.fold(init=0, (acc, row) => acc.max(row.length())),
+    )
+    assert_eq(
+      actual.drop_impacts[i].completed,
+      without.fold(init=0, (acc, row) => acc.max(row.length())),
+    )
+  }
+  let required = actual.with_required.unwrap()
+  assert_eq(required.conflict_cores, [["C", "D"], [archived_platform]])
+  assert_eq(required.minimal_waivers, [
+    ["C", archived_platform],
+    ["D", archived_platform],
+  ])
+  for rescue in required.waiver_routes {
+    let retained = required.requested.filter(name => {
+      !rescue.waived.contains(name)
+    })
+    let feasible = legal.filter(row => retained.all(name => row.contains(name)))
+    let longest = feasible.fold(init=0, (acc, row) => acc.max(row.length()))
+    let best = feasible.filter(row => row.length() == longest)
+    best.sort()
+    assert_eq(rescue.steps, best[0])
+  }
+}
+
+///|
+test "bench exact shortlist with seven compatible targets" (it : @bench.T) {
+  let work = order_work()
+  let names = ["A", "B", "C", "D", "E", "F", "G"]
+  let targets = names.map(name => order_fixture(name))
+  let today = date_to_days("2026-11-20")
+  it.bench(fn() { it.keep(try! plan_exact_shortlist(work, targets, today)) })
+}

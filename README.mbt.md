@@ -124,9 +124,12 @@ moon run cmd/main -- materials-plan 小店日结 2026-11-20 frontier
 moon run cmd/main -- order-exact 第零次黎明 2026-11-20 'Qoder 高校创造力大赛' 'AI PLAY 72H 创作黑客松' '魔搭 AI+∞ 第三期「AI 造游戏」'
 ```
 
-`plan_exact_shortlist(work, targets, today)` 在同一审计日精确搜索最多 7 个目标的可行顺序。每一步按当前模拟状态重跑资格和材料认证。以位集合跟踪已执行目标，枚举各条可行路线。输出 `steps` 和代表方案完成后其余目标的阻断原因 `remaining`，并提供 `optimal_order_count`、所有最优路线的目标交集 `required_targets` 及并集 `possible_targets`。目标并集中的赛事可能只能择一。没有目标可完成时计为一条空路线。结果只针对本次所选短名单及台账条件。
+`plan_exact_shortlist(work, targets, today)` 在同一审计日精确搜索最多 7 个目标的可行顺序。以位集合跟踪已执行目标。固定审计日下，同一目标集合的参赛记录与是否已完成上架一致，因此可复用资格结果，同时逐条枚举路线并保留顺序计数。输出 `steps` 和代表方案完成后其余目标的阻断原因 `remaining`，并提供 `optimal_order_count`、所有最优路线的目标交集 `required_targets` 及并集 `possible_targets`。目标并集中的赛事可能只能择一。没有目标可完成时计为一条空路线。结果只针对本次所选短名单及台账条件。
 
-三个合成目标都能独立作为首次提交。若先提交普通赛，两个首发赛都随之不可投；若先提交其中一个首发赛，可以再提交普通赛，最长为 2 步。两条最优路线为 B → A 和 C → A，普通赛 A 必选，首发赛 B 与 C 可互换。另有先上架后才满足首发窗口的合成场景，以及七个无冲突目标的 5,040 条最优路线边界测试。上述真实「第零次黎明」短名单仍为 0 步，已登记的冲突继续保留。运行 `moon test -f 'exact shortlist*'` 可核对合成结果。
+三个合成目标都能独立作为首次提交。若先提交普通赛，两个首发赛都随之不可投；若先提交其中一个首发赛，可以再提交普通赛，最长为 2 步。两条最优路线为 B → A 和 C → A，普通赛 A 必选，首发赛 B 与 C 可互换。另有先上架后才满足首发窗口的合成场景，以及七个无冲突目标的 5,040 条最优路线边界测试。上述真实「第零次黎明」短名单仍为 0 步，已登记的冲突继续保留。运行 `moon test -f 'exact shortlist*'` 可核对合成结果。混合七目标用例独立枚举 149 个合法前缀，最长为 5 步，有 32 条并列路线。它包含两条上架路径、互斥首发目标和不能重复的历史上架记录。
+
+七个兼容目标的资格检查次数由 13,699 次降到 448 次。用
+`moon bench sequencing_wbtest.mbt --release --target native` 复测。同机 Windows 单次基准的组均值从 22.32 ms 降到 3.67 ms。
 
 运行 `moon run cmd/main -- order-demo --exact` 可比较每个开局。输出 `first_choices` 在同一次搜索中记录固定首个目标后最多完成的数量 `completed`，以及相对全局最优少完成多少项 `lost_steps`。首项当前不可执行时会列出 `blockers` 并省略 `lost_steps`。演示中普通赛 A 或 B 先投最多完成 2 项，首发赛 C 先投可完成 3 项。Python 按该案例的首发规则枚举排列核对每个开局。
 

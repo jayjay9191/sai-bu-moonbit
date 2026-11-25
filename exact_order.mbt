@@ -116,7 +116,15 @@ pub fn plan_exact_shortlist(
   let best_by_first = Array::make(pending.length(), 0)
   let best_without = Array::make(pending.length(), 0)
   let first_blockers = pending.map(comp => sequence_reasons(work, comp, today))
+  // On a fixed day, a used set fixes the recorded entrants and whether a
+  // platform has supplied the publication date. Order matters for counting
+  // routes and for displaying reasons, so only cache eligibility booleans.
+  let eligible_by_set : Array[Array[Bool?]] = Array::makei(
+    1 << pending.length(),
+    _ => Array::make(pending.length(), None),
+  )
   fn search(current : Work, used : Int32, first : Int32) -> Unit {
+    let eligibility = eligible_by_set[used]
     if first >= 0 && path.length() > best_by_first[first] {
       best_by_first[first] = path.length()
     }
@@ -159,12 +167,19 @@ pub fn plan_exact_shortlist(
       if path.length() > best_without[i] {
         best_without[i] = path.length()
       }
-      let blockers = if first < 0 {
-        first_blockers[i]
+      let eligible = if used == 0 {
+        first_blockers[i].is_empty()
       } else {
-        sequence_reasons(current, comp, today)
+        match eligibility[i] {
+          Some(cached) => cached
+          None => {
+            let allowed = sequence_reasons(current, comp, today).is_empty()
+            eligibility[i] = Some(allowed)
+            allowed
+          }
+        }
       }
-      if !blockers.is_empty() {
+      if !eligible {
         continue
       }
       path.push(comp.name)
