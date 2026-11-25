@@ -120,3 +120,71 @@ test "two-date replay includes only retroactive evidence with a known effective 
   }
   assert_true(bad_cutoff)
 }
+
+///|
+test "late historical amendments cannot override a newer effective rule" {
+  let anchor = @sai-bu-moonbit.recorded_ledger_at("2026-11-20").checkpoint
+  let rule = anchor.competitions[0]
+  let scheduled : @sai-bu-moonbit.LedgerObservation = {
+    known_on: "2026-11-21",
+    effective_on: Some("2026-11-24"),
+    source: "synthetic scheduled amendment",
+    change: UpdateRule({ ..rule, requires_no_prior_entry: true, }),
+  }
+  let historical : @sai-bu-moonbit.LedgerObservation = {
+    known_on: "2026-11-25",
+    effective_on: Some("2026-11-22"),
+    source: "synthetic late record of historical amendment",
+    change: UpdateRule({ ..rule, requires_no_prior_entry: false, }),
+  }
+  let correction = {
+    ..historical,
+    known_on: "2026-11-26",
+    effective_on: scheduled.effective_on,
+    source: "synthetic correction for the same effective date",
+  }
+  let events = [historical, correction, scheduled]
+  let work = {
+    ..anchor.works[0],
+    submitted_to: ["第十九届全国大学生软件创新大赛"],
+  }
+  for
+    scenario in [
+      ("2026-11-23", "2026-11-25", false),
+      ("2026-11-24", "2026-11-25", true),
+      ("2026-11-24", "2026-11-26", false),
+    ] {
+    let (audit_day, cutoff, expected) = scenario
+    let actual = @sai-bu-moonbit.replay_ledger_as_of(
+      [anchor],
+      events,
+      audit_day,
+      cutoff,
+    )
+    assert_eq(actual.competitions[0].requires_no_prior_entry, expected)
+    let conflicts = @sai-bu-moonbit.detect_conflicts(work, [
+      actual.competitions[0],
+    ])
+    let blocks = conflicts
+      .iter()
+      .any(item => item.level == "P0" && item.message.contains("原创条款"))
+    assert_eq(blocks, expected)
+    if expected {
+      assert_eq(actual.applied.map(entry => entry.source), [scheduled.source])
+    }
+  }
+
+  let competitions = anchor.competitions.copy()
+  competitions[0] = { ..rule, requires_no_prior_entry: true, }
+  let saved = { ..anchor, known_on: "2026-11-25", competitions, }
+  let retro = { ..historical, known_on: "2026-11-26", }
+  let replayed = @sai-bu-moonbit.replay_ledger_as_of(
+    [anchor, saved],
+    [scheduled, retro],
+    "2026-11-25",
+    "2026-11-26",
+  )
+  assert_eq(replayed.checkpoint.known_on, "2026-11-25")
+  assert_true(replayed.competitions[0].requires_no_prior_entry)
+  assert_true(replayed.applied.is_empty())
+}

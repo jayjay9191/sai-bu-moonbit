@@ -60,7 +60,8 @@ pub fn replay_ledger(
 ///|
 /// Reconstruct a historical audit using evidence recorded by a later date.
 /// A checkpoint cannot supply facts from after the audit day. Evidence with
-/// no effective date is treated as effective when recorded.
+/// no effective date is treated as effective when recorded. For explicit rule
+/// versions, use the latest effective date and then the latest receipt date.
 pub fn replay_ledger_as_of(
   checkpoints : Array[LedgerCheckpoint],
   observations : Array[LedgerObservation],
@@ -92,7 +93,8 @@ pub fn replay_ledger_as_of(
 
   let comps = checkpoint.competitions.copy()
   let works = checkpoint.works.copy()
-  let order : Array[(Int32, Int32)] = []
+  let order : Array[(Int32, Int32, Int32)] = []
+  let rule_effective_days : Map[String, Int32] = Map([])
   for i in 0..<observations.length() {
     let event = observations[i]
     let known = replay_date(event.known_on)
@@ -103,10 +105,15 @@ pub fn replay_ledger_as_of(
     if event.source.trim().is_empty() {
       raise InvalidLedgerEvidence("ledger observations require a source")
     }
-    if known.max(effective) >= selected_day &&
-      known <= known_cutoff &&
-      effective <= day {
-      order.push((known, i))
+    if known > known_cutoff || effective > day {
+      continue
+    }
+    if known.max(effective) >= selected_day {
+      order.push((known, i, effective))
+    } else if event.change is UpdateRule(rule) {
+      // The checkpoint already incorporates this explicit rule history.
+      let previous = rule_effective_days.get(rule.name).unwrap_or(effective)
+      rule_effective_days[rule.name] = previous.max(effective)
     }
   }
   order.sort_by((a, b) => {
@@ -119,14 +126,20 @@ pub fn replay_ledger_as_of(
   })
   let applied : Array[LedgerObservation] = []
   for item in order {
-    let (_, i) = item
+    let (_, i, effective) = item
     let event = observations[i]
     match event.change {
-      UpdateRule(rule) =>
+      UpdateRule(rule) => {
+        if rule_effective_days.get(rule.name) is Some(previous) &&
+          effective < previous {
+          continue
+        }
+        rule_effective_days[rule.name] = effective
         match comps.search_by(row => row.name == rule.name) {
           Some(index) => comps[index] = rule
           None => comps.push(rule)
         }
+      }
       RecordSubmission(work, competition)
       | CorrectSubmission(work, competition) => {
         guard works.search_by(row => row.name == work) is Some(index) else {
