@@ -303,3 +303,48 @@ test "historical contest aliases are preserved on record and removed on correcti
   assert_eq(corrected.works[index].submitted_to, ["AI PLAY"])
   assert_eq(anchor.works[index].submitted_to, ["Qoder", "AI PLAY"])
 }
+
+///|
+test "a ledger replay does not lend its historical evidence arrays" {
+  let anchor = @sai-bu-moonbit.recorded_ledger_at("2026-11-20").checkpoint
+  let rule = { ..anchor.competitions[0], materials: ["new rule materials"], }
+  let event : @sai-bu-moonbit.LedgerObservation = {
+    known_on: "2026-11-21",
+    effective_on: None,
+    source: "test rule snapshot",
+    change: UpdateRule(rule),
+  }
+  let result = @sai-bu-moonbit.replay_ledger([anchor], [event], "2026-11-21")
+  let canonical = @sai-bu-moonbit.manifest_canonical(
+    result.competitions,
+    result.works,
+  )
+  let original_work_materials = anchor.works[0].materials_ready.copy()
+  let original_rule_materials = anchor.competitions[0].materials.copy()
+  anchor.works[0].materials_ready.push("edited input work")
+  anchor.works[0].submitted_to.push("edited input history")
+  anchor.competitions[1].materials.push("edited input target")
+  anchor.competitions[0].materials.push("edited input checkpoint")
+  rule.materials.push("edited input update")
+  assert_eq(result.checkpoint.works[0].materials_ready, original_work_materials)
+  assert_eq(
+    result.checkpoint.competitions[0].materials,
+    original_rule_materials,
+  )
+  assert_eq(
+    @sai-bu-moonbit.manifest_canonical(result.competitions, result.works),
+    canonical,
+  )
+  result.checkpoint.works[0].materials_ready.push("edited snapshot work")
+  result.checkpoint.competitions[1].materials.push("edited snapshot target")
+  guard result.applied[0].change is UpdateRule(applied) else {
+    fail("expected an incorporated rule")
+  }
+  assert_eq(applied.materials, ["new rule materials"])
+  applied.materials.push("edited result evidence")
+  assert_eq(rule.materials, ["new rule materials", "edited input update"])
+  assert_eq(
+    @sai-bu-moonbit.manifest_canonical(result.competitions, result.works),
+    canonical,
+  )
+}

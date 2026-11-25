@@ -46,6 +46,20 @@ fn replay_date(date : String) -> Int32 raise LedgerReplayError {
 }
 
 ///|
+fn snapshot_rule(rule : Competition) -> Competition {
+  { ..rule, materials: rule.materials.copy(), }
+}
+
+///|
+fn snapshot_work(work : Work) -> Work {
+  {
+    ..work,
+    submitted_to: work.submitted_to.copy(),
+    materials_ready: work.materials_ready.copy(),
+  }
+}
+
+///|
 /// Replay only evidence available by the supplied date. A late observation
 /// enters the known state on its recording date, even if the fact is older.
 /// When the effective date is unknown, use recording day as the visibility boundary.
@@ -62,6 +76,7 @@ pub fn replay_ledger(
 /// A checkpoint cannot supply facts from after the audit day. Evidence with
 /// no effective date is treated as effective when recorded. For explicit rule
 /// versions, use the latest effective date and then the latest receipt date.
+/// The projected rows, checkpoint and applied rule evidence own their arrays.
 pub fn replay_ledger_as_of(
   checkpoints : Array[LedgerCheckpoint],
   observations : Array[LedgerObservation],
@@ -91,8 +106,8 @@ pub fn replay_ledger_as_of(
   }
   guard selected is Some(checkpoint) else { raise NoLedgerCheckpoint(audit_on) }
 
-  let comps = checkpoint.competitions.copy()
-  let works = checkpoint.works.copy()
+  let comps = checkpoint.competitions.map(snapshot_rule)
+  let works = checkpoint.works.map(snapshot_work)
   let order : Array[(Int32, Int32, Int32)] = []
   let rule_effective_days : Map[String, Int32] = Map([])
   for i in 0..<observations.length() {
@@ -135,10 +150,12 @@ pub fn replay_ledger_as_of(
           continue
         }
         rule_effective_days[rule.name] = effective
+        let updated = snapshot_rule(rule)
         match comps.search_by(row => row.name == rule.name) {
-          Some(index) => comps[index] = rule
-          None => comps.push(rule)
+          Some(index) => comps[index] = updated
+          None => comps.push(updated)
         }
+        applied.push({ ..event, change: UpdateRule(snapshot_rule(rule)), })
       }
       RecordSubmission(work, competition)
       | CorrectSubmission(work, competition) => {
@@ -161,11 +178,20 @@ pub fn replay_ledger_as_of(
           row.submitted_to.filter(item => !same_entry(item, competition))
         }
         works[index] = { ..row, submitted_to, }
+        applied.push(event)
       }
     }
-    applied.push(event)
   }
-  { checkpoint, competitions: comps, works, applied, }
+  {
+    checkpoint: {
+      ..checkpoint,
+      competitions: checkpoint.competitions.map(snapshot_rule),
+      works: checkpoint.works.map(snapshot_work),
+    },
+    competitions: comps,
+    works,
+    applied,
+  }
 }
 
 ///|
