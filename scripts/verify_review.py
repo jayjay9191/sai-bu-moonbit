@@ -147,6 +147,18 @@ def verify_preflight_diff(prior, current):
     assert fixed["before_date"] == fixed["after_date"] == "2026-11-20"
     assert (fixed["before_known_on"], fixed["after_known_on"]) == ("2026-11-20", "2026-11-23")
     assert fixed["before_manifest"] == fixed["after_manifest"] and fixed["changes"] == []
+    elapsed = json.loads(run("preflight-diff", "2026-11-23", "2026-11-30"))
+    assert elapsed["before_manifest"] == elapsed["after_manifest"] == result["after_manifest"]
+    # Independently find expired targets in that unchanged archived dataset.
+    archive = json.loads((ROOT / "data/history/2026-11-23.json").read_bytes())
+    deadlines = {comp["name"]: comp["deadline_date"] for comp in archive["competitions"]
+                 if "2026-11-23" <= comp["deadline_date"] < "2026-11-30"}
+    expected = {(work["name"], comp) for work in archive["works"] for comp in deadlines}
+    assert {(row["work"], row["competition"]) for row in elapsed["changes"]} == expected
+    assert all(any(f"已过截止：{deadlines[row['competition']]}" in reason
+                   for reason in row["after"]["reasons"]) for row in elapsed["changes"])
+    print(f"PASS unchanged manifest still reports {len(expected)} date-driven reason changes")
+
     assert run("preflight-diff", "2026-11-20", "2026-11-23", "--audit-on", "2026-11-21",
                success=False) == ""
 
