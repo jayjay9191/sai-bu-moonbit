@@ -267,14 +267,14 @@ def verify_historical_preflight():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--quick", action="store_true", help="verify three archived preflights and their differences")
+    parser.add_argument("--quick", action="store_true", help="verify archived preflights, their differences and explicit-date planning")
     args = parser.parse_args()
     if not __debug__:
         parser.error("enable Python assertions (remove -O or PYTHONOPTIMIZE)")
+    verify_historical_planning()
     if args.quick:
         print("Manifest SHA-256:", verify_historical_preflight())
         return
-    verify_historical_planning()
     verify_real_material_choices()
     assert "用法" in run("help")
     verify_calendar()

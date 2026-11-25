@@ -40,6 +40,10 @@ jobs:
         run: |
           export PATH="$HOME/.moon/bin:$PATH"
           moon test ledger_replay_test.mbt --target js
+      - name: Verify the public library on Wasm GC
+        run: |
+          export PATH="$HOME/.moon/bin:$PATH"
+          moon test review --target wasm-gc
       - name: Verify evidence audit and submission order CLI
         run: |
           export PATH="$HOME/.moon/bin:$PATH"
