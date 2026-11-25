@@ -420,3 +420,130 @@ test "review real ledger loses both tied routes after the national deadline" {
   assert_eq(both.possible_materials.length(), 2)
   assert_eq(both.possible_targets.length(), 2)
 }
+
+///|
+test "review joint plan counts seven-target routes against a separate permutation oracle" {
+  let (base, choices) = review_shortlist()
+  let historical = "itch.io 游戏上架"
+  let work = { ..base, first_public_date: "", submitted_to: [historical], }
+  let names = ["A", "B", "C", "D", "E", "F", historical]
+  let required = ["poster", "proof", "proof", "", "video", "video", ""]
+  let targets = names.map(name => {
+    let i = names.search(name).unwrap()
+    let materials = if required[i] == "" { [] } else { [required[i]] }
+    let target = if name == "B" || name == "C" {
+      choices[3]
+    } else {
+      choices[2]
+    }
+    let kind = if name == "E" || name == "F" || name == historical {
+      "平台上架"
+    } else {
+      "比赛"
+    }
+    { ..target, name, target_kind: kind, materials, }
+  })
+  let material_names = ["proof", "video", "poster"]
+  let legal : Array[(Array[String], Array[String])] = []
+  fn enumerate(path : Array[String]) -> Unit {
+    if path.contains(historical) {
+      return
+    }
+    for index, name in path {
+      if (name == "B" || name == "C") &&
+        (
+          index == 0 ||
+          !path[:index].iter().all(prior => prior == "E" || prior == "F")
+        ) {
+        return
+      }
+    }
+    let materials = material_names.filter(item => {
+      path.any(name => required[names.search(name).unwrap()] == item)
+    })
+    legal.push((path, materials))
+    for name in names {
+      if !path.contains(name) {
+        enumerate(path + [name])
+      }
+    }
+  }
+  enumerate([])
+  for prefix in [[], ["E"], ["A", "E"], ["B"]] {
+    let actual = @lib.plan_order_material_choices(
+      work,
+      targets.rev(),
+      @lib.date_to_days("2026-11-20"),
+      3,
+      prefix,
+    )
+    for budget, choice in actual {
+      let feasible = legal.filter(entry => {
+        let (steps, materials) = entry
+        materials.length() <= budget &&
+        steps.length() >= prefix.length() &&
+        steps[:prefix.length()].to_owned() == prefix
+      })
+      if feasible.is_empty() {
+        assert_true(choice is None)
+        continue
+      }
+      feasible.sort_by((a, b) => {
+        let length = b.0.length().compare(a.0.length())
+        let materials = a.1.length().compare(b.1.length())
+        if length != 0 {
+          length
+        } else if materials != 0 {
+          materials
+        } else {
+          a.0.compare(b.0)
+        }
+      })
+      let (steps, materials) = feasible[0]
+      let tied = feasible.filter(entry => {
+        entry.0.length() == steps.length() &&
+        entry.1.length() == materials.length()
+      })
+      let result = choice.unwrap()
+      assert_eq(result.plan.steps, steps)
+      assert_eq(result.plan.materials, materials)
+      assert_eq(result.optimal_order_count, tied.length())
+      assert_eq(
+        result.required_targets,
+        names.filter(name => tied.all(entry => entry.0.contains(name))),
+      )
+      assert_eq(
+        result.possible_targets,
+        names.filter(name => tied.any(entry => entry.0.contains(name))),
+      )
+      assert_eq(
+        result.required_materials,
+        material_names.filter(item => tied.all(entry => entry.1.contains(item))),
+      )
+      assert_eq(
+        result.possible_materials,
+        material_names.filter(item => tied.any(entry => entry.1.contains(item))),
+      )
+    }
+  }
+}
+
+///|
+test "review material plan arrays own their results" {
+  let (work, choices) = review_shortlist()
+  let target = { ..choices[2], materials: ["poster"], }
+  let rows = @lib.plan_order_material_choices(
+    work,
+    [target],
+    @lib.date_to_days("2026-11-20"),
+    3,
+    [],
+  )
+  let result = rows[1].unwrap()
+  result.plan.materials.push("user-added draft")
+  result.required_targets.push("mock")
+  assert_eq(result.required_materials, ["poster"])
+  assert_eq(result.possible_materials, ["poster"])
+  assert_eq(result.possible_targets, [target.name])
+  assert_eq(rows[2].unwrap().plan.materials, ["poster"])
+}

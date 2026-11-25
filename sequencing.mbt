@@ -410,6 +410,14 @@ fn union_sorted(left : Array[String], right : Array[String]) -> Array[String] {
 }
 
 ///|
+priv struct MaterialOrderState {
+  work : Work
+  bundle : Array[String]
+  steps : Array[String]
+  count : Int32
+}
+
+///|
 /// Count routes that tie on both objectives, retaining intersections and unions.
 pub fn plan_order_material_choices(
   work : Work,
@@ -443,8 +451,16 @@ pub fn plan_order_material_choices(
   }
   let gaps = targets.map(comp => required_material_gaps(work, comp))
   let best : Array[MaterialOrderChoices?] = Array::make(max_budget + 1, None)
-  let path : Array[String] = []
-  fn visit(state : Work, used : Int32, bundle : Array[String]) -> Unit {
+  // A fixed day and used set fix the material union and all eligibility facts.
+  // Every predecessor mask is smaller, so its route count arrives before expansion.
+  let states : Array[MaterialOrderState?] = Array::make(
+    1 << targets.length(),
+    None,
+  )
+  states[0] = Some({ work, bundle: [], steps: [], count: 1, })
+  for used in 0..<states.length() {
+    guard states[used] is Some(state) else { continue }
+    let { work: projected, bundle, steps: path, count, } = state
     let depth = path.length()
     if depth >= prefix_indices.length() {
       for budget in bundle.length()..<(max_budget + 1) {
@@ -467,11 +483,11 @@ pub fn plan_order_material_choices(
           names.sort()
           best[budget] = Some({
             plan: { budget, materials, steps, },
-            optimal_order_count: 1,
-            required_materials: materials,
-            possible_materials: materials,
+            optimal_order_count: count,
+            required_materials: materials.copy(),
+            possible_materials: materials.copy(),
             required_targets: names,
-            possible_targets: names,
+            possible_targets: names.copy(),
           })
         } else if comparison == 0 && current is Some(tied) {
           let plan = if path.compare(tied.plan.steps) < 0 {
@@ -483,7 +499,7 @@ pub fn plan_order_material_choices(
           }
           best[budget] = Some({
             plan,
-            optimal_order_count: tied.optimal_order_count + 1,
+            optimal_order_count: tied.optimal_order_count + count,
             required_materials: tied.required_materials.filter(item => {
               bundle.contains(item)
             }),
@@ -507,20 +523,36 @@ pub fn plan_order_material_choices(
         continue
       }
       let prepared = {
-        ..state,
-        materials_ready: state.materials_ready + extra,
+        ..projected,
+        materials_ready: projected.materials_ready + extra,
       }
-      if sequence_reasons(prepared, comp, today).is_empty() {
-        path.push(comp.name)
-        visit(
-          simulate_submission(prepared, comp, today),
-          used | bit,
-          bundle + extra,
-        )
-        ignore(path.pop())
+      if !sequence_reasons(prepared, comp, today).is_empty() {
+        continue
       }
+      let next = used | bit
+      let steps = path + [comp.name]
+      states[next] = Some(
+        match states[next] {
+          Some(previous) =>
+            {
+              ..previous,
+              steps: if steps.compare(previous.steps) < 0 {
+                steps
+              } else {
+                previous.steps
+              },
+              count: previous.count + count,
+            }
+          None =>
+            {
+              work: simulate_submission(prepared, comp, today),
+              bundle: bundle + extra,
+              steps,
+              count,
+            }
+        },
+      )
     }
   }
-  visit(work, 0, [])
   best
 }

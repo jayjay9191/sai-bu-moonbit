@@ -767,16 +767,19 @@ test "exact shortlist keeps targets that become legal after platform publication
 ///|
 test "exact shortlist counts every permutation at the seven-target boundary" {
   let targets = ["A", "B", "C", "D", "E", "F", "G"]
-  let route = plan_exact_shortlist(
-    order_work(),
-    targets.rev().map(name => order_fixture(name)),
-    date_to_days("2026-11-20"),
-  )
+  let work = order_work()
+  let competitions = targets.rev().map(name => order_fixture(name))
+  let today = date_to_days("2026-11-20")
+  let route = plan_exact_shortlist(work, competitions, today)
+  let expected = 7 * 6 * 5 * 4 * 3 * 2
   assert_eq(route.steps, targets)
-  assert_eq(route.optimal_order_count, 7 * 6 * 5 * 4 * 3 * 2)
+  assert_eq(route.optimal_order_count, expected)
   assert_eq(route.required_targets, targets)
   assert_eq(route.possible_targets, targets)
   assert_true(route.remaining.is_empty())
+  let plans = plan_order_material_choices(work, competitions, today, 3, [])
+  assert_true(plans.all(plan => plan.unwrap().optimal_order_count == expected))
+  assert_true(plans.all(plan => plan.unwrap().plan.steps == targets))
 }
 
 ///|
@@ -871,4 +874,20 @@ test "bench exact shortlist with seven compatible targets" (it : @bench.T) {
   let targets = names.map(name => order_fixture(name))
   let today = date_to_days("2026-11-20")
   it.bench(fn() { it.keep(try! plan_exact_shortlist(work, targets, today)) })
+}
+
+///|
+test "bench joint planning with shared material and seven targets" (
+  it : @bench.T,
+) {
+  let work = order_work()
+  let names = ["A", "B", "C", "D", "E", "F", "G"]
+  let targets = names.map(name => {
+    ..order_fixture(name),
+    materials: ["fixture", "shared material"],
+  })
+  let today = date_to_days("2026-11-20")
+  it.bench(fn() {
+    it.keep(try! plan_order_material_choices(work, targets, today, 3, []))
+  })
 }
