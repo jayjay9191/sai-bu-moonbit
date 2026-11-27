@@ -1,6 +1,6 @@
-# 每次推送与 PR 自动跑 moon test。
+# 每次推送与 PR 检查、构建和测试 MoonBit 项目。
 # 安装方式按 MoonBit 官方文档（moonbitlang/x 等官方项目同款流程）：
-# 官方安装脚本装 CLI，再 moon update 同步核心库，然后跑测试。
+# 官方安装脚本同时安装项目使用的标准库。
 # 注意：不要改动同目录下的 copilot-setup-steps.yml（Copilot 专用）。
 name: MoonBit test
 
@@ -11,17 +11,30 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      MOONBIT_INSTALL_VERSION: "1.0.0-rc1+3c0520448"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install MoonBit
         run: curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-      - name: Update MoonBit registry
+      - name: Check MoonBit sources
         run: |
           export PATH="$HOME/.moon/bin:$PATH"
-          moon update
+          compiler_report="$(moonc -v)"
+          echo "$compiler_report"
+          compiler_version="${compiler_report%% *}"
+          test "${compiler_version#v}" = "$MOONBIT_INSTALL_VERSION"
+          moon check
+      - name: Build native release
+        run: |
+          export PATH="$HOME/.moon/bin:$PATH"
+          moon build --release --target native
       - name: Check generated data is in sync
         run: |
           python3 scripts/generate_data.py
@@ -47,4 +60,5 @@ jobs:
       - name: Verify evidence audit and submission order CLI
         run: |
           export PATH="$HOME/.moon/bin:$PATH"
+          python3 -m unittest discover -s tests_py
           python3 scripts/verify_review.py

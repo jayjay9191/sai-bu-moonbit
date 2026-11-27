@@ -6,11 +6,19 @@
 
 ## 十一月验收复跑
 
-从源码仓库根目录运行，使用 MoonBit CLI 和 Python 3.10+。
+安装 [MoonBit 官方工具链](https://www.moonbitlang.com/download)，用 `moonc -v` 确认编译器为
+`1.0.0-rc1` 或更新版本。验收脚本还使用 Python 3.10+。
 
 ```sh
+git clone https://github.com/jayjay9191/sai-bu-moonbit.git
+cd sai-bu-moonbit
+moonc -v
+moon run cmd/main -- preflight 2026-11-23
 python scripts/verify_review.py --quick
 ```
+
+CI 固定使用 `1.0.0-rc1+3c0520448`，依次核对编译器版本、检查源码、构建 Native 发布版并运行测试。也可分别执行
+`moon check`、`moon build --release --target native` 和 `moon test`。
 
 命令从仓库中的真实台账独立重算 11 月 15 日、20 日和 23 日的清单 SHA-256，
 并与 MoonBit 的预检结果逐一对照。11 月 20 日至 23 日，**6 个投稿包的判断或理由变化，
@@ -88,7 +96,7 @@ AI 用于辅助整理规则和构造边界用例。本版使用 Codex 辅助实�
 
 ## 初审核对
 
-在仓库根目录运行 `moon test review`。十三个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
+在仓库根目录运行 `moon test review`。十五个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
 
 运行 `moon run cmd/main -- materials-plan 小店日结 2026-11-20 3`。MoonBit 先模拟补齐每个目标的材料并复跑认证，再在预算内枚举缺项集合的去重并集，选出最多能新增多少可认证目标。并列时优先选材料较少的方案。预算为 0 至 3 项，同名材料按一项计。
 
@@ -428,12 +436,10 @@ MoonBit 参赛作品，目前没有外部用户。定价核验的 MoonBit 报名
 
 ```sh
 # 在自己的 MoonBit 项目里把赛簿装成依赖
-moon add jayjay9191/sai-bu-moonbit@0.1.3
+moon add jayjay9191/sai-bu-moonbit@0.3.0
 ```
 
-想先看效果不用装：克隆仓库后，三条命令验证核心价值（作品名、
-比赛名写全名，含空格与符号的加引号；以下输出均为 2026-11-16
-当场实测）：
+克隆仓库后可直接运行下面的命令。作品和比赛使用全名，含空格与符号时加引号。
 
 ```sh
 moon run cmd/main list
@@ -454,10 +460,12 @@ moon run cmd/main trace 第零次黎明 "魔搭 AI+∞ 第三期「AI 造游戏�
 
 ## 怎么跑
 
-需要 MoonBit 工具链（`moon`，0.1.20261104 或更新）。
+使用上方验收复跑所列的工具链。
 
 ```sh
-# 1. 跑测试（268 个：MoonBit 232 个 + Python 36 个，全部通过才算数）
+# 1. 检查、构建并跑测试
+moon check
+moon build --release --target native
 moon test
 python3 -m unittest discover -s tests_py
 
@@ -743,9 +751,13 @@ preflight 与 SHA-256 26 个；2026-11-16 加第 4 件作品，生成测试
 | `.githooks/pre-commit` | 提交前钩子：跑 `moon test`，失败阻止提交（启用方法见“怎么跑 / 提交前检查”） |
 | `scripts/setup-hooks.sh` | 启用钩子：`git config core.hooksPath .githooks`（只需跑一次，本地配置，不进 git） |
 
-## 60% 借鉴 / 40% 创新（诚实说明）
+## 实现参考与许可证
 
-**借鉴 60%（学的是思路和工程做法，不是代码）：**
+本项目源代码采用 [Apache-2.0](LICENSE)，属于 [OSI 认可的许可证](https://opensource.org/license/apache-2.0)。
+日期换算参考 Howard Hinnant [公有领域算法](https://howardhinnant.github.io/date_algorithms.html#Summary)。
+SHA-256 按 [NIST FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) 实现。
+
+**工程做法参考：**
 
 - 证据优先：每条比赛数据带来源与核实状态，没核到的直接标“未核实”/“待核对”，
   不编数据。数据来源是《最近要参加的比赛汇总》（2026-11-13 晚四路核实版）。
@@ -760,7 +772,7 @@ preflight 与 SHA-256 26 个；2026-11-16 加第 4 件作品，生成测试
   （例如魔搭“首次发布”条款注明来自 AIBetas 转述，官网原文未直接读到）。
 - 测试覆盖：核心逻辑（台账、冲突、投稿包）都有测试，`moon test` 全过才算完成。
 
-**创新优化 40%（Auto-Lexmount 没有的）：**
+**本项目的主要实现：**
 
 - 多目标并行管理（21 个投稿目标一个台账：19 个比赛 + 2 个平台上架，按截止排序；12 个在途 + 9 个关注）。
 - 游戏作品投稿支持（打包游戏链接 + 演示视频 + 投稿文案）。
@@ -906,13 +918,10 @@ preflight 与 SHA-256 26 个；2026-11-16 加第 4 件作品，生成测试
   触发条件写清楚再动手：比赛数翻倍（到 40 行左右），或者每周要改多次
   数据——到那时再评估 Plan A，生成器方案作为对照组保留。
 
-## 作者参赛要做的事（工具帮不了的）
+## 十一月验收安排
 
-1. GitHub 公开仓库已同步，软件包已发布为 [Mooncakes v0.1.3](https://mooncakes.io/docs/jayjay9191/sai-bu-moonbit)。
-2. 填**飞书报名表**申报项目（一页项目说明 + 公开仓库链接）。
-3. 进**赛事交流群**，把群昵称改成自己的 GitHub ID，否则影响奖金发放。
-4. 注意：11 月轮报名/验收截止官网未公布具体日期（按每月滚动规律推测
-   11 月 30 日，未核实），以官方通知和群通知为准。
+按本轮官方通知，已通过初审的项目无需重新填写报名表。
+验收以 11 月 30 日 23:59 的仓库状态为准，安排在 12 月第一周。
 
 ## 环境说明
 
