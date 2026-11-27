@@ -27,9 +27,10 @@ CI 固定使用 `1.0.0-rc1+3c0520448`，依次核对编译器版本、检查源�
 六条带日期的规划入口也使用同一归档回放。脚本对照 11 月 20 日和 23 日的原始记录，
 确认后收录的报名证据只影响对应日期后的首发资格。
 
-v0.3.0 本期新增双日期回放、规则生效顺序修正和预检差异。
-去掉 `--quick` 可复跑材料组合、投稿顺序和日历回归。
-[发布记录](https://github.com/jayjay9191/sai-bu-moonbit/releases/tag/v0.3.0) · [台账验证](https://github.com/jayjay9191/sai-bu-moonbit/actions/workflows/moon-test.yml) · [快照来源](data/history/index.json) · [许可证](LICENSE)
+v0.3.1 的显式日期日历、证据审计和规划均使用对应归档。也可下载 Mooncakes 的 0.3.1 源码包，
+在解压后的模块根目录执行上述两个验收命令。去掉 `--quick` 可复跑材料组合、投稿顺序和日历回归。
+v0.3.0 新增了双日期回放、规则生效顺序修正和预检差异。
+[v0.3.0 发布记录](https://github.com/jayjay9191/sai-bu-moonbit/releases/tag/v0.3.0) · [台账验证](https://github.com/jayjay9191/sai-bu-moonbit/actions/workflows/moon-test.yml) · [快照来源](data/history/index.json) · [许可证](LICENSE)
 
 ## 投稿判断示例
 
@@ -48,7 +49,7 @@ python scripts/verify_review.py
 
 [规则、证据与投稿包完整案例](docs/worked-example-moda-dawn.md) · [可提交的投稿包复跑命令](#验收用投稿包样例)
 
-作为依赖可用 `moon add jayjay9191/sai-bu-moonbit@0.3.0`，公开接口见 [Mooncakes](https://mooncakes.io/docs/jayjay9191/sai-bu-moonbit)。
+作为依赖可用 `moon add jayjay9191/sai-bu-moonbit@0.3.1`，公开接口见 [Mooncakes](https://mooncakes.io/docs/jayjay9191/sai-bu-moonbit)。
 
 ### 验收用投稿包样例
 
@@ -438,7 +439,7 @@ MoonBit 参赛作品，目前没有外部用户。定价核验的 MoonBit 报名
 
 ```sh
 # 在自己的 MoonBit 项目里把赛簿装成依赖
-moon add jayjay9191/sai-bu-moonbit@0.3.0
+moon add jayjay9191/sai-bu-moonbit@0.3.1
 ```
 
 克隆仓库后可直接运行下面的命令。作品和比赛使用全名，含空格与符号时加引号。

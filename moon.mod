@@ -11,7 +11,7 @@
 
 name = "jayjay9191/sai-bu-moonbit"
 
-version = "0.3.0"
+version = "0.3.1"
 
 readme = "README.mbt.md"
 
