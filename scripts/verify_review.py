@@ -1,6 +1,6 @@
 """Replay the second-review CLI and retained certification results."""
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 from pathlib import Path
 import json
@@ -48,6 +48,48 @@ def verify_calendar():
     for args in (("--days",), ("--days", "0"), ("--days", "1.5"), ("--days", "2147483648")):
         assert run("calendar", "2026-11-20", *args, success=False) == ""
     print("PASS calendar: 12 verified date reminders, later stage retained, unique UIDs and UTF-8 folding")
+
+
+def verify_historical_calendar():
+    root = ROOT / "data/history"
+    markers = ("未核实", "待核对", "未确认", "待确认", "未公布", "打不开")
+
+    def expected_primary(competitions, day):
+        when = date.fromisoformat(day)
+        expected = set()
+        for row in competitions:
+            deadline = row["deadline_date"]
+            age = (when - date.fromisoformat(row["verified_at"])).days
+            wording = "|".join(row[key] for key in ("deadline", "prize", "note"))
+            if deadline >= day and 0 <= age <= 30 and not any(flag in wording for flag in markers):
+                expected.add((deadline.replace("-", ""), row["name"]))
+        return expected
+
+    def primary_events(report):
+        unfolded = report.replace("\n ", "")
+        return {(start, name) for start, name in re.findall(
+            r"^DTSTART;VALUE=DATE:(\d{8})\nTRANSP:TRANSPARENT\nSUMMARY:(.+)", unfolded, re.M)
+                if not name.endswith("（后续截止）")}
+
+    for day in ("2026-11-15", "2026-11-20"):
+        archive = json.loads((root / f"{day}.json").read_bytes())
+        expected = expected_primary(archive["competitions"], day)
+        actual = primary_events(run("calendar", day))
+        assert actual == expected, (day, sorted(expected - actual), sorted(actual - expected))
+
+    missing = subprocess.run(["moon", "run", "cmd/main", "--", "calendar", "2026-11-14"], cwd=ROOT,
+                             capture_output=True, text=True, encoding="utf-8", timeout=90)
+    assert missing.returncode == 2 and not missing.stdout
+    assert "没有覆盖 2026-11-14 的台账快照" in missing.stderr
+
+    current = json.loads((ROOT / "data/competitions.json").read_bytes())["competitions"]
+    beijing = timezone(timedelta(hours=8))
+    before = datetime.now(beijing).date().isoformat()
+    default = primary_events(run("calendar"))
+    after = datetime.now(beijing).date().isoformat()
+    assert any(default == expected_primary(current, day) for day in {before, after}), default
+    assert "日期必须有效" in run("preflight", "😀😀😀A-XY", success=False)
+    print("PASS calendar uses archived dates, rejects dates before coverage, and defaults to the working ledger")
 
 
 def verify_real_material_choices():
@@ -303,6 +345,7 @@ def main():
     if not __debug__:
         parser.error("enable Python assertions (remove -O or PYTHONOPTIMIZE)")
     verify_historical_planning()
+    verify_historical_calendar()
     verify_historical_evidence()
     if args.quick:
         print("Manifest SHA-256:", verify_historical_preflight())

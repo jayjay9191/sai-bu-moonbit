@@ -96,7 +96,7 @@ AI 用于辅助整理规则和构造边界用例。本版使用 Codex 辅助实�
 
 ## 初审核对
 
-在仓库根目录运行 `moon test review`。十五个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
+在仓库根目录运行 `moon test review`。十六个 [公开接口案例](review/public_contract_test.mbt) 核对材料预算、已登记投稿的阻断、并列路线和先投不同目标的后果。
 
 运行 `moon run cmd/main -- materials-plan 小店日结 2026-11-20 3`。MoonBit 先模拟补齐每个目标的材料并复跑认证，再在预算内枚举缺项集合的去重并集，选出最多能新增多少可认证目标。并列时优先选材料较少的方案。预算为 0 至 3 项，同名材料按一项计。
 
@@ -304,7 +304,9 @@ moon run cmd/main -- calendar 2026-11-20 --days 14 > deadlines.ics
 
 `--days 14` 从起始日（含）起导出 14 个自然日。本例到 12 月 3 日（含），共 4 条。
 日期范围的设计参考 [khal](https://github.com/pimutils/khal/blob/master/doc/source/usage.rst#list)。
-省略 `--days` 可得到全部 12 条已核实的全天提醒。PAYATHON 的 12 月 1 日报名和
+省略 `--days` 可得到全部 12 条已核实的全天提醒。带日期的日历使用当日归档和已收录证据；
+早于首条快照会提示缺少覆盖，省略日期时使用工作台账。11 月 15 日的快照保留了后来复核的松江、涌现奖等六项截止。
+验收脚本直接读取两份归档，逐条核对主阶段日期。PAYATHON 的 12 月 1 日报名和
 12 月 9 日作品提交分别入历。先前阶段到期后，仍会保留未到期的明确日期。
 同日多阶段合为一条，暂定的后续日期留在台账原文中。提醒按日期排序，同日按赛事名称排序。具体阶段时间以说明原文为准。日期字段与文本转义参考
 [iCalendar 项目](https://github.com/icalendar/icalendar) 和 [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545)。

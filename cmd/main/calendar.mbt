@@ -24,7 +24,14 @@ fn cmd_calendar(args : Array[String]) -> Unit {
       }
       Some(value.to_int())
     }
-    let calendar = @lib.deadline_calendar(@lib.all_competitions(), date, days~)
+    let (competitions, _) = ledger_visible_on(
+      if has_date {
+        Some(date)
+      } else {
+        None
+      },
+    )
+    let calendar = @lib.deadline_calendar(competitions, date, days~)
     @async.run_async_main(async fn() {
       @stdio.stdout.write(@utf8.encode(calendar)) catch {
         _ => {

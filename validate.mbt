@@ -128,8 +128,9 @@ pub fn is_valid_date(s : String) -> Bool {
   if s.length() != 10 {
     return false
   }
+  // String length counts UTF-16 code units; date positions index decoded characters.
   let chars = s.to_array()
-  if chars[4] != '-' || chars[7] != '-' {
+  if chars.length() != 10 || chars[4] != '-' || chars[7] != '-' {
     return false
   }
   for i in [0, 1, 2, 3, 5, 6, 8, 9] {

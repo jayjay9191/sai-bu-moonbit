@@ -547,3 +547,12 @@ test "review material plan arrays own their results" {
   assert_eq(result.possible_targets, [target.name])
   assert_eq(rows[2].unwrap().plan.materials, ["poster"])
 }
+
+///|
+test "review rejects dates with supplementary Unicode safely" {
+  for candidate in ["😀😀😀A-XY", "2026-11-😀", "😀😀😀😀😀"] {
+    assert_false(@lib.is_valid_date(candidate))
+    assert_eq(@lib.date_to_days(candidate), -1)
+  }
+  assert_true(@lib.is_valid_date("2026-11-15"))
+}
